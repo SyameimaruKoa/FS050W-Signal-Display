@@ -45,18 +45,26 @@ class MetricGauge extends StatelessWidget {
                                 ),
                             ),
                             Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                    Text(
-                                        valueText,
-                                        style: GoogleFonts.notoSansMono(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: color,
+                                    SizedBox(
+                                        width: 96,
+                                        child: Text(
+                                            valueText,
+                                            textAlign: TextAlign.right,
+                                            style: GoogleFonts.notoSansMono(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: color,
+                                            ),
                                         ),
                                     ),
                                     const SizedBox(width: 8),
                                     Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        width: 78,
+                                        height: 24,
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
                                         decoration: BoxDecoration(
                                             color: color.withOpacity(0.2),
                                             borderRadius: BorderRadius.circular(4),
@@ -69,6 +77,8 @@ class MetricGauge extends StatelessWidget {
                                                 fontWeight: FontWeight.bold,
                                                 color: color,
                                             ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                         ),
                                     ),
                                 ],

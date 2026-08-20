@@ -187,9 +187,9 @@ class CellCard extends StatelessWidget {
                     value: signal.nrSnr,
                     unit: "dB",
                     level: snrLevel,
-                    annotation: "${ColorGauge.getLabel(snrLevel)}・補正済",
                 ),
             ],
+
         );
     }
 

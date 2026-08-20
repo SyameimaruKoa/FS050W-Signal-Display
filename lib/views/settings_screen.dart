@@ -42,9 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await StorageService.saveSettings(_settings);
         if (mounted) {
             context.read<ApiService>().updateSettings(_settings);
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("設定を保存しました")),
-            );
         }
     }
 
@@ -56,13 +53,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     "⚙ 設定",
                     style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                actions: [
-                    IconButton(
-                        icon: const Icon(Icons.check, color: Colors.greenAccent),
-                        onPressed: _save,
-                        tooltip: "保存",
-                    ),
-                ],
             ),
             body: ListView(
                 padding: const EdgeInsets.all(16.0),
