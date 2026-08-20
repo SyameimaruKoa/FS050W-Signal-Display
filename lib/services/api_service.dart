@@ -84,11 +84,45 @@ class ApiService extends ChangeNotifier {
         _pollingTimer = Timer.periodic(interval, (_) => _pollOnce());
     }
 
+    void _updateHeadersFromResponse(http.Response response) {
+        final csrf = response.headers['x-csrf-token'];
+        if (csrf != null && csrf.isNotEmpty) {
+            _csrfToken = csrf;
+        }
+        final cookie = response.headers['set-cookie'];
+        if (cookie != null && cookie.isNotEmpty) {
+            final match = RegExp(r'-webs-session-=[^;]+').firstMatch(cookie);
+            if (match != null) {
+                _sessionCookie = match.group(0);
+            } else {
+                _sessionCookie = cookie.split(';').first;
+            }
+        }
+    }
+
     Future<bool> testConnection(String ip, String password) async {
         try {
             final testUri = Uri.parse("http://$ip/goform/x_csrf_token");
             final resp = await _client.get(testUri).timeout(const Duration(seconds: 3));
             if (resp.statusCode == 200) {
+                final csrf = resp.headers['x-csrf-token'];
+                final cookie = resp.headers['set-cookie'];
+                final cookieHeader = cookie?.split(';').first ?? '';
+
+                final testParamsUri = Uri.parse("http://$ip/goform/get_mgdb_params");
+                final testHeaders = {
+                    'Content-Type': 'application/json',
+                    if (csrf != null) 'X-Csrf-Token': csrf,
+                    if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
+                };
+                final payload = jsonEncode({
+                    'keys': ['mnet_sysmode', 'mnet_rsrp']
+                });
+                final paramResp = await _client.post(testParamsUri, headers: testHeaders, body: payload).timeout(const Duration(seconds: 3));
+                if (paramResp.statusCode == 200) {
+                    final json = jsonDecode(paramResp.body);
+                    return json['retcode'] == 0;
+                }
                 return true;
             }
         } catch (e) {
@@ -122,7 +156,7 @@ class ApiService extends ChangeNotifier {
                         _status = ConnectionStatus.unauthenticatedMode;
                     } else {
                         _status = ConnectionStatus.error;
-                        _errorMessage = "ログイン認証に失敗しました";
+                        _errorMessage = "ログイン認証に失敗しました (パスワードを確認してください)";
                         notifyListeners();
                         return;
                     }
@@ -174,19 +208,7 @@ class ApiService extends ChangeNotifier {
             final uri = Uri.parse("http://${_settings.routerIp}/goform/x_csrf_token");
             final response = await _client.get(uri).timeout(const Duration(seconds: 3));
             if (response.statusCode == 200) {
-                final csrf = response.headers['x-csrf-token'];
-                final cookie = response.headers['set-cookie'];
-                if (csrf != null) {
-                    _csrfToken = csrf;
-                }
-                if (cookie != null) {
-                    final match = RegExp(r'-webs-session-=[^;]+').firstMatch(cookie);
-                    if (match != null) {
-                        _sessionCookie = match.group(0);
-                    } else {
-                        _sessionCookie = cookie.split(';').first;
-                    }
-                }
+                _updateHeadersFromResponse(response);
                 return _csrfToken != null;
             }
         } catch (e) {
@@ -212,6 +234,8 @@ class ApiService extends ChangeNotifier {
             ).timeout(const Duration(seconds: 3));
 
             if (prikeyResp.statusCode != 200) return false;
+            _updateHeadersFromResponse(prikeyResp);
+
             final prikeyJson = jsonDecode(prikeyResp.body);
             final prikey = prikeyJson['prikey']?.toString();
             if (prikey == null || prikey.isEmpty) return false;
@@ -220,7 +244,7 @@ class ApiService extends ChangeNotifier {
             // 2. Hash calculation
             final hashedPassword = CryptoUtils.computeLoginPasswordHash(_settings.webPassword, _prikey!);
 
-            // 3. POST login2
+            // 3. POST login2 with updated CSRF token
             final loginUri = Uri.parse("http://${_settings.routerIp}/goform/login2");
             final loginResp = await _client.post(
                 loginUri,
@@ -237,6 +261,7 @@ class ApiService extends ChangeNotifier {
             ).timeout(const Duration(seconds: 3));
 
             if (loginResp.statusCode == 200) {
+                _updateHeadersFromResponse(loginResp);
                 final loginJson = jsonDecode(loginResp.body);
                 if (loginJson['retcode'] == 0) {
                     return true;
@@ -249,25 +274,69 @@ class ApiService extends ChangeNotifier {
     }
 
     Future<Map<String, dynamic>?> _fetchParams() async {
-        final path = _isLoggedIn ? "/action/get_mgdb_params" : "/goform/get_mgdb_params";
-        final uri = Uri.parse("http://${_settings.routerIp}$path");
-        
-        final Map<String, String> headers = {'Content-Type': 'application/json'};
-        if (_csrfToken != null) headers['X-Csrf-Token'] = _csrfToken!;
-        if (_sessionCookie != null) headers['Cookie'] = _sessionCookie!;
+        final keysPayload = jsonEncode({
+            'keys': [
+                'mnet_sysmode',
+                'mnet_operator_name',
+                'mnet_rsrp',
+                'mnet_rssi',
+                'mnet_rsrq',
+                'mnet_sinr',
+                'mnet_wnw_band',
+                'mnet_wnw_pci',
+                'mnet_wnw_earfcn',
+                'mnet_endc_rsrp',
+                'mnet_endc_rsrq',
+                'mnet_endc_snr',
+                'mnet_wnw_psband',
+                'mnet_wnw_pspci',
+                'mnet_wnw_psnrarfcn',
+                'battery_percent',
+                'battery_charging',
+            ]
+        });
+
+        // Try authenticated endpoint first if logged in
+        if (_isLoggedIn) {
+            final authUri = Uri.parse("http://${_settings.routerIp}/action/get_mgdb_params");
+            final authHeaders = {
+                'Content-Type': 'application/json',
+                if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
+                if (_sessionCookie != null) 'Cookie': _sessionCookie!,
+            };
+
+            try {
+                final response = await _client.post(authUri, headers: authHeaders, body: keysPayload).timeout(const Duration(seconds: 3));
+                _updateHeadersFromResponse(response);
+                if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
+                    final dynamic data = jsonDecode(response.body);
+                    if (data is Map<String, dynamic> && data['retcode'] == 0) {
+                        return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
+                    }
+                } else if (response.statusCode == 401 || response.statusCode == 403 || response.body.startsWith('<!DOCTYPE')) {
+                    _isLoggedIn = false;
+                }
+            } catch (e) {
+                // fall through to unauthenticated
+            }
+        }
+
+        // Unauthenticated mode (/goform/get_mgdb_params)
+        final uri = Uri.parse("http://${_settings.routerIp}/goform/get_mgdb_params");
+        final headers = {
+            'Content-Type': 'application/json',
+            if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
+            if (_sessionCookie != null) 'Cookie': _sessionCookie!,
+        };
 
         try {
-            final response = await _client.post(uri, headers: headers, body: '{}').timeout(const Duration(seconds: 3));
+            final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 3));
+            _updateHeadersFromResponse(response);
             if (response.statusCode == 200) {
                 final dynamic data = jsonDecode(response.body);
-                if (data is Map<String, dynamic>) {
-                    return data;
+                if (data is Map<String, dynamic> && data['retcode'] == 0) {
+                    return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
                 }
-            } else if (response.statusCode == 401 || response.statusCode == 403) {
-                // Session expired, reset token
-                _csrfToken = null;
-                _sessionCookie = null;
-                _isLoggedIn = false;
             }
         } catch (e) {
             // failed
@@ -280,12 +349,13 @@ class ApiService extends ChangeNotifier {
         final uri = Uri.parse("http://${_settings.routerIp}/action/mnet_get_ca_list");
         final Map<String, String> headers = {
             'Content-Type': 'application/json',
-            'X-Csrf-Token': _csrfToken ?? '',
-            'Cookie': _sessionCookie ?? '',
+            if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
+            if (_sessionCookie != null) 'Cookie': _sessionCookie!,
         };
 
         try {
             final response = await _client.post(uri, headers: headers, body: '{}').timeout(const Duration(seconds: 2));
+            _updateHeadersFromResponse(response);
             if (response.statusCode == 200) {
                 final dynamic data = jsonDecode(response.body);
                 if (data is Map<String, dynamic>) {
