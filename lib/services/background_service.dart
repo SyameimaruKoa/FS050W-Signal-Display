@@ -2,6 +2,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../models/signal_data.dart';
 import '../models/app_settings.dart';
 import '../models/connection_state.dart';
+import 'notification_service.dart';
 
 class BackgroundService {
     static void initService() {
@@ -10,8 +11,8 @@ class BackgroundService {
                 channelId: 'fs050w_monitor_channel',
                 channelName: 'FS050W 電波常駐監視',
                 channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-                channelImportance: NotificationChannelImportance.LOW,
-                priority: NotificationPriority.LOW,
+                channelImportance: NotificationChannelImportance.DEFAULT,
+                priority: NotificationPriority.DEFAULT,
             ),
             iosNotificationOptions: const IOSNotificationOptions(),
             foregroundTaskOptions: ForegroundTaskOptions(
@@ -40,9 +41,13 @@ class BackgroundService {
         if (await FlutterForegroundTask.isRunningService) {
             await FlutterForegroundTask.stopService();
         }
+        await NotificationService.cancelPersistentStatus();
     }
 
     static void updateNotification(SignalData signal, AppSettings settings) {
+        // Update persistent notification via local notifications plugin
+        NotificationService.updatePersistentStatus(signal, settings);
+
         if (!settings.foregroundNotificationEnabled) {
             stopService();
             return;

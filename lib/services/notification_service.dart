@@ -23,9 +23,22 @@ class NotificationService {
             importance: Importance.high,
         );
 
-        await _notificationsPlugin
-            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-            ?.createNotificationChannel(eventChannel);
+        const statusChannel = AndroidNotificationChannel(
+            'fs050w_status_channel',
+            'FS050W 電波常駐ステータス',
+            description: 'FS050Wの電波状態をリアルタイムで常駐通知します',
+            importance: Importance.defaultImportance,
+            enableVibration: false,
+            playSound: false,
+            showBadge: false,
+        );
+
+        final androidPlugin = _notificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        
+        await androidPlugin?.createNotificationChannel(eventChannel);
+        await androidPlugin?.createNotificationChannel(statusChannel);
+        await androidPlugin?.requestNotificationsPermission();
     }
 
     static Future<void> showSimpleAlert({
@@ -99,4 +112,58 @@ class NotificationService {
             body: 'RSRPが極めて低調です (${rsrp.toStringAsFixed(1)} dBm)。通信切断にご注意ください。',
         );
     }
+
+    static Future<void> updatePersistentStatus(SignalData signal, AppSettings settings) async {
+        if (!settings.foregroundNotificationEnabled) {
+            await cancelPersistentStatus();
+            return;
+        }
+
+        final modeBadge = ConnectionModeHelper.getIconBadgeText(signal.connectionMode);
+        final uiMode = ConnectionModeHelper.getUiModeText(signal.connectionMode, isSa: signal.isSa);
+        final lteRsrpStr = signal.lteRsrp != null ? "${signal.lteRsrp!.toStringAsFixed(1)} dBm" : "--";
+        final nrRsrpStr = signal.nrRsrp != null ? "${signal.nrRsrp!.toStringAsFixed(1)} dBm" : "--";
+
+        final title = "[$modeBadge] $uiMode | ${signal.operatorName}";
+
+        String text;
+        if (settings.notificationStyle == NotificationDetailStyle.detailed) {
+            final band4g = signal.lteBand != null ? "B${signal.lteBand}" : "--";
+            final pci4g = signal.ltePci != null ? "${signal.ltePci}" : "--";
+            final batStr = signal.batteryPercent != null ? " | 🔋${signal.batteryPercent}%${signal.isCharging ? '⚡' : ''}" : "";
+
+            if (signal.connectionMode == Fs050wConnectionMode.nr5g || signal.connectionMode == Fs050wConnectionMode.nr5gSub6) {
+                final nrBand = signal.nrBand != null ? "n${signal.nrBand}" : "--";
+                text = "5G: $nrBand (RSRP: $nrRsrpStr) | 4G: $band4g PCI:$pci4g (RSRP: $lteRsrpStr)$batStr";
+            } else {
+                final sinrStr = signal.lteSinr != null ? " | SINR: ${signal.lteSinr!.toStringAsFixed(1)}dB" : "";
+                text = "4G: $band4g PCI: $pci4g | RSRP: $lteRsrpStr$sinrStr$batStr";
+            }
+        } else {
+            text = "4G RSRP: $lteRsrpStr${signal.nrRsrp != null ? ' | 5G: $nrRsrpStr' : ''}";
+        }
+
+        const androidDetails = AndroidNotificationDetails(
+            'fs050w_status_channel',
+            'FS050W 電波常駐ステータス',
+            channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            ongoing: true,
+            autoCancel: false,
+            showWhen: true,
+            playSound: false,
+            enableVibration: false,
+            onlyAlertOnce: true,
+            icon: '@mipmap/ic_launcher',
+        );
+
+        const details = NotificationDetails(android: androidDetails);
+        await _notificationsPlugin.show(1000, title, text, details);
+    }
+
+    static Future<void> cancelPersistentStatus() async {
+        await _notificationsPlugin.cancel(1000);
+    }
 }
+

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../services/api_service.dart';
+import '../services/background_service.dart';
 import '../services/storage_service.dart';
 import 'widgets/log_viewer_dialog.dart';
 
@@ -41,7 +42,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         await StorageService.saveSettings(_settings);
         if (mounted) {
-            context.read<ApiService>().updateSettings(_settings);
+            final api = context.read<ApiService>();
+            api.updateSettings(_settings);
+            if (!_settings.foregroundNotificationEnabled) {
+                await BackgroundService.stopService();
+            } else if (api.currentSignal != null) {
+                BackgroundService.updateNotification(api.currentSignal!, _settings);
+            }
         }
     }
 
