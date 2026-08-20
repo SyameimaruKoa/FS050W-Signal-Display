@@ -194,7 +194,7 @@ class DashboardScreen extends StatelessWidget {
                             ],
                         ),
                     ),
-                    if (apiService.errorMessage != null) ...[
+                    if (apiService.errorMessage != null && !isConnected) ...[
                         const SizedBox(height: 6),
                         Text(
                             apiService.errorMessage!,

@@ -151,6 +151,7 @@ class ApiService extends ChangeNotifier {
                     _isLoggedIn = true;
                     _status = ConnectionStatus.authenticated;
                 } else {
+                    // Fallback to passwordless mode if enabled or if locked
                     if (_settings.autoPasswordless) {
                         _isLoggedIn = false;
                         _status = ConnectionStatus.unauthenticatedMode;
@@ -196,6 +197,25 @@ class ApiService extends ChangeNotifier {
                 _errorMessage = null;
                 notifyListeners();
             } else {
+                // If fetching params failed, attempt quick CSRF recovery once
+                _csrfToken = null;
+                _sessionCookie = null;
+                final bool reInit = await _fetchCsrfToken();
+                if (reInit) {
+                    final retryParams = await _fetchParams();
+                    if (retryParams != null) {
+                        final signal = SignalData.fromApiResponse(
+                            retryParams,
+                            previousData: _currentSignal,
+                        );
+                        _currentSignal = signal;
+                        _signalHistory.add(signal);
+                        _status = _isLoggedIn ? ConnectionStatus.authenticated : ConnectionStatus.unauthenticatedMode;
+                        _errorMessage = null;
+                        notifyListeners();
+                        return;
+                    }
+                }
                 _handleFetchFailure();
             }
         } catch (e) {
@@ -373,6 +393,8 @@ class ApiService extends ChangeNotifier {
     }
 
     void _handleFetchFailure([String? message]) {
+        _csrfToken = null;
+        _sessionCookie = null;
         _status = ConnectionStatus.error;
         _errorMessage = message ?? "ルーターからのデータ取得に失敗しました";
         notifyListeners();
