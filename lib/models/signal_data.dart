@@ -14,8 +14,6 @@ class SignalData {
     final double? lteSinr;
     final int? lteBand;
     final int? ltePci;
-    final int? lteEarfcn;
-    final double? lteFrequency;
 
     // 5G NR Parameters
     final double? nrRsrp;
@@ -23,8 +21,6 @@ class SignalData {
     final double? nrSnr;
     final int? nrBand;
     final int? nrPci;
-    final int? nrArfcn;
-    final double? nrFrequency;
 
     // Battery & CA
     final int? batteryPercent;
@@ -49,15 +45,11 @@ class SignalData {
         this.lteSinr,
         this.lteBand,
         this.ltePci,
-        this.lteEarfcn,
-        this.lteFrequency,
         this.nrRsrp,
         this.nrRsrq,
         this.nrSnr,
         this.nrBand,
         this.nrPci,
-        this.nrArfcn,
-        this.nrFrequency,
         this.batteryPercent,
         this.isCharging = false,
         this.hasCa = false,
@@ -77,57 +69,61 @@ class SignalData {
             ? (json['data'] as Map<String, dynamic>)
             : json;
         final now = DateTime.now();
-        final sysmode = (rawMap['mnet_sysmode'] ?? 'lte').toString().toLowerCase();
+        final sysmode = (rawMap['mnet_sysmode'] ?? previousData?.sysmode ?? 'lte').toString().toLowerCase();
         final isSa = sysmode == 'nr5g';
-        final operatorName = (rawMap['mnet_operator_name'] ?? '--').toString();
+        final operatorName = (rawMap['mnet_operator_name'] ?? previousData?.operatorName ?? '--').toString();
 
         // 4G LTE Parsing
         final rawLteRsrp = _parseInt(rawMap['mnet_rsrp']);
         double? lteRsrp;
         if (rawLteRsrp != null) {
             lteRsrp = isSa ? (rawLteRsrp - 157.0) : (rawLteRsrp - 141.0);
+        } else {
+            lteRsrp = previousData?.lteRsrp;
         }
 
         final rawLteRssi = _parseInt(rawMap['mnet_rssi']);
-        final double? lteRssi = rawLteRssi != null ? (rawLteRssi - 111.0) : null;
+        final double? lteRssi = rawLteRssi != null ? (rawLteRssi - 111.0) : previousData?.lteRssi;
 
         final rawLteRsrq = _parseInt(rawMap['mnet_rsrq']);
-        final double? lteRsrq = rawLteRsrq != null ? ((rawLteRsrq - 40.0) / 2.0) : null;
+        final double? lteRsrq = rawLteRsrq != null ? ((rawLteRsrq - 40.0) / 2.0) : previousData?.lteRsrq;
 
-        final double? lteSinr = _parseDouble(rawMap['mnet_sinr']);
+        final double? lteSinr = _parseDouble(rawMap['mnet_sinr']) ?? previousData?.lteSinr;
 
-        final int? lteBand = _parseBand(rawMap['mnet_wnw_band']);
-        final int? ltePci = _parseInt(rawMap['mnet_wnw_pci']);
-        final int? lteEarfcn = _parseInt(rawMap['mnet_wnw_earfcn']);
-        final double? lteFrequency = FrequencyCalculator.calculateLteFrequency(lteBand, lteEarfcn);
+        final int? lteBand = _parseBand(rawMap['mnet_wnw_band']) ?? previousData?.lteBand;
+        final int? ltePci = _parseInt(rawMap['mnet_wnw_pci']) ?? previousData?.ltePci;
 
         // 5G NR Parsing
         final rawEndcRsrp = _parseInt(rawMap['mnet_endc_rsrp']);
         double? nrRsrp;
         if (rawEndcRsrp != null && rawEndcRsrp > 0) {
             nrRsrp = rawEndcRsrp - 157.0;
+        } else if (rawEndcRsrp == null) {
+            nrRsrp = previousData?.nrRsrp;
         }
 
         final rawEndcRsrq = _parseInt(rawMap['mnet_endc_rsrq']);
         double? nrRsrq;
         if (rawEndcRsrq != null && rawEndcRsrq > 0) {
             nrRsrq = ((rawEndcRsrq - 1.0) / 2.0) - 43.0;
+        } else if (rawEndcRsrq == null) {
+            nrRsrq = previousData?.nrRsrq;
         }
 
         final rawEndcSnr = _parseInt(rawMap['mnet_endc_snr']);
         double? nrSnr;
         if (rawEndcSnr != null && rawEndcSnr > 0) {
             nrSnr = ((rawEndcSnr - 1.0) / 2.0) - 23.0;
+        } else if (rawEndcSnr == null) {
+            nrSnr = previousData?.nrSnr;
         }
 
-        final int? nrBand = _parseBand(rawMap['mnet_wnw_psband']);
-        final int? nrPci = _parseInt(rawMap['mnet_wnw_pspci']);
-        final int? nrArfcn = _parseInt(rawMap['mnet_wnw_psnrarfcn']);
-        final double? nrFrequency = FrequencyCalculator.calculateNrFrequency(nrBand, nrArfcn);
+        final int? nrBand = _parseBand(rawMap['mnet_wnw_psband']) ?? previousData?.nrBand;
+        final int? nrPci = _parseInt(rawMap['mnet_wnw_pspci']) ?? previousData?.nrPci;
 
         // Battery
-        final int? batteryPercent = _parseInt(rawMap['battery_percent']);
-        final bool isCharging = (rawMap['battery_charging']?.toString() == '1');
+        final int? batteryPercent = _parseInt(rawMap['battery_percent']) ?? previousData?.batteryPercent;
+        final bool isCharging = (rawMap['battery_charging']?.toString() == '1') || (previousData?.isCharging ?? false);
 
         // Mode determination
         final bool isNrActive = (nrRsrp != null && nrRsrp < 0) || (nrBand != null && nrBand > 0);
@@ -165,15 +161,11 @@ class SignalData {
             lteSinr: lteSinr,
             lteBand: lteBand,
             ltePci: ltePci,
-            lteEarfcn: lteEarfcn,
-            lteFrequency: lteFrequency,
             nrRsrp: nrRsrp,
             nrRsrq: nrRsrq,
             nrSnr: nrSnr,
             nrBand: nrBand,
             nrPci: nrPci,
-            nrArfcn: nrArfcn,
-            nrFrequency: nrFrequency,
             batteryPercent: batteryPercent,
             isCharging: isCharging,
             hasCa: hasCa,

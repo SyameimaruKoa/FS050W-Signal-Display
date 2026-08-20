@@ -6,25 +6,17 @@ import 'package:fs050w_monitor/models/signal_data.dart';
 import 'package:fs050w_monitor/models/connection_state.dart';
 
 void main() {
-    group('3GPP Frequency Calculator Tests', () {
-        test('LTE Band 3 EARFCN 1750 should calculate to 1860.0 MHz', () {
-            final freq = FrequencyCalculator.calculateLteFrequency(3, 1750);
-            expect(freq, equals(1860.0));
+    group('3GPP Band Naming Tests', () {
+        test('LTE Band 3 and 1 names', () {
+            expect(FrequencyCalculator.getLteBandName(3), equals("B3 (1.7GHz帯)"));
+            expect(FrequencyCalculator.getLteBandName(1), equals("B1 (2.1GHz帯)"));
         });
 
-        test('LTE Band 1 EARFCN 100 should calculate to 2120.0 MHz', () {
-            final freq = FrequencyCalculator.calculateLteFrequency(1, 100);
-            expect(freq, equals(2120.0));
-        });
-
-        test('5G sub6 n77 ARFCN 650000 should calculate to 3750.0 MHz', () {
-            final freq = FrequencyCalculator.calculateNrFrequency(77, 650000);
-            expect(freq, equals(3750.0));
-        });
-
-        test('5G refarmed n28 ARFCN 150000 should calculate to 750.0 MHz', () {
-            final freq = FrequencyCalculator.calculateNrFrequency(28, 150000);
-            expect(freq, equals(750.0));
+        test('5G sub6 and refarmed band names', () {
+            expect(FrequencyCalculator.getNrBandName(77), equals("n77 (3.7GHz帯 sub6)"));
+            expect(FrequencyCalculator.getNrBandName(28), equals("n28 (700MHz帯 転用5G)"));
+            expect(FrequencyCalculator.isSub6Band(77), isTrue);
+            expect(FrequencyCalculator.isSub6Band(28), isFalse);
         });
     });
 
@@ -73,13 +65,12 @@ void main() {
                 'mnet_rsrp': '68', // 68 - 141 = -73.0
                 'mnet_wnw_band': '3',
                 'mnet_wnw_pci': '315',
-                'mnet_wnw_earfcn': '1750',
             };
             final data = SignalData.fromApiResponse(json, hasCa: false);
             expect(data.connectionMode, equals(Fs050wConnectionMode.lte));
             expect(data.lteRsrp, equals(-73.0));
             expect(data.lteBand, equals(3));
-            expect(data.lteFrequency, equals(1860.0));
+            expect(data.ltePci, equals(315));
         });
 
         test('Pattern 2: 4G+ LTE CA', () {
@@ -126,7 +117,6 @@ void main() {
                 'mnet_endc_rsrp': '68', // 68 - 157 = -89.0
                 'mnet_wnw_psband': '28',
                 'mnet_wnw_pspci': '454',
-                'mnet_wnw_psnrarfcn': '150000',
             };
             final data = SignalData.fromApiResponse(json);
             expect(data.connectionMode, equals(Fs050wConnectionMode.nr5g));
@@ -143,13 +133,11 @@ void main() {
                 'mnet_endc_snr': '77', // (77 - 1) / 2 - 23 = 15.0
                 'mnet_wnw_psband': '77',
                 'mnet_wnw_pspci': '723',
-                'mnet_wnw_psnrarfcn': '650000',
             };
             final data = SignalData.fromApiResponse(json);
             expect(data.connectionMode, equals(Fs050wConnectionMode.nr5gSub6));
             expect(data.nrRsrp, equals(-89.0));
             expect(data.nrSnr, equals(15.0));
-            expect(data.nrFrequency, equals(3750.0));
         });
 
         test('Handover Detection when PCI changes', () {
@@ -171,3 +159,4 @@ void main() {
         });
     });
 }
+

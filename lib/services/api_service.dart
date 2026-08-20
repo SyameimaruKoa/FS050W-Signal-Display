@@ -131,6 +131,8 @@ class ApiService extends ChangeNotifier {
         return false;
     }
 
+    DateTime? _lastLoginAttempt;
+
     Future<void> _pollOnce() async {
         try {
             if (_csrfToken == null || _sessionCookie == null) {
@@ -145,13 +147,19 @@ class ApiService extends ChangeNotifier {
                 }
             }
 
-            if (!_isLoggedIn && _settings.webPassword.isNotEmpty) {
+            // Attempt login if password configured and not recently throttled
+            final now = DateTime.now();
+            final canAttemptLogin = !_isLoggedIn &&
+                _settings.webPassword.isNotEmpty &&
+                (_lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 15);
+
+            if (canAttemptLogin) {
+                _lastLoginAttempt = now;
                 final bool loginSuccess = await _performLogin();
                 if (loginSuccess) {
                     _isLoggedIn = true;
                     _status = ConnectionStatus.authenticated;
                 } else {
-                    // Fallback to passwordless mode if enabled or if locked
                     if (_settings.autoPasswordless) {
                         _isLoggedIn = false;
                         _status = ConnectionStatus.unauthenticatedMode;
@@ -168,27 +176,15 @@ class ApiService extends ChangeNotifier {
 
             final Map<String, dynamic>? params = await _fetchParams();
             if (params != null) {
-                bool hasCa = false;
-                List<String> caBands = [];
-                if (_isLoggedIn) {
-                    final caData = await _fetchCaList();
-                    if (caData != null) {
-                        hasCa = caData['hasCa'] == true;
-                        caBands = (caData['bands'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-                    }
-                }
-
                 final signal = SignalData.fromApiResponse(
                     params,
-                    hasCa: hasCa,
-                    caBands: caBands,
                     previousData: _currentSignal,
                 );
 
                 _currentSignal = signal;
                 _signalHistory.add(signal);
 
-                // Keep maximum 600 history points (10 mins at 1s)
+                // Keep maximum 600 history points
                 if (_signalHistory.length > 600) {
                     _signalHistory.removeRange(0, _signalHistory.length - 600);
                 }
@@ -226,7 +222,7 @@ class ApiService extends ChangeNotifier {
     Future<bool> _fetchCsrfToken() async {
         try {
             final uri = Uri.parse("http://${_settings.routerIp}/goform/x_csrf_token");
-            final response = await _client.get(uri).timeout(const Duration(seconds: 3));
+            final response = await _client.get(uri).timeout(const Duration(seconds: 4));
             if (response.statusCode == 200) {
                 _updateHeadersFromResponse(response);
                 return _csrfToken != null;
@@ -251,7 +247,7 @@ class ApiService extends ChangeNotifier {
                     'Content-Type': 'application/json',
                 },
                 body: '{}',
-            ).timeout(const Duration(seconds: 3));
+            ).timeout(const Duration(seconds: 4));
 
             if (prikeyResp.statusCode != 200) return false;
             _updateHeadersFromResponse(prikeyResp);
@@ -278,7 +274,7 @@ class ApiService extends ChangeNotifier {
                     'password': hashedPassword,
                     'prikey': _prikey,
                 }),
-            ).timeout(const Duration(seconds: 3));
+            ).timeout(const Duration(seconds: 4));
 
             if (loginResp.statusCode == 200) {
                 _updateHeadersFromResponse(loginResp);
@@ -293,28 +289,27 @@ class ApiService extends ChangeNotifier {
         return false;
     }
 
+    static const List<String> kValidParamKeys = [
+        'mnet_rsrp',
+        'mnet_rssi',
+        'mnet_rsrq',
+        'mnet_sinr',
+        'mnet_snr',
+        'mnet_wnw_pci',
+        'mnet_wnw_band',
+        'mnet_wnw_pspci',
+        'mnet_wnw_psband',
+        'mnet_endc_rsrp',
+        'mnet_endc_snr',
+        'mnet_endc_rsrq',
+        'mnet_sysmode',
+        'battery_percent',
+        'battery_charging',
+        'mnet_operator_name',
+    ];
+
     Future<Map<String, dynamic>?> _fetchParams() async {
-        final keysPayload = jsonEncode({
-            'keys': [
-                'mnet_sysmode',
-                'mnet_operator_name',
-                'mnet_rsrp',
-                'mnet_rssi',
-                'mnet_rsrq',
-                'mnet_sinr',
-                'mnet_wnw_band',
-                'mnet_wnw_pci',
-                'mnet_wnw_earfcn',
-                'mnet_endc_rsrp',
-                'mnet_endc_rsrq',
-                'mnet_endc_snr',
-                'mnet_wnw_psband',
-                'mnet_wnw_pspci',
-                'mnet_wnw_psnrarfcn',
-                'battery_percent',
-                'battery_charging',
-            ]
-        });
+        final keysPayload = jsonEncode({'keys': kValidParamKeys});
 
         // Try authenticated endpoint first if logged in
         if (_isLoggedIn) {
@@ -326,7 +321,7 @@ class ApiService extends ChangeNotifier {
             };
 
             try {
-                final response = await _client.post(authUri, headers: authHeaders, body: keysPayload).timeout(const Duration(seconds: 3));
+                final response = await _client.post(authUri, headers: authHeaders, body: keysPayload).timeout(const Duration(seconds: 4));
                 _updateHeadersFromResponse(response);
                 if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
                     final dynamic data = jsonDecode(response.body);
@@ -350,7 +345,7 @@ class ApiService extends ChangeNotifier {
         };
 
         try {
-            final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 3));
+            final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 4));
             _updateHeadersFromResponse(response);
             if (response.statusCode == 200) {
                 final dynamic data = jsonDecode(response.body);

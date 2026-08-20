@@ -112,7 +112,6 @@ class CellCard extends StatelessWidget {
         }
 
         final nrBandName = FrequencyCalculator.getNrBandName(signal.nrBand);
-        final freqStr = signal.nrFrequency != null ? "${signal.nrFrequency!.toStringAsFixed(1)} MHz" : "--";
         final isSub6 = FrequencyCalculator.isSub6Band(signal.nrBand);
         final nrTitle = isSub6 ? "▼ 5G+ NR+ ($nrBandName)" : "▼ 5G NR ($nrBandName)";
 
@@ -160,9 +159,9 @@ class CellCard extends StatelessWidget {
                             ),
                             Row(
                                 children: [
-                                    const Text("NR-ARFCN: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
+                                    const Text("Band: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
                                     Text(
-                                        signal.nrArfcn != null ? "${signal.nrArfcn} ($freqStr)" : "--",
+                                        nrBandName,
                                         style: GoogleFonts.notoSansMono(fontSize: 13, fontWeight: FontWeight.bold),
                                     ),
                                 ],
@@ -212,7 +211,6 @@ class CellCard extends StatelessWidget {
         }
 
         final bandName = FrequencyCalculator.getLteBandName(signal.lteBand);
-        final freqStr = signal.lteFrequency != null ? "${signal.lteFrequency!.toStringAsFixed(1)} MHz" : "--";
         final anchorText = ConnectionModeHelper.get4gAnchorText(
             signal.connectionMode,
             bandName,
@@ -262,9 +260,9 @@ class CellCard extends StatelessWidget {
                             ),
                             Row(
                                 children: [
-                                    const Text("EARFCN: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
+                                    const Text("Band: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
                                     Text(
-                                        signal.lteEarfcn != null ? "${signal.lteEarfcn} ($freqStr)" : "--",
+                                        bandName,
                                         style: GoogleFonts.notoSansMono(fontSize: 13, fontWeight: FontWeight.bold),
                                     ),
                                 ],
