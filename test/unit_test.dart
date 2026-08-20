@@ -1,0 +1,173 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:fs050w_monitor/utils/calc_frequency.dart';
+import 'package:fs050w_monitor/utils/crypto_utils.dart';
+import 'package:fs050w_monitor/utils/color_gauge.dart';
+import 'package:fs050w_monitor/models/signal_data.dart';
+import 'package:fs050w_monitor/models/connection_state.dart';
+
+void main() {
+    group('3GPP Frequency Calculator Tests', () {
+        test('LTE Band 3 EARFCN 1750 should calculate to 1860.0 MHz', () {
+            final freq = FrequencyCalculator.calculateLteFrequency(3, 1750);
+            expect(freq, equals(1860.0));
+        });
+
+        test('LTE Band 1 EARFCN 100 should calculate to 2120.0 MHz', () {
+            final freq = FrequencyCalculator.calculateLteFrequency(1, 100);
+            expect(freq, equals(2120.0));
+        });
+
+        test('5G sub6 n77 ARFCN 650000 should calculate to 3750.0 MHz', () {
+            final freq = FrequencyCalculator.calculateNrFrequency(77, 650000);
+            expect(freq, equals(3750.0));
+        });
+
+        test('5G refarmed n28 ARFCN 150000 should calculate to 750.0 MHz', () {
+            final freq = FrequencyCalculator.calculateNrFrequency(28, 150000);
+            expect(freq, equals(750.0));
+        });
+    });
+
+    group('Challenge-Response Hash Calculation Tests', () {
+        test('HMAC-MD5 and MD5 digest pipeline produces valid 32-char hex string', () {
+            final hash = CryptoUtils.computeLoginPasswordHash('admin123', 'abcdef123456');
+            expect(hash.length, equals(32));
+            expect(RegExp(r'^[a-f0-9]{32}$').hasMatch(hash), isTrue);
+        });
+    });
+
+    group('6-Tier Color Gauge Evaluation Tests', () {
+        test('RSRP levels evaluation', () {
+            expect(ColorGauge.rateRsrp(-75.0), equals(SignalRatingLevel.excellent));
+            expect(ColorGauge.rateRsrp(-85.0), equals(SignalRatingLevel.good));
+            expect(ColorGauge.rateRsrp(-95.0), equals(SignalRatingLevel.moderate));
+            expect(ColorGauge.rateRsrp(-105.0), equals(SignalRatingLevel.weak));
+            expect(ColorGauge.rateRsrp(-115.0), equals(SignalRatingLevel.veryWeak));
+            expect(ColorGauge.rateRsrp(-125.0), equals(SignalRatingLevel.critical));
+        });
+
+        test('RSRQ levels evaluation', () {
+            expect(ColorGauge.rateRsrq(-8.0), equals(SignalRatingLevel.excellent));
+            expect(ColorGauge.rateRsrq(-10.0), equals(SignalRatingLevel.good));
+            expect(ColorGauge.rateRsrq(-13.0), equals(SignalRatingLevel.moderate));
+            expect(ColorGauge.rateRsrq(-16.0), equals(SignalRatingLevel.weak));
+            expect(ColorGauge.rateRsrq(-18.5), equals(SignalRatingLevel.veryWeak));
+            expect(ColorGauge.rateRsrq(-20.0), equals(SignalRatingLevel.critical));
+        });
+
+        test('SINR levels evaluation', () {
+            expect(ColorGauge.rateSinr(25.0), equals(SignalRatingLevel.excellent));
+            expect(ColorGauge.rateSinr(15.0), equals(SignalRatingLevel.good));
+            expect(ColorGauge.rateSinr(8.0), equals(SignalRatingLevel.moderate));
+            expect(ColorGauge.rateSinr(2.0), equals(SignalRatingLevel.weak));
+            expect(ColorGauge.rateSinr(-5.0), equals(SignalRatingLevel.veryWeak));
+            expect(ColorGauge.rateSinr(-15.0), equals(SignalRatingLevel.critical));
+        });
+    });
+
+    group('SignalData Parsing and 6-Pattern Mode Determination Tests', () {
+        test('Pattern 1: 4G LTE Single', () {
+            final json = {
+                'mnet_sysmode': 'lte',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '68', // 68 - 141 = -73.0
+                'mnet_wnw_band': '3',
+                'mnet_wnw_pci': '315',
+                'mnet_wnw_earfcn': '1750',
+            };
+            final data = SignalData.fromApiResponse(json, hasCa: false);
+            expect(data.connectionMode, equals(Fs050wConnectionMode.lte));
+            expect(data.lteRsrp, equals(-73.0));
+            expect(data.lteBand, equals(3));
+            expect(data.lteFrequency, equals(1860.0));
+        });
+
+        test('Pattern 2: 4G+ LTE CA', () {
+            final json = {
+                'mnet_sysmode': 'lte',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '68',
+                'mnet_wnw_band': '3',
+            };
+            final data = SignalData.fromApiResponse(json, hasCa: true, caBands: ['B18']);
+            expect(data.connectionMode, equals(Fs050wConnectionMode.lteCa));
+            expect(data.hasCa, isTrue);
+        });
+
+        test('Pattern 3: 4GN 5G NSA Standby', () {
+            final json = {
+                'mnet_sysmode': 'nsa',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '68',
+                'mnet_endc_rsrp': '0', // 0 indicates standby
+                'mnet_wnw_band': '3',
+            };
+            final data = SignalData.fromApiResponse(json, hasCa: false);
+            expect(data.connectionMode, equals(Fs050wConnectionMode.nsaReady));
+        });
+
+        test('Pattern 4: 4GN+ 5G NSA Standby CA', () {
+            final json = {
+                'mnet_sysmode': 'nsa',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '68',
+                'mnet_endc_rsrp': '0',
+                'mnet_wnw_band': '3',
+            };
+            final data = SignalData.fromApiResponse(json, hasCa: true);
+            expect(data.connectionMode, equals(Fs050wConnectionMode.nsaReadyCa));
+        });
+
+        test('Pattern 5: 5G Refarmed (n28)', () {
+            final json = {
+                'mnet_sysmode': 'nsa',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '68',
+                'mnet_endc_rsrp': '68', // 68 - 157 = -89.0
+                'mnet_wnw_psband': '28',
+                'mnet_wnw_pspci': '454',
+                'mnet_wnw_psnrarfcn': '150000',
+            };
+            final data = SignalData.fromApiResponse(json);
+            expect(data.connectionMode, equals(Fs050wConnectionMode.nr5g));
+            expect(data.nrRsrp, equals(-89.0));
+            expect(data.nrBand, equals(28));
+        });
+
+        test('Pattern 6: 5G+ sub6 (n77)', () {
+            final json = {
+                'mnet_sysmode': 'nsa',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '68',
+                'mnet_endc_rsrp': '68', // 68 - 157 = -89.0
+                'mnet_endc_snr': '77', // (77 - 1) / 2 - 23 = 15.0
+                'mnet_wnw_psband': '77',
+                'mnet_wnw_pspci': '723',
+                'mnet_wnw_psnrarfcn': '650000',
+            };
+            final data = SignalData.fromApiResponse(json);
+            expect(data.connectionMode, equals(Fs050wConnectionMode.nr5gSub6));
+            expect(data.nrRsrp, equals(-89.0));
+            expect(data.nrSnr, equals(15.0));
+            expect(data.nrFrequency, equals(3750.0));
+        });
+
+        test('Handover Detection when PCI changes', () {
+            final prevJson = {
+                'mnet_sysmode': 'lte',
+                'mnet_wnw_pci': '29',
+                'mnet_wnw_band': '3',
+            };
+            final prevData = SignalData.fromApiResponse(prevJson);
+
+            final nextJson = {
+                'mnet_sysmode': 'lte',
+                'mnet_wnw_pci': '57',
+                'mnet_wnw_band': '3',
+            };
+            final nextData = SignalData.fromApiResponse(nextJson, previousData: prevData);
+
+            expect(nextData.handoverDescription, equals("PCI 29 → 57 (B3)"));
+        });
+    });
+}
