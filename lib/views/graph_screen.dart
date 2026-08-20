@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/signal_data.dart';
 
@@ -265,8 +264,10 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 interval: (maxX / 4).clamp(1.0, 300.0),
                                                 getTitlesWidget: (value, meta) {
                                                     final sampleTime = startTime.add(Duration(seconds: value.toInt()));
+                                                    final minStr = sampleTime.minute.toString().padLeft(2, '0');
+                                                    final secStr = sampleTime.second.toString().padLeft(2, '0');
                                                     return Text(
-                                                        DateFormat("mm:ss").format(sampleTime),
+                                                        "$minStr:$secStr",
                                                         style: GoogleFonts.notoSansMono(
                                                             fontSize: 10,
                                                             color: Colors.white54,

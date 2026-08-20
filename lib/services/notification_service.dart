@@ -1,121 +1,102 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:vibration/vibration.dart';
 import '../models/app_settings.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 
 class NotificationService {
     static final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
-    static bool _initialized = false;
-
-    static Fs050wConnectionMode? _lastMode;
-    static int? _lastPci;
-    static bool _lastWasCritical = false;
 
     static Future<void> initialize() async {
-        if (_initialized) return;
+        await init();
+    }
 
-        const AndroidInitializationSettings initializationSettingsAndroid =
-            AndroidInitializationSettings('@mipmap/ic_launcher');
+    static Future<void> init() async {
+        const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+        const initSettings = InitializationSettings(android: androidInit);
+        await _notificationsPlugin.initialize(initSettings);
 
-        const InitializationSettings initializationSettings = InitializationSettings(
-            android: initializationSettingsAndroid,
+        const eventChannel = AndroidNotificationChannel(
+            'fs050w_event_alerts',
+            'FS050W イベント通知',
+            description: '5G+接続時やハンドオーバー発生時の通知',
+            importance: Importance.high,
         );
 
-        await _notificationsPlugin.initialize(initializationSettings);
-        _initialized = true;
+        await _notificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            ?.createNotificationChannel(eventChannel);
     }
 
-    static void handleSignalEvents(SignalData signal, AppSettings settings) {
-        // 1. 5G+ (sub6) area entry
-        if (settings.vibrateOn5gSub6) {
-            final isNowSub6 = signal.connectionMode == Fs050wConnectionMode.nr5gSub6;
-            final wasSub6 = _lastMode == Fs050wConnectionMode.nr5gSub6;
-            if (isNowSub6 && !wasSub6) {
-                _trigger5gSub6Alert();
-            }
-        }
-        _lastMode = signal.connectionMode;
-
-        // 2. Handover (PCI change)
-        if (settings.vibrateOnHandover && signal.handoverDescription != null) {
-            _triggerHandoverAlert(signal.handoverDescription!);
-        }
-        _lastPci = signal.ltePci;
-
-        // 3. Critical Signal (RSRP < -120dBm)
-        if (settings.vibrateOnCriticalSignal) {
-            final isCritical = (signal.lteRsrp != null && signal.lteRsrp! < -120.0);
-            if (isCritical && !_lastWasCritical) {
-                _triggerCriticalSignalAlert();
-            }
-            _lastWasCritical = isCritical;
-        }
-    }
-
-    static Future<void> _trigger5gSub6Alert() async {
-        try {
-            final hasVib = await Vibration.hasVibrator() ?? false;
-            if (hasVib) {
-                Vibration.vibrate(duration: 150);
-            }
-            _showNotification(
-                id: 101,
-                title: "⚡ 5G+ (sub6) エリア突入",
-                body: "高速 sub6 通信エリアに接続しました。",
-            );
-        } catch (e) {
-            // ignore
-        }
-    }
-
-    static Future<void> _triggerHandoverAlert(String message) async {
-        try {
-            final hasVib = await Vibration.hasVibrator() ?? false;
-            if (hasVib) {
-                Vibration.vibrate(duration: 50);
-            }
-            _showNotification(
-                id: 102,
-                title: "📡 基地局ハンドオーバー",
-                body: message,
-            );
-        } catch (e) {
-            // ignore
-        }
-    }
-
-    static Future<void> _triggerCriticalSignalAlert() async {
-        try {
-            final hasVib = await Vibration.hasVibrator() ?? false;
-            if (hasVib) {
-                Vibration.vibrate(pattern: [0, 200, 100, 200]);
-            }
-            _showNotification(
-                id: 103,
-                title: "⚠️ 電波限界警告",
-                body: "電波強度が極めて微弱 (RSRP < -120dBm) です。",
-            );
-        } catch (e) {
-            // ignore
-        }
-    }
-
-    static Future<void> _showNotification({
+    static Future<void> showSimpleAlert({
         required int id,
         required String title,
         required String body,
     }) async {
-        const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-            'fs050w_events_channel',
+        const androidDetails = AndroidNotificationDetails(
+            'fs050w_event_alerts',
             'FS050W イベント通知',
-            channelDescription: 'ハンドオーバーや5G+突入時のイベント通知',
             importance: Importance.high,
             priority: Priority.high,
         );
 
-        const NotificationDetails notificationDetails = NotificationDetails(android: androidDetails);
-        await _notificationsPlugin.show(id, title, body, notificationDetails);
+        const details = NotificationDetails(android: androidDetails);
+        await _notificationsPlugin.show(id, title, body, details);
+    }
+
+    static void handleSignalEvents(SignalData signal, AppSettings settings) {
+        if (signal.connectionMode == Fs050wConnectionMode.nr5gSub6) {
+            trigger5gSub6Notification(settings);
+        }
+
+        if (signal.handoverDescription != null) {
+            triggerHandoverNotification(settings, signal.handoverDescription!);
+        }
+
+        if (signal.lteRsrp != null && signal.lteRsrp! <= -115.0) {
+            triggerCriticalSignalNotification(settings, signal.lteRsrp!);
+        }
+    }
+
+    static Future<void> trigger5gSub6Notification(AppSettings settings) async {
+        if (!settings.vibrateOn5gSub6) return;
+
+        HapticFeedback.heavyImpact();
+        Future.delayed(const Duration(milliseconds: 150), () {
+            HapticFeedback.heavyImpact();
+        });
+
+        await showSimpleAlert(
+            id: 1001,
+            title: '5G+ (Sub6) 接続検知',
+            body: '超高速 5G+ (Sub6 / n77等) に接続しました。',
+        );
+    }
+
+    static Future<void> triggerHandoverNotification(AppSettings settings, String handoverText) async {
+        if (!settings.vibrateOnHandover) return;
+
+        HapticFeedback.mediumImpact();
+
+        await showSimpleAlert(
+            id: 1002,
+            title: 'ハンドオーバー検知 (PCI更新)',
+            body: '基地局が切り替わりました: $handoverText',
+        );
+    }
+
+    static Future<void> triggerCriticalSignalNotification(AppSettings settings, double rsrp) async {
+        if (!settings.vibrateOnCriticalSignal) return;
+
+        HapticFeedback.vibrate();
+        Future.delayed(const Duration(milliseconds: 150), () {
+            HapticFeedback.vibrate();
+        });
+
+        await showSimpleAlert(
+            id: 1003,
+            title: '電波レベル警告 (圏外寸前)',
+            body: 'RSRPが極めて低調です (${rsrp.toStringAsFixed(1)} dBm)。通信切断にご注意ください。',
+        );
     }
 }

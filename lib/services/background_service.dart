@@ -12,11 +12,6 @@ class BackgroundService {
                 channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
                 channelImportance: NotificationChannelImportance.LOW,
                 priority: NotificationPriority.LOW,
-                iconData: const NotificationIconData(
-                    resType: ResourceType.mipmap,
-                    resPrefix: ResourcePrefix.ic,
-                    name: 'launcher',
-                ),
             ),
             iosNotificationOptions: const IOSNotificationOptions(),
             foregroundTaskOptions: ForegroundTaskOptions(
@@ -99,7 +94,7 @@ class MonitorTaskHandler extends TaskHandler {
     void onRepeatEvent(DateTime timestamp) {}
 
     @override
-    Future<void> onDestroy(DateTime timestamp) async {}
+    Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {}
 
     @override
     void onReceiveData(Object data) {}
