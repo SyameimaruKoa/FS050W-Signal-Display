@@ -8,11 +8,12 @@ class BackgroundService {
     static void initService() {
         FlutterForegroundTask.init(
             androidNotificationOptions: AndroidNotificationOptions(
-                channelId: 'fs050w_monitor_channel',
+                channelId: 'fs050w_alert_monitor_v4',
                 channelName: 'FS050W 電波常駐監視',
                 channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-                channelImportance: NotificationChannelImportance.DEFAULT,
-                priority: NotificationPriority.DEFAULT,
+                channelImportance: NotificationChannelImportance.MAX,
+                priority: NotificationPriority.MAX,
+                playSound: true,
             ),
             iosNotificationOptions: const IOSNotificationOptions(),
             foregroundTaskOptions: ForegroundTaskOptions(

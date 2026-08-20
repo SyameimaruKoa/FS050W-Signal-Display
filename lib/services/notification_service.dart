@@ -24,17 +24,23 @@ class NotificationService {
         );
 
         const statusChannel = AndroidNotificationChannel(
-            'fs050w_status_channel',
-            'FS050W 電波常駐ステータス',
+            'fs050w_alert_status_v4',
+            'FS050W リアルタイム電波ステータス',
             description: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-            importance: Importance.defaultImportance,
+            importance: Importance.max,
             enableVibration: false,
-            playSound: false,
-            showBadge: false,
+            playSound: true,
+            showBadge: true,
         );
 
         final androidPlugin = _notificationsPlugin
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        
+        // Clean up legacy silent channels
+        await androidPlugin?.deleteNotificationChannel('fs050w_status_channel');
+        await androidPlugin?.deleteNotificationChannel('fs050w_monitor_channel');
+        await androidPlugin?.deleteNotificationChannel('fs050w_live_status_v3');
+        await androidPlugin?.deleteNotificationChannel('fs050w_live_monitor_v3');
         
         await androidPlugin?.createNotificationChannel(eventChannel);
         await androidPlugin?.createNotificationChannel(statusChannel);
@@ -144,15 +150,17 @@ class NotificationService {
         }
 
         const androidDetails = AndroidNotificationDetails(
-            'fs050w_status_channel',
-            'FS050W 電波常駐ステータス',
+            'fs050w_alert_status_v4',
+            'FS050W リアルタイム電波ステータス',
             channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-            importance: Importance.defaultImportance,
-            priority: Priority.defaultPriority,
+            importance: Importance.max,
+            priority: Priority.max,
+            category: AndroidNotificationCategory.status,
+            visibility: NotificationVisibility.public,
             ongoing: true,
             autoCancel: false,
             showWhen: true,
-            playSound: false,
+            playSound: true,
             enableVibration: false,
             onlyAlertOnce: true,
             icon: '@mipmap/ic_launcher',
