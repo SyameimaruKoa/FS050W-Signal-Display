@@ -7,6 +7,7 @@ import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 import '../utils/calc_frequency.dart';
 import 'widgets/cell_card.dart';
+import 'widgets/log_viewer_dialog.dart';
 import 'hud_screen.dart';
 import 'settings_screen.dart';
 
@@ -35,8 +36,13 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 actions: [
                     IconButton(
-                        tooltip: "🌙 HUD (常時表示 / AOD)",
-                        icon: const Icon(Icons.nightlight_round, color: Colors.amberAccent),
+                        icon: const Icon(Icons.assignment_outlined, color: Colors.white70),
+                        tooltip: "診断ログを表示",
+                        onPressed: () => LogViewerDialog.show(context),
+                    ),
+                    IconButton(
+                        icon: const Icon(Icons.bedtime, color: Colors.amberAccent),
+                        tooltip: "HUD / 有機EL 常時表示モード",
                         onPressed: () {
                             Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const HudScreen()),
@@ -44,8 +50,8 @@ class DashboardScreen extends StatelessWidget {
                         },
                     ),
                     IconButton(
-                        tooltip: "⚙ 設定",
-                        icon: const Icon(Icons.settings),
+                        icon: const Icon(Icons.settings, color: Colors.white70),
+                        tooltip: "設定",
                         onPressed: onNavigateToSettings ?? () {
                             Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -62,11 +68,10 @@ class DashboardScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 24),
                     children: [
                         _buildConnectionBanner(context, apiService, signal),
-                        const SizedBox(height: 4),
                         CellCard.build5gNrCard(context, signal),
                         CellCard.build4gLteCard(context, signal),
-                        if (apiService.settings.navigationStyle == AppNavigationStyle.cardButtons)
-                            _buildNavigationActionButtons(context),
+                        const SizedBox(height: 8),
+                        _buildNavigationActionButtons(context),
                     ],
                 ),
             ),
@@ -83,21 +88,12 @@ class DashboardScreen extends StatelessWidget {
 
         final operatorName = signal?.operatorName ?? "--";
         final battery = signal?.batteryPercent != null
-            ? "🔋 ${signal!.batteryPercent}%${signal.isCharging ? ' (⚡ 充電中)' : ''}"
-            : "";
+            ? "🔋 ${signal!.batteryPercent}%${signal.isCharging ? ' ⚡' : ''}"
+            : "🔋 --%";
 
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
         final modeBadge = ConnectionModeHelper.getIconBadgeText(mode);
         final uiMode = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false);
-
-        String extraBandInfo = "";
-        if (signal != null) {
-            if (mode == Fs050wConnectionMode.nr5gSub6 || mode == Fs050wConnectionMode.nr5g) {
-                extraBandInfo = " (${FrequencyCalculator.getNrBandName(signal.nrBand)})";
-            } else if (signal.lteBand != null) {
-                extraBandInfo = " (${FrequencyCalculator.getLteBandName(signal.lteBand)})";
-            }
-        }
 
         return Container(
             margin: const EdgeInsets.all(12),
@@ -144,13 +140,11 @@ class DashboardScreen extends StatelessWidget {
                                             color: Colors.white,
                                         ),
                                     ),
-                                    if (battery.isNotEmpty) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                            battery,
-                                            style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                        ),
-                                    ],
+                                    const SizedBox(width: 8),
+                                    Text(
+                                        battery,
+                                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                    ),
                                 ],
                             ),
                         ],
@@ -183,14 +177,6 @@ class DashboardScreen extends StatelessWidget {
                                         ),
                                     ),
                                 ),
-                                if (extraBandInfo.isNotEmpty)
-                                    Expanded(
-                                        child: Text(
-                                            extraBandInfo,
-                                            style: const TextStyle(fontSize: 12, color: Colors.white60),
-                                            overflow: TextOverflow.ellipsis,
-                                        ),
-                                    ),
                             ],
                         ),
                     ),

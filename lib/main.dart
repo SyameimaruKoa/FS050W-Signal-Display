@@ -187,10 +187,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         }
 
         return Scaffold(
-            body: IndexedStack(
-                index: _currentIndex,
-                children: pages,
-            ),
+            body: pages[_currentIndex],
             bottomNavigationBar: NavigationBar(
                 selectedIndex: _currentIndex,
                 onDestinationSelected: (index) {
@@ -198,6 +195,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                         _currentIndex = index;
                     });
                 },
+
                 destinations: const [
                     NavigationDestination(
                         icon: Icon(Icons.dashboard_outlined),

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import 'widgets/log_viewer_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
     const SettingsScreen({super.key});
@@ -302,22 +303,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     const SizedBox(height: 16),
-                    _buildSectionHeader("6. 将来拡張 (Phase 2)", Icons.extension),
+                    _buildSectionHeader("6. アプリ診断ログ & エクスポート", Icons.assignment),
                     _buildCard([
-                        const ListTile(
+                        ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text("フローティング小窓表示 (Overlay)"),
-                            subtitle: Text("他アプリ起動中も画面上に常時電波表示 (Phase 2)"),
-                            trailing: Chip(label: Text("予定", style: TextStyle(fontSize: 11))),
-                        ),
-                        const ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text("ログ記録 & CSVエクスポート"),
-                            subtitle: Text("受信ログのファイル保存・共有 (Phase 2)"),
-                            trailing: Chip(label: Text("予定", style: TextStyle(fontSize: 11))),
+                            title: const Text("アプリ診断ログを表示 / コピー"),
+                            subtitle: const Text("API通信履歴、エラー詳細、ハンドオーバー記録を確認・コピー"),
+                            trailing: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.cyanAccent.shade700,
+                                    foregroundColor: Colors.white,
+                                ),
+                                icon: const Icon(Icons.open_in_new, size: 16),
+                                label: const Text("ログ表示"),
+                                onPressed: () => LogViewerDialog.show(context),
+                            ),
                         ),
                     ]),
                     const SizedBox(height: 24),
+
                 ],
             ),
         );

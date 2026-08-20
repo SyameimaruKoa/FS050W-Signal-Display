@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/signal_data.dart';
 import '../models/app_settings.dart';
 import '../utils/crypto_utils.dart';
+import 'app_logger.dart';
 
 enum ConnectionStatus {
     disconnected,
@@ -142,6 +143,7 @@ class ApiService extends ChangeNotifier {
                 if (!initSuccess) {
                     _status = ConnectionStatus.error;
                     _errorMessage = "ルーター (${_settings.routerIp}) に接続できません";
+                    AppLogger.warn("Initial CSRF token fetch failed for ${_settings.routerIp}");
                     notifyListeners();
                     return;
                 }
@@ -155,17 +157,21 @@ class ApiService extends ChangeNotifier {
 
             if (canAttemptLogin) {
                 _lastLoginAttempt = now;
+                AppLogger.info("Attempting login to router (${_settings.routerIp})");
                 final bool loginSuccess = await _performLogin();
                 if (loginSuccess) {
                     _isLoggedIn = true;
                     _status = ConnectionStatus.authenticated;
+                    AppLogger.info("Login succeeded: authenticated mode active");
                 } else {
                     if (_settings.autoPasswordless) {
                         _isLoggedIn = false;
                         _status = ConnectionStatus.unauthenticatedMode;
+                        AppLogger.warn("Login failed or locked: falling back to unauthenticated public mode");
                     } else {
                         _status = ConnectionStatus.error;
                         _errorMessage = "ログイン認証に失敗しました (パスワードを確認してください)";
+                        AppLogger.error("Login authentication rejected by router");
                         notifyListeners();
                         return;
                     }
@@ -181,6 +187,10 @@ class ApiService extends ChangeNotifier {
                     previousData: _currentSignal,
                 );
 
+                if (signal.handoverDescription != null) {
+                    AppLogger.info("Handover detected: ${signal.handoverDescription}");
+                }
+
                 _currentSignal = signal;
                 _signalHistory.add(signal);
 
@@ -194,6 +204,7 @@ class ApiService extends ChangeNotifier {
                 notifyListeners();
             } else {
                 // If fetching params failed, attempt quick CSRF recovery once
+                AppLogger.warn("Params fetch returned null, attempting token refresh");
                 _csrfToken = null;
                 _sessionCookie = null;
                 final bool reInit = await _fetchCsrfToken();
@@ -208,6 +219,7 @@ class ApiService extends ChangeNotifier {
                         _signalHistory.add(signal);
                         _status = _isLoggedIn ? ConnectionStatus.authenticated : ConnectionStatus.unauthenticatedMode;
                         _errorMessage = null;
+                        AppLogger.info("Token refresh & retry succeeded");
                         notifyListeners();
                         return;
                     }
@@ -225,13 +237,15 @@ class ApiService extends ChangeNotifier {
             final response = await _client.get(uri).timeout(const Duration(seconds: 4));
             if (response.statusCode == 200) {
                 _updateHeadersFromResponse(response);
+                AppLogger.debug("CSRF token fetched: ${_csrfToken != null}");
                 return _csrfToken != null;
             }
         } catch (e) {
-            // connection failed
+            AppLogger.warn("Failed to reach x_csrf_token: $e");
         }
         return false;
     }
+
 
     Future<bool> _performLogin() async {
         try {

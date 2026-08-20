@@ -47,40 +47,36 @@ class ConnectionModeHelper {
         }
     }
 
-    static String get4gAnchorText(Fs050wConnectionMode mode, String bandText, {bool hasCa = false, List<String>? caBands}) {
+    static String get4gCardTitle(Fs050wConnectionMode mode) {
         switch (mode) {
             case Fs050wConnectionMode.lte:
-                return "4G LTE ($bandText)";
+                return "4G LTE";
             case Fs050wConnectionMode.lteCa:
-                final caInfo = (caBands != null && caBands.isNotEmpty) ? "$bandText+${caBands.join('+')}" : "$bandText+CA";
-                return "4G+ LTE ($caInfo)";
+                return "4G+ LTE";
             case Fs050wConnectionMode.nsaReady:
-                return "4G Ready ($bandText)";
+                return "4G Ready";
             case Fs050wConnectionMode.nsaReadyCa:
-                final caInfo = (caBands != null && caBands.isNotEmpty) ? "$bandText+${caBands.join('+')}" : "$bandText+CA";
-                return "4G+ Ready ($caInfo)";
+                return "4G+ Ready";
             case Fs050wConnectionMode.nr5g:
             case Fs050wConnectionMode.nr5gSub6:
-                return "4G Anchor ($bandText)";
+                return "4G Anchor Cell";
             case Fs050wConnectionMode.disconnected:
-                return "未接続";
+                return "4G LTE (未接続)";
         }
     }
 
-    static String get5gNrText(Fs050wConnectionMode mode, String nrBandText) {
+    static String get5gCardTitle(Fs050wConnectionMode mode) {
         switch (mode) {
-            case Fs050wConnectionMode.lte:
-            case Fs050wConnectionMode.lteCa:
-                return "非表示";
+            case Fs050wConnectionMode.nr5gSub6:
+                return "5G+ NR+ (sub6)";
+            case Fs050wConnectionMode.nr5g:
+                return "5G NR";
             case Fs050wConnectionMode.nsaReady:
             case Fs050wConnectionMode.nsaReadyCa:
-                return "待機中 (--)";
-            case Fs050wConnectionMode.nr5g:
-                return "5G NR ($nrBandText)";
-            case Fs050wConnectionMode.nr5gSub6:
-                return "5G+ NR+ ($nrBandText)";
-            case Fs050wConnectionMode.disconnected:
-                return "--";
+                return "5G NR (待機中)";
+            default:
+                return "5G NR";
         }
     }
 }
+

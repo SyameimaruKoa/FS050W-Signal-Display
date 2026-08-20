@@ -113,7 +113,7 @@ class CellCard extends StatelessWidget {
 
         final nrBandName = FrequencyCalculator.getNrBandName(signal.nrBand);
         final isSub6 = FrequencyCalculator.isSub6Band(signal.nrBand);
-        final nrTitle = isSub6 ? "▼ 5G+ NR+ ($nrBandName)" : "▼ 5G NR ($nrBandName)";
+        final nrTitle = "● ${ConnectionModeHelper.get5gCardTitle(mode)}";
 
         final rsrpLevel = ColorGauge.rateRsrp(signal.nrRsrp);
         final rsrqLevel = ColorGauge.rateRsrq(signal.nrRsrq);
@@ -196,7 +196,7 @@ class CellCard extends StatelessWidget {
     static Widget build4gLteCard(BuildContext context, SignalData? signal) {
         if (signal == null) {
             return const CellCard(
-                title: "【下段：4G LTE Anchor Cell】",
+                title: "● 4G LTE Anchor Cell",
                 icon: Icons.network_cell,
                 accentColor: Color(0xFF2196F3),
                 children: [
@@ -211,19 +211,14 @@ class CellCard extends StatelessWidget {
         }
 
         final bandName = FrequencyCalculator.getLteBandName(signal.lteBand);
-        final anchorText = ConnectionModeHelper.get4gAnchorText(
-            signal.connectionMode,
-            bandName,
-            hasCa: signal.hasCa,
-            caBands: signal.caBands,
-        );
+        final titleText = "● ${ConnectionModeHelper.get4gCardTitle(signal.connectionMode)}";
 
         final rsrpLevel = ColorGauge.rateRsrp(signal.lteRsrp);
         final rsrqLevel = ColorGauge.rateRsrq(signal.lteRsrq);
         final sinrLevel = ColorGauge.rateSinr(signal.lteSinr);
 
         return CellCard(
-            title: "▼ $anchorText",
+            title: titleText,
             icon: Icons.four_g_mobiledata,
             accentColor: const Color(0xFF2196F3),
             headerTrailing: signal.hasCa
@@ -239,6 +234,7 @@ class CellCard extends StatelessWidget {
                     ),
                 )
                 : null,
+
             children: [
                 Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

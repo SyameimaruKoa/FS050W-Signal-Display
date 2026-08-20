@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -27,7 +28,8 @@ class _GraphScreenState extends State<GraphScreen> {
         final apiService = context.watch<ApiService>();
         final history = apiService.signalHistory;
 
-        final cutoffTime = DateTime.now().subtract(Duration(minutes: _selectedSpanMinutes));
+        final now = DateTime.now();
+        final cutoffTime = now.subtract(Duration(minutes: _selectedSpanMinutes));
         final filteredData = history.where((d) => d.timestamp.isAfter(cutoffTime)).toList();
 
         return Scaffold(
@@ -57,6 +59,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                         minY: -140,
                                         maxY: -50,
                                         data: filteredData,
+                                        cutoffTime: cutoffTime,
+                                        totalSpanSeconds: _selectedSpanMinutes * 60.0,
                                         getY4g: (d) => d.lteRsrp,
                                         getY5g: (d) => d.nrRsrp,
                                     ),
@@ -67,6 +71,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                         minY: -25,
                                         maxY: -3,
                                         data: filteredData,
+                                        cutoffTime: cutoffTime,
+                                        totalSpanSeconds: _selectedSpanMinutes * 60.0,
                                         getY4g: (d) => d.lteRsrq,
                                         getY5g: (d) => d.nrRsrq,
                                     ),
@@ -78,6 +84,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                         maxY: 35,
                                         hasZeroLine: true,
                                         data: filteredData,
+                                        cutoffTime: cutoffTime,
+                                        totalSpanSeconds: _selectedSpanMinutes * 60.0,
                                         getY4g: (d) => d.lteSinr,
                                         getY5g: (d) => d.nrSnr,
                                     ),
@@ -92,8 +100,8 @@ class _GraphScreenState extends State<GraphScreen> {
 
     Widget _buildSpanSelector() {
         return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.white.withOpacity(0.03),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: const Color(0xFF1E1E1E),
             child: Row(
                 children: [
                     const Text(
@@ -101,22 +109,47 @@ class _GraphScreenState extends State<GraphScreen> {
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70),
                     ),
                     const SizedBox(width: 8),
-                    for (final span in [1, 3, 5, 10]) ...[
-                        Padding(
-                            padding: const EdgeInsets.only(right: 6.0),
-                            child: ChoiceChip(
-                                label: Text("${span}分"),
-                                selected: _selectedSpanMinutes == span,
-                                onSelected: (selected) {
-                                    if (selected) {
-                                        setState(() {
-                                            _selectedSpanMinutes = span;
-                                        });
-                                    }
-                                },
-                            ),
+                    Expanded(
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [1, 3, 5, 10].map((span) {
+                                final isSelected = _selectedSpanMinutes == span;
+                                return Expanded(
+                                    child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                                        child: InkWell(
+                                            borderRadius: BorderRadius.circular(6),
+                                            onTap: () {
+                                                setState(() {
+                                                    _selectedSpanMinutes = span;
+                                                });
+                                            },
+                                            child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 7),
+                                                alignment: Alignment.center,
+                                                decoration: BoxDecoration(
+                                                    color: isSelected ? const Color(0xFF00E5FF).withOpacity(0.2) : Colors.white.withOpacity(0.06),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                        color: isSelected ? const Color(0xFF00E5FF) : Colors.white12,
+                                                        width: 1.2,
+                                                    ),
+                                                ),
+                                                child: Text(
+                                                    "${span}分",
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                        color: isSelected ? const Color(0xFF00E5FF) : Colors.white70,
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                );
+                            }).toList(),
                         ),
-                    ],
+                    ),
                 ],
             ),
         );
@@ -128,20 +161,21 @@ class _GraphScreenState extends State<GraphScreen> {
         required double minY,
         required double maxY,
         required List<SignalData> data,
+        required DateTime cutoffTime,
+        required double totalSpanSeconds,
         required double? Function(SignalData) getY4g,
         required double? Function(SignalData) getY5g,
         bool hasZeroLine = false,
     }) {
         if (data.isEmpty) return const SizedBox.shrink();
 
-        final startTime = data.first.timestamp;
         final List<FlSpot> spots4g = [];
         final List<FlSpot> spots5g = [];
         final List<VerticalLine> handoverLines = [];
 
         for (int i = 0; i < data.length; i++) {
             final sample = data[i];
-            final x = sample.timestamp.difference(startTime).inSeconds.toDouble();
+            final x = sample.timestamp.difference(cutoffTime).inSeconds.toDouble().clamp(0.0, totalSpanSeconds);
 
             final y4g = getY4g(sample);
             if (y4g != null) {
@@ -176,7 +210,7 @@ class _GraphScreenState extends State<GraphScreen> {
             }
         }
 
-        final double maxX = data.last.timestamp.difference(startTime).inSeconds.toDouble().clamp(10.0, 600.0);
+        final double maxX = max(totalSpanSeconds, 10.0);
 
         return Card(
             elevation: 2,
@@ -219,6 +253,29 @@ class _GraphScreenState extends State<GraphScreen> {
                                     maxY: maxY,
                                     minX: 0,
                                     maxX: maxX,
+                                    clipData: const FlClipData.all(),
+                                    lineTouchData: LineTouchData(
+                                        enabled: true,
+                                        handleBuiltInTouches: true,
+                                        touchTooltipData: LineTouchTooltipData(
+                                            fitInsideHorizontally: true,
+                                            fitInsideVertically: true,
+                                            tooltipRoundedRadius: 6,
+                                            getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                                                return touchedSpots.map((barSpot) {
+                                                    final is5g = barSpot.barIndex == 1;
+                                                    return LineTooltipItem(
+                                                        "${is5g ? '5G' : '4G'}: ${barSpot.y.toStringAsFixed(1)} $unit",
+                                                        TextStyle(
+                                                            color: is5g ? const Color(0xFF00E5FF) : const Color(0xFF2196F3),
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 11,
+                                                        ),
+                                                    );
+                                                }).toList();
+                                            },
+                                        ),
+                                    ),
                                     gridData: FlGridData(
                                         show: true,
                                         drawVerticalLine: true,
@@ -243,27 +300,31 @@ class _GraphScreenState extends State<GraphScreen> {
                                         leftTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                                 showTitles: true,
-                                                reservedSize: 38,
+                                                reservedSize: 44,
                                                 getTitlesWidget: (value, meta) {
-                                                    return Text(
-                                                        "${value.toInt()}",
-                                                        style: GoogleFonts.notoSansMono(
-                                                            fontSize: 10,
-                                                            color: Colors.white54,
+                                                    return Container(
+                                                        alignment: Alignment.centerRight,
+                                                        padding: const EdgeInsets.only(right: 4),
+                                                        child: Text(
+                                                            "${value.toInt()}",
+                                                            style: GoogleFonts.notoSansMono(
+                                                                fontSize: 10,
+                                                                color: Colors.white54,
+                                                            ),
                                                         ),
                                                     );
                                                 },
                                             ),
                                         ),
-                                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false, reservedSize: 6)),
                                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                         bottomTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                                 showTitles: true,
-                                                reservedSize: 20,
+                                                reservedSize: 22,
                                                 interval: (maxX / 4).clamp(1.0, 300.0),
                                                 getTitlesWidget: (value, meta) {
-                                                    final sampleTime = startTime.add(Duration(seconds: value.toInt()));
+                                                    final sampleTime = cutoffTime.add(Duration(seconds: value.toInt()));
                                                     final minStr = sampleTime.minute.toString().padLeft(2, '0');
                                                     final secStr = sampleTime.second.toString().padLeft(2, '0');
                                                     return Text(
@@ -282,7 +343,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                         border: Border.all(color: Colors.white24, width: 0.8),
                                     ),
                                     lineBarsData: [
-                                        // 4G Line (Blue, sharp oscilloscope step/straight style)
+                                        // 4G Line (Blue)
                                         LineChartBarData(
                                             spots: spots4g,
                                             isCurved: false,
@@ -290,7 +351,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                             barWidth: 2,
                                             dotData: const FlDotData(show: false),
                                         ),
-                                        // 5G Line (Cyan, sharp oscilloscope step/straight style)
+                                        // 5G Line (Cyan)
                                         LineChartBarData(
                                             spots: spots5g,
                                             isCurved: false,
