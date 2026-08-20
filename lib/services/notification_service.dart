@@ -23,27 +23,18 @@ class NotificationService {
             importance: Importance.high,
         );
 
-        const statusChannel = AndroidNotificationChannel(
-            'fs050w_alert_status_v4',
-            'FS050W リアルタイム電波ステータス',
-            description: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-            importance: Importance.max,
-            enableVibration: false,
-            playSound: true,
-            showBadge: true,
-        );
-
         final androidPlugin = _notificationsPlugin
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
         
-        // Clean up legacy silent channels
+        // Clean up legacy channels and any leftover notifications
+        await _notificationsPlugin.cancelAll();
         await androidPlugin?.deleteNotificationChannel('fs050w_status_channel');
         await androidPlugin?.deleteNotificationChannel('fs050w_monitor_channel');
         await androidPlugin?.deleteNotificationChannel('fs050w_live_status_v3');
         await androidPlugin?.deleteNotificationChannel('fs050w_live_monitor_v3');
+        await androidPlugin?.deleteNotificationChannel('fs050w_alert_status_v4');
         
         await androidPlugin?.createNotificationChannel(eventChannel);
-        await androidPlugin?.createNotificationChannel(statusChannel);
         await androidPlugin?.requestNotificationsPermission();
     }
 
@@ -63,18 +54,35 @@ class NotificationService {
         await _notificationsPlugin.show(id, title, body, details);
     }
 
+    static Fs050wConnectionMode? _lastConnectionMode;
+    static String? _lastHandoverKey;
+    static bool _wasCriticalSignal = false;
+
     static void handleSignalEvents(SignalData signal, AppSettings settings) {
+        // 1. 5G+ Sub6 connection trigger (only on transition into 5G Sub6)
         if (signal.connectionMode == Fs050wConnectionMode.nr5gSub6) {
-            trigger5gSub6Notification(settings);
+            if (_lastConnectionMode != Fs050wConnectionMode.nr5gSub6) {
+                trigger5gSub6Notification(settings);
+            }
         }
+        _lastConnectionMode = signal.connectionMode;
 
+        // 2. Handover trigger (only on new handover event)
         if (signal.handoverDescription != null) {
-            triggerHandoverNotification(settings, signal.handoverDescription!);
+            if (_lastHandoverKey != signal.handoverDescription) {
+                triggerHandoverNotification(settings, signal.handoverDescription!);
+                _lastHandoverKey = signal.handoverDescription;
+            }
+        } else {
+            _lastHandoverKey = null;
         }
 
-        if (signal.lteRsrp != null && signal.lteRsrp! <= -115.0) {
+        // 3. Critical low signal trigger (only on transition to critical <= -115 dBm)
+        final isCrit = signal.lteRsrp != null && signal.lteRsrp! <= -115.0;
+        if (isCrit && !_wasCriticalSignal) {
             triggerCriticalSignalNotification(settings, signal.lteRsrp!);
         }
+        _wasCriticalSignal = isCrit;
     }
 
     static Future<void> trigger5gSub6Notification(AppSettings settings) async {
@@ -117,61 +125,6 @@ class NotificationService {
             title: '電波レベル警告 (圏外寸前)',
             body: 'RSRPが極めて低調です (${rsrp.toStringAsFixed(1)} dBm)。通信切断にご注意ください。',
         );
-    }
-
-    static Future<void> updatePersistentStatus(SignalData signal, AppSettings settings) async {
-        if (!settings.foregroundNotificationEnabled) {
-            await cancelPersistentStatus();
-            return;
-        }
-
-        final modeBadge = ConnectionModeHelper.getIconBadgeText(signal.connectionMode);
-        final uiMode = ConnectionModeHelper.getUiModeText(signal.connectionMode, isSa: signal.isSa);
-        final lteRsrpStr = signal.lteRsrp != null ? "${signal.lteRsrp!.toStringAsFixed(1)} dBm" : "--";
-        final nrRsrpStr = signal.nrRsrp != null ? "${signal.nrRsrp!.toStringAsFixed(1)} dBm" : "--";
-
-        final title = "[$modeBadge] $uiMode | ${signal.operatorName}";
-
-        String text;
-        if (settings.notificationStyle == NotificationDetailStyle.detailed) {
-            final band4g = signal.lteBand != null ? "B${signal.lteBand}" : "--";
-            final pci4g = signal.ltePci != null ? "${signal.ltePci}" : "--";
-            final batStr = signal.batteryPercent != null ? " | 🔋${signal.batteryPercent}%${signal.isCharging ? '⚡' : ''}" : "";
-
-            if (signal.connectionMode == Fs050wConnectionMode.nr5g || signal.connectionMode == Fs050wConnectionMode.nr5gSub6) {
-                final nrBand = signal.nrBand != null ? "n${signal.nrBand}" : "--";
-                text = "5G: $nrBand (RSRP: $nrRsrpStr) | 4G: $band4g PCI:$pci4g (RSRP: $lteRsrpStr)$batStr";
-            } else {
-                final sinrStr = signal.lteSinr != null ? " | SINR: ${signal.lteSinr!.toStringAsFixed(1)}dB" : "";
-                text = "4G: $band4g PCI: $pci4g | RSRP: $lteRsrpStr$sinrStr$batStr";
-            }
-        } else {
-            text = "4G RSRP: $lteRsrpStr${signal.nrRsrp != null ? ' | 5G: $nrRsrpStr' : ''}";
-        }
-
-        const androidDetails = AndroidNotificationDetails(
-            'fs050w_alert_status_v4',
-            'FS050W リアルタイム電波ステータス',
-            channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-            importance: Importance.max,
-            priority: Priority.max,
-            category: AndroidNotificationCategory.status,
-            visibility: NotificationVisibility.public,
-            ongoing: true,
-            autoCancel: false,
-            showWhen: true,
-            playSound: true,
-            enableVibration: false,
-            onlyAlertOnce: true,
-            icon: '@mipmap/ic_launcher',
-        );
-
-        const details = NotificationDetails(android: androidDetails);
-        await _notificationsPlugin.show(1000, title, text, details);
-    }
-
-    static Future<void> cancelPersistentStatus() async {
-        await _notificationsPlugin.cancel(1000);
     }
 }
 

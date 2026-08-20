@@ -2,18 +2,19 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../models/signal_data.dart';
 import '../models/app_settings.dart';
 import '../models/connection_state.dart';
-import 'notification_service.dart';
 
 class BackgroundService {
     static void initService() {
         FlutterForegroundTask.init(
             androidNotificationOptions: AndroidNotificationOptions(
-                channelId: 'fs050w_alert_monitor_v4',
-                channelName: 'FS050W 電波常駐監視',
+                channelId: 'fs050w_continuous_status',
+                channelName: 'FS050W 電波常駐ステータス',
                 channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-                channelImportance: NotificationChannelImportance.MAX,
-                priority: NotificationPriority.MAX,
-                playSound: true,
+                channelImportance: NotificationChannelImportance.LOW,
+                priority: NotificationPriority.LOW,
+                playSound: false,
+                enableVibration: false,
+                visibility: NotificationVisibility.VISIBILITY_PUBLIC,
             ),
             iosNotificationOptions: const IOSNotificationOptions(),
             foregroundTaskOptions: ForegroundTaskOptions(
@@ -42,16 +43,16 @@ class BackgroundService {
         if (await FlutterForegroundTask.isRunningService) {
             await FlutterForegroundTask.stopService();
         }
-        await NotificationService.cancelPersistentStatus();
     }
 
-    static void updateNotification(SignalData signal, AppSettings settings) {
-        // Update persistent notification via local notifications plugin
-        NotificationService.updatePersistentStatus(signal, settings);
-
+    static Future<void> updateNotification(SignalData signal, AppSettings settings) async {
         if (!settings.foregroundNotificationEnabled) {
-            stopService();
+            await stopService();
             return;
+        }
+
+        if (!await FlutterForegroundTask.isRunningService) {
+            await startService();
         }
 
         final modeBadge = ConnectionModeHelper.getIconBadgeText(signal.connectionMode);
