@@ -59,7 +59,6 @@ class _HudScreenState extends State<HudScreen> {
         final modeBadge = ConnectionModeHelper.getIconBadgeText(mode);
         final uiMode = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false);
 
-        final battery = signal?.batteryPercent != null ? "${signal!.batteryPercent}%" : "--";
         final isCharging = signal?.isCharging ?? false;
 
         return Scaffold(
@@ -94,11 +93,13 @@ class _HudScreenState extends State<HudScreen> {
                                                             color: const Color(0xFF00E5FF),
                                                         ),
                                                     ),
-                                                    const SizedBox(width: 12),
-                                                    Text(
-                                                        "🔋 $battery${isCharging ? '⚡' : ''}",
-                                                        style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                                    ),
+                                                    if (signal?.batteryPercent != null) ...[
+                                                        const SizedBox(width: 12),
+                                                        Text(
+                                                            "🔋 ${signal!.batteryPercent}%${isCharging ? '⚡' : ''}",
+                                                            style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                                        ),
+                                                    ],
                                                     const SizedBox(width: 8),
                                                     Text(
                                                         signal?.operatorName ?? "--",

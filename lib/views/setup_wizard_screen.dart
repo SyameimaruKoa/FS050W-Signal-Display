@@ -4,7 +4,6 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
-import '../models/app_settings.dart';
 
 class SetupWizardScreen extends StatefulWidget {
     final VoidCallback onComplete;
@@ -22,6 +21,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
     bool _isScanning = false;
     bool _isTesting = false;
     bool _isDetected = false;
+    bool _isPasswordVisible = false;
     String? _detectedGateway;
     String? _testResult;
     bool _isTestSuccess = false;
@@ -48,7 +48,6 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
         try {
             final info = NetworkInfo();
             final gateway = await info.getWifiGatewayIP();
-            final ip = await info.getWifiIP();
 
             if (gateway != null && gateway.isNotEmpty) {
                 _detectedGateway = gateway;
@@ -106,24 +105,19 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
 
     @override
     Widget build(BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Scaffold(
-            appBar: AppBar(
-                title: Text(
-                    "🚀 初期セットアップ",
-                    style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold),
-                ),
-            ),
-            body: Center(
+            body: SafeArea(
                 child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                            const Icon(
+                            Icon(
                                 Icons.router,
                                 size: 64,
-                                color: Colors.cyanAccent,
+                                color: isDark ? Colors.cyanAccent : const Color(0xFF00ADB5),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -132,22 +126,21 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                 style: GoogleFonts.notoSansJp(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: isDark ? Colors.white : Colors.black87,
                                 ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                                 "ルーターに接続し、電波強度の監視を開始します",
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 13, color: Colors.white70),
+                                style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
                             ),
                             const SizedBox(height: 24),
 
-                            // Detection Banner
                             if (_isScanning)
-                                const Card(
-                                    color: Color(0xFF1E1E1E),
-                                    child: Padding(
+                                Card(
+                                    color: Theme.of(context).cardColor,
+                                    child: const Padding(
                                         padding: EdgeInsets.all(16.0),
                                         child: Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
@@ -178,9 +171,9 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                             Expanded(
                                                 child: Text(
                                                     "🎉 +F FS050W (${_ipController.text}) を検出しました！",
-                                                    style: const TextStyle(
-                                                        color: Colors.greenAccent,
+                                                    style: TextStyle(
                                                         fontWeight: FontWeight.bold,
+                                                        color: isDark ? Colors.white : Colors.black87,
                                                     ),
                                                 ),
                                             ),
@@ -188,44 +181,71 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                     ),
                                 ),
 
-                            const SizedBox(height: 20),
-                            TextField(
-                                controller: _ipController,
-                                decoration: const InputDecoration(
-                                    labelText: "ルーター IP アドレス",
-                                    hintText: "192.168.155.1",
-                                    prefixIcon: Icon(Icons.dns),
-                                    border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.url,
-                            ),
-                            const SizedBox(height: 14),
-                            TextField(
-                                controller: _passwordController,
-                                decoration: const InputDecoration(
-                                    labelText: "Web管理パスワード (省略可)",
-                                    hintText: "未設定の場合は未認証モードで動作",
-                                    prefixIcon: Icon(Icons.lock_outline),
-                                    border: OutlineInputBorder(),
-                                ),
-                                obscureText: true,
-                            ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 24),
 
-                            ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    backgroundColor: Colors.blueGrey.shade800,
+                            Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                            Text(
+                                                "接続設定",
+                                                style: GoogleFonts.notoSansJp(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                ),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            TextField(
+                                                controller: _ipController,
+                                                decoration: const InputDecoration(
+                                                    labelText: "ルーター IP アドレス",
+                                                    hintText: "192.168.155.1",
+                                                    prefixIcon: Icon(Icons.wifi),
+                                                ),
+                                                keyboardType: TextInputType.url,
+                                            ),
+                                            const SizedBox(height: 12),
+                                            TextField(
+                                                controller: _passwordController,
+                                                decoration: InputDecoration(
+                                                    labelText: "Web管理パスワード (初期: admin)",
+                                                    hintText: "未設定の場合は admin が使用されます",
+                                                    prefixIcon: const Icon(Icons.lock_outline),
+                                                    suffixIcon: IconButton(
+                                                        icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                                                        onPressed: () {
+                                                            setState(() {
+                                                                _isPasswordVisible = !_isPasswordVisible;
+                                                            });
+                                                        },
+                                                    ),
+                                                ),
+                                                obscureText: !_isPasswordVisible,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            ElevatedButton.icon(
+                                                style: ElevatedButton.styleFrom(
+                                                    backgroundColor: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade100,
+                                                    foregroundColor: isDark ? Colors.white : Colors.black87,
+                                                    elevation: 0,
+                                                ),
+                                                onPressed: _isTesting ? null : _testConnection,
+                                                icon: _isTesting
+                                                    ? const SizedBox(
+                                                        width: 16,
+                                                        height: 16,
+                                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                                    )
+                                                    : const Icon(Icons.network_check),
+                                                label: const Text("接続テスト"),
+                                            ),
+                                        ],
+                                    ),
                                 ),
-                                icon: _isTesting
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                    )
-                                    : const Icon(Icons.network_check, color: Colors.cyanAccent),
-                                label: const Text("接続テスト", style: TextStyle(color: Colors.white)),
-                                onPressed: _isTesting ? null : _testConnection,
                             ),
 
                             if (_testResult != null) ...[
@@ -256,9 +276,9 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                             const SizedBox(height: 12),
                             TextButton(
                                 onPressed: _finishSetup,
-                                child: const Text(
+                                child: Text(
                                     "設定をスキップして手動で開始 (強制進行)",
-                                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12),
                                 ),
                             ),
                         ],

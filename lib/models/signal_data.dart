@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../utils/calc_frequency.dart';
 import 'connection_state.dart';
 

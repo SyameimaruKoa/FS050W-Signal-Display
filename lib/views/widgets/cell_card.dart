@@ -63,13 +63,14 @@ class CellCard extends StatelessWidget {
     }
 
     static Widget build5gNrCard(BuildContext context, SignalData? signal) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         if (signal == null) {
-            return const CellCard(
+            return CellCard(
                 title: "【最上段：5G NR Secondary Cell】",
                 icon: Icons.cell_tower,
-                accentColor: Color(0xFF00E5FF),
+                accentColor: const Color(0xFF00E5FF),
                 children: [
-                    Text("データ取得待機中...", style: TextStyle(color: Colors.white60)),
+                    Text("データ取得待機中...", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
                 ],
             );
         }
@@ -91,17 +92,17 @@ class CellCard extends StatelessWidget {
                     Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.04),
+                            color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
                             borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                             children: [
-                                Icon(Icons.hourglass_empty, color: Colors.orangeAccent, size: 18),
-                                SizedBox(width: 8),
+                                const Icon(Icons.hourglass_empty, color: Colors.orangeAccent, size: 18),
+                                const SizedBox(width: 8),
                                 Expanded(
                                     child: Text(
                                         "5G NSA 待機中 (ENDC 未確立 / 4G Ready)",
-                                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                                        style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13),
                                     ),
                                 ),
                             ],
@@ -142,7 +143,7 @@ class CellCard extends StatelessWidget {
                 Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
+                        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
                         borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -150,19 +151,27 @@ class CellCard extends StatelessWidget {
                         children: [
                             Row(
                                 children: [
-                                    const Text("PCI: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
+                                    Text("PCI: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
                                         signal.nrPci != null ? "${signal.nrPci}" : "--",
-                                        style: GoogleFonts.notoSansMono(fontSize: 13, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.notoSansMono(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                        ),
                                     ),
                                 ],
                             ),
                             Row(
                                 children: [
-                                    const Text("Band: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
+                                    Text("Band: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
                                         nrBandName,
-                                        style: GoogleFonts.notoSansMono(fontSize: 13, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.notoSansMono(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                        ),
                                     ),
                                 ],
                             ),
@@ -189,18 +198,18 @@ class CellCard extends StatelessWidget {
                     level: snrLevel,
                 ),
             ],
-
         );
     }
 
     static Widget build4gLteCard(BuildContext context, SignalData? signal) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         if (signal == null) {
-            return const CellCard(
+            return CellCard(
                 title: "● 4G LTE Anchor Cell",
                 icon: Icons.network_cell,
-                accentColor: Color(0xFF2196F3),
+                accentColor: const Color(0xFF2196F3),
                 children: [
-                    Text("データ取得待機中...", style: TextStyle(color: Colors.white60)),
+                    Text("データ取得待機中...", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
                 ],
             );
         }
@@ -234,12 +243,11 @@ class CellCard extends StatelessWidget {
                     ),
                 )
                 : null,
-
             children: [
                 Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
+                        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
                         borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -247,19 +255,27 @@ class CellCard extends StatelessWidget {
                         children: [
                             Row(
                                 children: [
-                                    const Text("PCI: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
+                                    Text("PCI: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
                                         signal.ltePci != null ? "${signal.ltePci}" : "--",
-                                        style: GoogleFonts.notoSansMono(fontSize: 13, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.notoSansMono(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                        ),
                                     ),
                                 ],
                             ),
                             Row(
                                 children: [
-                                    const Text("Band: ", style: TextStyle(fontSize: 12, color: Colors.white60)),
+                                    Text("Band: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
                                         bandName,
-                                        style: GoogleFonts.notoSansMono(fontSize: 13, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.notoSansMono(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                        ),
                                     ),
                                 ],
                             ),

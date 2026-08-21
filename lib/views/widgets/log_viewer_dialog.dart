@@ -10,7 +10,7 @@ class LogViewerDialog extends StatefulWidget {
         showModalBottomSheet(
             context: context,
             isScrollControlled: true,
-            backgroundColor: const Color(0xFF1E1E1E),
+            backgroundColor: Theme.of(context).cardColor,
             shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -34,6 +34,7 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
 
     @override
     Widget build(BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final logs = AppLogger.logs.where((l) {
             if (_filter.isEmpty) return true;
             return l.formatted.toLowerCase().contains(_filter.toLowerCase());
@@ -46,17 +47,21 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                     // Header
                     Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: Colors.white12)),
+                        decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: isDark ? Colors.white12 : Colors.black12)),
                         ),
                         child: Row(
                             children: [
-                                const Icon(Icons.assignment, color: Colors.cyanAccent, size: 20),
+                                Icon(Icons.assignment, color: isDark ? Colors.cyanAccent : const Color(0xFF007A78), size: 20),
                                 const SizedBox(width: 8),
                                 Expanded(
                                     child: Text(
                                         "アプリ診断ログ (${logs.length}件)",
-                                        style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold, fontSize: 15),
+                                        style: GoogleFonts.notoSansJp(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                     ),
                                 ),
@@ -82,13 +87,12 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                     },
                                 ),
                                 IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                                    icon: Icon(Icons.close, color: isDark ? Colors.white70 : Colors.black54, size: 20),
                                     visualDensity: VisualDensity.compact,
                                     onPressed: () => Navigator.of(context).pop(),
                                 ),
                             ],
                         ),
-
                     ),
 
                     // Filter Search Box
@@ -100,7 +104,7 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                 prefixIcon: const Icon(Icons.search, size: 18),
                                 isDense: true,
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.05),
+                                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                                 border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
@@ -113,8 +117,8 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                     // Log List
                     Expanded(
                         child: logs.isEmpty
-                            ? const Center(
-                                child: Text("ログはありません", style: TextStyle(color: Colors.white38)),
+                            ? Center(
+                                child: Text("ログはありません", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38)),
                             )
                             : ListView.builder(
                                 controller: _scrollController,
@@ -122,7 +126,7 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                 itemCount: logs.length,
                                 itemBuilder: (ctx, index) {
                                     final entry = logs[logs.length - 1 - index]; // latest first
-                                    Color levelColor = Colors.white70;
+                                    Color levelColor = isDark ? Colors.white70 : Colors.black54;
                                     if (entry.level == LogLevel.error) levelColor = Colors.redAccent;
                                     if (entry.level == LogLevel.warn) levelColor = Colors.orangeAccent;
                                     if (entry.level == LogLevel.debug) levelColor = Colors.blueAccent;
@@ -131,9 +135,9 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                         margin: const EdgeInsets.only(bottom: 6),
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.03),
+                                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
                                             borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: Colors.white10),
+                                            border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
                                         ),
                                         child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +164,7 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                             "${entry.timestamp.hour.toString().padLeft(2, '0')}:${entry.timestamp.minute.toString().padLeft(2, '0')}:${entry.timestamp.second.toString().padLeft(2, '0')}.${entry.timestamp.millisecond.toString().padLeft(3, '0')}",
                                                             style: GoogleFonts.notoSansMono(
                                                                 fontSize: 11,
-                                                                color: Colors.white38,
+                                                                color: isDark ? Colors.white38 : Colors.black45,
                                                             ),
                                                         ),
                                                     ],
@@ -168,13 +172,19 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                 const SizedBox(height: 4),
                                                 SelectableText(
                                                     entry.message,
-                                                    style: GoogleFonts.notoSansMono(fontSize: 12, color: Colors.white),
+                                                    style: GoogleFonts.notoSansMono(
+                                                        fontSize: 12,
+                                                        color: isDark ? Colors.white : Colors.black87,
+                                                    ),
                                                 ),
                                                 if (entry.details != null && entry.details!.isNotEmpty) ...[
                                                     const SizedBox(height: 2),
                                                     SelectableText(
                                                         entry.details!,
-                                                        style: GoogleFonts.notoSansMono(fontSize: 11, color: Colors.white60),
+                                                        style: GoogleFonts.notoSansMono(
+                                                            fontSize: 11,
+                                                            color: isDark ? Colors.white60 : Colors.black54,
+                                                        ),
                                                     ),
                                                 ],
                                             ],

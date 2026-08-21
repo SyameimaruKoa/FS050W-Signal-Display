@@ -325,18 +325,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     Widget _buildSectionHeader(String title, IconData icon) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final headerColor = isDark ? Colors.cyanAccent : const Color(0xFF007A78);
         return Padding(
             padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
             child: Row(
                 children: [
-                    Icon(icon, size: 18, color: Colors.cyanAccent),
+                    Icon(icon, size: 18, color: headerColor),
                     const SizedBox(width: 8),
                     Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: Colors.cyanAccent,
+                            color: headerColor,
                         ),
                     ),
                 ],
@@ -345,11 +347,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     Widget _buildCard(List<Widget> children) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Card(
-            elevation: 1,
+            elevation: isDark ? 1 : 0.5,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: Colors.white12),
+                side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
             ),
             color: Theme.of(context).cardColor,
             child: Padding(

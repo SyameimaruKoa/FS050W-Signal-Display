@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/app_settings.dart';
 import '../services/api_service.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
-import '../utils/calc_frequency.dart';
 import 'widgets/cell_card.dart';
 import 'widgets/log_viewer_dialog.dart';
 import 'hud_screen.dart';
@@ -25,8 +23,7 @@ class DashboardScreen extends StatelessWidget {
     Widget build(BuildContext context) {
         final apiService = context.watch<ApiService>();
         final signal = apiService.currentSignal;
-        final status = apiService.status;
-        final isConnecting = status == ConnectionStatus.connecting;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
             appBar: AppBar(
@@ -36,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 actions: [
                     IconButton(
-                        icon: const Icon(Icons.assignment_outlined, color: Colors.white70),
+                        icon: Icon(Icons.assignment_outlined, color: isDark ? Colors.white70 : Colors.black87),
                         tooltip: "診断ログを表示",
                         onPressed: () => LogViewerDialog.show(context),
                     ),
@@ -50,7 +47,7 @@ class DashboardScreen extends StatelessWidget {
                         },
                     ),
                     IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.white70),
+                        icon: Icon(Icons.settings, color: isDark ? Colors.white70 : Colors.black87),
                         tooltip: "設定",
                         onPressed: onNavigateToSettings ?? () {
                             Navigator.of(context).push(
@@ -79,6 +76,7 @@ class DashboardScreen extends StatelessWidget {
     }
 
     Widget _buildConnectionBanner(BuildContext context, ApiService apiService, SignalData? signal) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final isConnected = apiService.status == ConnectionStatus.authenticated ||
             apiService.status == ConnectionStatus.unauthenticatedMode;
         final statusColor = isConnected ? Colors.greenAccent : (apiService.status == ConnectionStatus.connecting ? Colors.orangeAccent : Colors.redAccent);
@@ -87,9 +85,10 @@ class DashboardScreen extends StatelessWidget {
             : (apiService.status == ConnectionStatus.connecting ? "🟡 接続中..." : "🔴 未接続 / エラー");
 
         final operatorName = signal?.operatorName ?? "--";
-        final battery = signal?.batteryPercent != null
+        final hasBattery = signal?.batteryPercent != null;
+        final batteryText = hasBattery
             ? "🔋 ${signal!.batteryPercent}%${signal.isCharging ? ' ⚡' : ''}"
-            : "🔋 --%";
+            : null;
 
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
         final modeBadge = ConnectionModeHelper.getIconBadgeText(mode);
@@ -99,9 +98,9 @@ class DashboardScreen extends StatelessWidget {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
             ),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +124,7 @@ class DashboardScreen extends StatelessWidget {
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
-                                            color: statusColor,
+                                            color: isDark ? statusColor : (isConnected ? const Color(0xFF2E7D32) : Colors.red.shade700),
                                         ),
                                     ),
                                 ],
@@ -134,17 +133,22 @@ class DashboardScreen extends StatelessWidget {
                                 children: [
                                     Text(
                                         operatorName,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                            color: isDark ? Colors.white : Colors.black87,
                                         ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                        battery,
-                                        style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                    ),
+                                    if (batteryText != null) ...[
+                                        const SizedBox(width: 8),
+                                        Text(
+                                            batteryText,
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: isDark ? Colors.white70 : Colors.black54,
+                                            ),
+                                        ),
+                                    ],
                                 ],
                             ),
                         ],
@@ -153,27 +157,27 @@ class DashboardScreen extends StatelessWidget {
                     Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                            color: Colors.blueGrey.withOpacity(0.2),
+                            color: isDark ? Colors.blueGrey.withOpacity(0.2) : Colors.blueGrey.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                             children: [
-                                const Text(
+                                Text(
                                     "ステータス: ",
-                                    style: TextStyle(fontSize: 13, color: Colors.white70),
+                                    style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
                                 ),
                                 Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                        color: Colors.cyanAccent.withOpacity(0.25),
+                                        color: isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15),
                                         borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                         "[ $modeBadge ] $uiMode",
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.cyanAccent,
+                                            color: isDark ? Colors.cyanAccent : const Color(0xFF007A78),
                                         ),
                                     ),
                                 ),
@@ -193,6 +197,7 @@ class DashboardScreen extends StatelessWidget {
     }
 
     Widget _buildNavigationActionButtons(BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -201,10 +206,17 @@ class DashboardScreen extends StatelessWidget {
                         child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: Colors.blueGrey.shade800,
+                                backgroundColor: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade100,
+                                elevation: isDark ? 1 : 0,
                             ),
-                            icon: const Icon(Icons.show_chart, color: Colors.cyanAccent),
-                            label: const Text("同期グラフへ", style: TextStyle(color: Colors.white)),
+                            icon: Icon(Icons.show_chart, color: isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
+                            label: Text(
+                                "同期グラフへ",
+                                style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                ),
+                            ),
                             onPressed: onNavigateToGraph,
                         ),
                     ),
@@ -213,10 +225,17 @@ class DashboardScreen extends StatelessWidget {
                         child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: Colors.blueGrey.shade800,
+                                backgroundColor: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade100,
+                                elevation: isDark ? 1 : 0,
                             ),
                             icon: const Icon(Icons.settings, color: Colors.orangeAccent),
-                            label: const Text("設定へ", style: TextStyle(color: Colors.white)),
+                            label: Text(
+                                "設定へ",
+                                style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                ),
+                            ),
                             onPressed: onNavigateToSettings,
                         ),
                     ),

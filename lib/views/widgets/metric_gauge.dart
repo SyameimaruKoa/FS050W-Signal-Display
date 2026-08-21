@@ -20,6 +20,7 @@ class MetricGauge extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final color = ColorGauge.getColor(level);
         final progress = ColorGauge.getProgress(level);
         final levelText = ColorGauge.getLabel(level);
@@ -38,10 +39,10 @@ class MetricGauge extends StatelessWidget {
                         children: [
                             Text(
                                 label,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white70,
+                                    color: isDark ? Colors.white70 : Colors.black87,
                                 ),
                             ),
                             Row(
@@ -91,7 +92,7 @@ class MetricGauge extends StatelessWidget {
                         child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 6,
-                            backgroundColor: Colors.white12,
+                            backgroundColor: isDark ? Colors.white12 : Colors.black12,
                             valueColor: AlwaysStoppedAnimation<Color>(color),
                         ),
                     ),

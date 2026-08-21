@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 enum AppThemeMode {
     oled,    // OLED 漆黒ダーク (#000000)
     dark,    // マテリアルダーク (#121212)

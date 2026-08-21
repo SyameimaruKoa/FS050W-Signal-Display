@@ -27,10 +27,20 @@ class _GraphScreenState extends State<GraphScreen> {
     Widget build(BuildContext context) {
         final apiService = context.watch<ApiService>();
         final history = apiService.signalHistory;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         final now = DateTime.now();
         final cutoffTime = now.subtract(Duration(minutes: _selectedSpanMinutes));
-        final filteredData = history.where((d) => d.timestamp.isAfter(cutoffTime)).toList();
+
+        // Include 1 point immediately before cutoff for seamless edge clipping
+        final List<SignalData> chartData = [];
+        final firstAfter = history.indexWhere((d) => d.timestamp.isAfter(cutoffTime));
+        if (firstAfter > 0) {
+            chartData.add(history[firstAfter - 1]);
+            chartData.addAll(history.sublist(firstAfter));
+        } else if (firstAfter == 0) {
+            chartData.addAll(history);
+        }
 
         return Scaffold(
             appBar: AppBar(
@@ -41,13 +51,13 @@ class _GraphScreenState extends State<GraphScreen> {
             ),
             body: Column(
                 children: [
-                    _buildSpanSelector(),
+                    _buildSpanSelector(isDark),
                     Expanded(
-                        child: filteredData.isEmpty
-                            ? const Center(
+                        child: chartData.isEmpty
+                            ? Center(
                                 child: Text(
                                     "データ蓄積中...",
-                                    style: TextStyle(color: Colors.white54),
+                                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black45),
                                 ),
                             )
                             : ListView(
@@ -58,11 +68,12 @@ class _GraphScreenState extends State<GraphScreen> {
                                         unit: "dBm",
                                         minY: -140,
                                         maxY: -50,
-                                        data: filteredData,
+                                        data: chartData,
                                         cutoffTime: cutoffTime,
                                         totalSpanSeconds: _selectedSpanMinutes * 60.0,
                                         getY4g: (d) => d.lteRsrp,
                                         getY5g: (d) => d.nrRsrp,
+                                        isDark: isDark,
                                     ),
                                     const SizedBox(height: 14),
                                     _buildTierChart(
@@ -70,11 +81,12 @@ class _GraphScreenState extends State<GraphScreen> {
                                         unit: "dB",
                                         minY: -25,
                                         maxY: -3,
-                                        data: filteredData,
+                                        data: chartData,
                                         cutoffTime: cutoffTime,
                                         totalSpanSeconds: _selectedSpanMinutes * 60.0,
                                         getY4g: (d) => d.lteRsrq,
                                         getY5g: (d) => d.nrRsrq,
+                                        isDark: isDark,
                                     ),
                                     const SizedBox(height: 14),
                                     _buildTierChart(
@@ -83,11 +95,12 @@ class _GraphScreenState extends State<GraphScreen> {
                                         minY: -15,
                                         maxY: 35,
                                         hasZeroLine: true,
-                                        data: filteredData,
+                                        data: chartData,
                                         cutoffTime: cutoffTime,
                                         totalSpanSeconds: _selectedSpanMinutes * 60.0,
                                         getY4g: (d) => d.lteSinr,
                                         getY5g: (d) => d.nrSnr,
+                                        isDark: isDark,
                                     ),
                                     const SizedBox(height: 16),
                                 ],
@@ -98,15 +111,19 @@ class _GraphScreenState extends State<GraphScreen> {
         );
     }
 
-    Widget _buildSpanSelector() {
+    Widget _buildSpanSelector(bool isDark) {
         return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFF1E1E1E),
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
             child: Row(
                 children: [
-                    const Text(
+                    Text(
                         "表示スパン: ",
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70),
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                        ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -114,6 +131,17 @@ class _GraphScreenState extends State<GraphScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [1, 3, 5, 10].map((span) {
                                 final isSelected = _selectedSpanMinutes == span;
+                                final activeBg = isDark
+                                    ? const Color(0xFF00E5FF).withOpacity(0.2)
+                                    : const Color(0xFF00ADB5).withOpacity(0.15);
+                                final inactiveBg = isDark
+                                    ? Colors.white.withOpacity(0.06)
+                                    : Colors.white;
+                                final activeBorder = isDark ? const Color(0xFF00E5FF) : const Color(0xFF00ADB5);
+                                final inactiveBorder = isDark ? Colors.white12 : Colors.black12;
+                                final activeText = isDark ? const Color(0xFF00E5FF) : const Color(0xFF007A78);
+                                final inactiveText = isDark ? Colors.white70 : Colors.black87;
+
                                 return Expanded(
                                     child: Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 3.0),
@@ -128,10 +156,10 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 padding: const EdgeInsets.symmetric(vertical: 7),
                                                 alignment: Alignment.center,
                                                 decoration: BoxDecoration(
-                                                    color: isSelected ? const Color(0xFF00E5FF).withOpacity(0.2) : Colors.white.withOpacity(0.06),
+                                                    color: isSelected ? activeBg : inactiveBg,
                                                     borderRadius: BorderRadius.circular(6),
                                                     border: Border.all(
-                                                        color: isSelected ? const Color(0xFF00E5FF) : Colors.white12,
+                                                        color: isSelected ? activeBorder : inactiveBorder,
                                                         width: 1.2,
                                                     ),
                                                 ),
@@ -140,7 +168,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                     style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                        color: isSelected ? const Color(0xFF00E5FF) : Colors.white70,
+                                                        color: isSelected ? activeText : inactiveText,
                                                     ),
                                                 ),
                                             ),
@@ -165,6 +193,7 @@ class _GraphScreenState extends State<GraphScreen> {
         required double totalSpanSeconds,
         required double? Function(SignalData) getY4g,
         required double? Function(SignalData) getY5g,
+        required bool isDark,
         bool hasZeroLine = false,
     }) {
         if (data.isEmpty) return const SizedBox.shrink();
@@ -175,7 +204,7 @@ class _GraphScreenState extends State<GraphScreen> {
 
         for (int i = 0; i < data.length; i++) {
             final sample = data[i];
-            final x = sample.timestamp.difference(cutoffTime).inSeconds.toDouble().clamp(0.0, totalSpanSeconds);
+            final x = sample.timestamp.difference(cutoffTime).inMilliseconds / 1000.0;
 
             final y4g = getY4g(sample);
             if (y4g != null) {
@@ -187,6 +216,7 @@ class _GraphScreenState extends State<GraphScreen> {
                 spots5g.add(FlSpot(x, y5g));
             }
 
+            // Handover marker: vertical dashed line only (no PCI label text)
             if (sample.handoverDescription != null) {
                 handoverLines.add(
                     VerticalLine(
@@ -194,17 +224,6 @@ class _GraphScreenState extends State<GraphScreen> {
                         color: Colors.yellowAccent,
                         strokeWidth: 1.5,
                         dashArray: [4, 4],
-                        label: VerticalLineLabel(
-                            show: true,
-                            alignment: Alignment.topRight,
-                            padding: const EdgeInsets.all(2),
-                            style: const TextStyle(
-                                color: Colors.yellowAccent,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                            ),
-                            labelResolver: (_) => sample.handoverDescription!,
-                        ),
                     ),
                 );
             }
@@ -213,12 +232,12 @@ class _GraphScreenState extends State<GraphScreen> {
         final double maxX = max(totalSpanSeconds, 10.0);
 
         return Card(
-            elevation: 2,
+            elevation: isDark ? 2 : 1,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: Colors.white12),
+                side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
             ),
-            color: const Color(0xFF1E1E1E),
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
@@ -229,17 +248,17 @@ class _GraphScreenState extends State<GraphScreen> {
                             children: [
                                 Text(
                                     title,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: isDark ? Colors.white : Colors.black87,
                                     ),
                                 ),
                                 Row(
                                     children: [
-                                        _buildLegendDot(const Color(0xFF2196F3), "4G"),
+                                        _buildLegendDot(const Color(0xFF2196F3), "4G", isDark),
                                         const SizedBox(width: 10),
-                                        _buildLegendDot(const Color(0xFF00E5FF), "5G"),
+                                        _buildLegendDot(const Color(0xFF00ADB5), "5G", isDark),
                                     ],
                                 ),
                             ],
@@ -262,10 +281,16 @@ class _GraphScreenState extends State<GraphScreen> {
                                             fitInsideVertically: true,
                                             tooltipRoundedRadius: 6,
                                             getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                                                if (touchedSpots.isEmpty) return [];
+                                                final sampleTime = cutoffTime.add(
+                                                    Duration(milliseconds: (touchedSpots.first.x * 1000).round()),
+                                                );
+                                                final timeStr = "${sampleTime.hour.toString().padLeft(2, '0')}:${sampleTime.minute.toString().padLeft(2, '0')}:${sampleTime.second.toString().padLeft(2, '0')}";
+
                                                 return touchedSpots.map((barSpot) {
                                                     final is5g = barSpot.barIndex == 1;
                                                     return LineTooltipItem(
-                                                        "${is5g ? '5G' : '4G'}: ${barSpot.y.toStringAsFixed(1)} $unit",
+                                                        "[$timeStr]\n${is5g ? '5G' : '4G'}: ${barSpot.y.toStringAsFixed(1)} $unit",
                                                         TextStyle(
                                                             color: is5g ? const Color(0xFF00E5FF) : const Color(0xFF2196F3),
                                                             fontWeight: FontWeight.bold,
@@ -281,16 +306,22 @@ class _GraphScreenState extends State<GraphScreen> {
                                         drawVerticalLine: true,
                                         getDrawingHorizontalLine: (val) {
                                             if (hasZeroLine && val == 0) {
-                                                return const FlLine(
-                                                    color: Colors.white54,
+                                                return FlLine(
+                                                    color: isDark ? Colors.white54 : Colors.black45,
                                                     strokeWidth: 1.5,
                                                     dashArray: [5, 5],
                                                 );
                                             }
-                                            return const FlLine(color: Colors.white10, strokeWidth: 0.8);
+                                            return FlLine(
+                                                color: isDark ? Colors.white10 : Colors.black12,
+                                                strokeWidth: 0.8,
+                                            );
                                         },
                                         getDrawingVerticalLine: (val) {
-                                            return const FlLine(color: Colors.white10, strokeWidth: 0.8);
+                                            return FlLine(
+                                                color: isDark ? Colors.white10 : Colors.black12,
+                                                strokeWidth: 0.8,
+                                            );
                                         },
                                     ),
                                     extraLinesData: ExtraLinesData(
@@ -309,7 +340,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                             "${value.toInt()}",
                                                             style: GoogleFonts.notoSansMono(
                                                                 fontSize: 10,
-                                                                color: Colors.white54,
+                                                                color: isDark ? Colors.white54 : Colors.black54,
                                                             ),
                                                         ),
                                                     );
@@ -324,14 +355,32 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 reservedSize: 22,
                                                 interval: (maxX / 4).clamp(1.0, 300.0),
                                                 getTitlesWidget: (value, meta) {
-                                                    final sampleTime = cutoffTime.add(Duration(seconds: value.toInt()));
-                                                    final minStr = sampleTime.minute.toString().padLeft(2, '0');
-                                                    final secStr = sampleTime.second.toString().padLeft(2, '0');
+                                                    final diffSec = (maxX - value).round();
+                                                    if (diffSec <= 2) {
+                                                        return Text(
+                                                            "現在",
+                                                            style: GoogleFonts.notoSansJp(
+                                                                fontSize: 10,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: isDark ? Colors.white70 : Colors.black87,
+                                                            ),
+                                                        );
+                                                    }
+                                                    final min = diffSec ~/ 60;
+                                                    final sec = diffSec % 60;
+                                                    String label;
+                                                    if (min > 0 && sec == 0) {
+                                                        label = "-${min}分";
+                                                    } else if (min > 0) {
+                                                        label = "-${min}分${sec}秒";
+                                                    } else {
+                                                        label = "-${sec}秒";
+                                                    }
                                                     return Text(
-                                                        "$minStr:$secStr",
+                                                        label,
                                                         style: GoogleFonts.notoSansMono(
                                                             fontSize: 10,
-                                                            color: Colors.white54,
+                                                            color: isDark ? Colors.white54 : Colors.black54,
                                                         ),
                                                     );
                                                 },
@@ -340,7 +389,10 @@ class _GraphScreenState extends State<GraphScreen> {
                                     ),
                                     borderData: FlBorderData(
                                         show: true,
-                                        border: Border.all(color: Colors.white24, width: 0.8),
+                                        border: Border.all(
+                                            color: isDark ? Colors.white24 : Colors.black26,
+                                            width: 0.8,
+                                        ),
                                     ),
                                     lineBarsData: [
                                         // 4G Line (Blue)
@@ -355,7 +407,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                         LineChartBarData(
                                             spots: spots5g,
                                             isCurved: false,
-                                            color: const Color(0xFF00E5FF),
+                                            color: const Color(0xFF00ADB5),
                                             barWidth: 2,
                                             dotData: const FlDotData(show: false),
                                         ),
@@ -369,7 +421,7 @@ class _GraphScreenState extends State<GraphScreen> {
         );
     }
 
-    Widget _buildLegendDot(Color color, String label) {
+    Widget _buildLegendDot(Color color, String label, bool isDark) {
         return Row(
             children: [
                 Container(
@@ -380,7 +432,11 @@ class _GraphScreenState extends State<GraphScreen> {
                 const SizedBox(width: 4),
                 Text(
                     label,
-                    style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontWeight: FontWeight.bold,
+                    ),
                 ),
             ],
         );
