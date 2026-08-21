@@ -17,20 +17,21 @@ enum ConnectionStatus {
 
 class ApiService extends ChangeNotifier {
     final http.Client _client = http.Client();
-    
+
     AppSettings _settings;
     ConnectionStatus _status = ConnectionStatus.disconnected;
     String? _errorMessage;
     SignalData? _currentSignal;
     final List<SignalData> _signalHistory = [];
-    
+
     String? _csrfToken;
     String? _sessionCookie;
     String? _prikey;
     bool _isLoggedIn = false;
-    
+
     Timer? _pollingTimer;
     bool _isPolling = false;
+    bool _isScreenOn = true;
 
     ApiService(this._settings);
 
@@ -40,6 +41,7 @@ class ApiService extends ChangeNotifier {
     List<SignalData> get signalHistory => List.unmodifiable(_signalHistory);
     bool get isLoggedIn => _isLoggedIn;
     AppSettings get settings => _settings;
+    bool get isConnecting => _status == ConnectionStatus.connecting;
 
     void updateSettings(AppSettings newSettings) {
         final bool ipChanged = _settings.routerIp != newSettings.routerIp;
@@ -61,11 +63,30 @@ class ApiService extends ChangeNotifier {
         notifyListeners();
     }
 
+    void setScreenState(bool isScreenOn) {
+        _isScreenOn = isScreenOn;
+        if (!isScreenOn) {
+            // Screen Off (Sleep): Pause polling completely to save battery
+            AppLogger.info("Screen OFF detected: Pausing polling loop");
+            _pollingTimer?.cancel();
+            _pollingTimer = null;
+        } else {
+            // Screen On: Resume polling immediately
+            AppLogger.info("Screen ON detected: Resuming polling loop immediately");
+            if (_isPolling) {
+                _pollOnce();
+                _restartTimer();
+            }
+        }
+    }
+
     void startPolling() {
         if (_isPolling) return;
         _isPolling = true;
-        _pollOnce();
-        _restartTimer();
+        if (_isScreenOn) {
+            _pollOnce();
+            _restartTimer();
+        }
     }
 
     void stopPolling() {
@@ -82,7 +103,11 @@ class ApiService extends ChangeNotifier {
     void _restartTimer() {
         _pollingTimer?.cancel();
         final interval = Duration(seconds: _settings.foregroundIntervalSeconds.clamp(1, 10));
-        _pollingTimer = Timer.periodic(interval, (_) => _pollOnce());
+        _pollingTimer = Timer.periodic(interval, (_) {
+            if (_isScreenOn) {
+                _pollOnce();
+            }
+        });
     }
 
     void _updateHeadersFromResponse(http.Response response) {
@@ -126,9 +151,7 @@ class ApiService extends ChangeNotifier {
                 }
                 return true;
             }
-        } catch (e) {
-            // failed
-        }
+        } catch (_) {}
         return false;
     }
 
@@ -141,10 +164,8 @@ class ApiService extends ChangeNotifier {
                 notifyListeners();
                 final bool initSuccess = await _fetchCsrfToken();
                 if (!initSuccess) {
-                    _status = ConnectionStatus.error;
-                    _errorMessage = "ルーター (${_settings.routerIp}) に接続できません";
+                    _handleFetchFailure("ルーター (${_settings.routerIp}) に接続できません");
                     AppLogger.warn("Initial CSRF token fetch failed for ${_settings.routerIp}");
-                    notifyListeners();
                     return;
                 }
             }
@@ -169,10 +190,8 @@ class ApiService extends ChangeNotifier {
                         _status = ConnectionStatus.unauthenticatedMode;
                         AppLogger.warn("Login failed or locked: falling back to unauthenticated public mode");
                     } else {
-                        _status = ConnectionStatus.error;
-                        _errorMessage = "ログイン認証に失敗しました (パスワードを確認してください)";
+                        _handleFetchFailure("ログイン認証に失敗しました (パスワードを確認してください)");
                         AppLogger.error("Login authentication rejected by router");
-                        notifyListeners();
                         return;
                     }
                 }
@@ -246,7 +265,6 @@ class ApiService extends ChangeNotifier {
         return false;
     }
 
-
     Future<bool> _performLogin() async {
         try {
             if (_csrfToken == null || _sessionCookie == null) return false;
@@ -297,9 +315,7 @@ class ApiService extends ChangeNotifier {
                     return true;
                 }
             }
-        } catch (e) {
-            // login failed
-        }
+        } catch (_) {}
         return false;
     }
 
@@ -345,9 +361,7 @@ class ApiService extends ChangeNotifier {
                 } else if (response.statusCode == 401 || response.statusCode == 403 || response.body.startsWith('<!DOCTYPE')) {
                     _isLoggedIn = false;
                 }
-            } catch (e) {
-                // fall through to unauthenticated
-            }
+            } catch (_) {}
         }
 
         // Unauthenticated mode (/goform/get_mgdb_params)
@@ -367,45 +381,15 @@ class ApiService extends ChangeNotifier {
                     return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
                 }
             }
-        } catch (e) {
-            // failed
-        }
+        } catch (_) {}
         return null;
-    }
-
-    Future<Map<String, dynamic>?> _fetchCaList() async {
-        if (!_isLoggedIn) return null;
-        final uri = Uri.parse("http://${_settings.routerIp}/action/mnet_get_ca_list");
-        final Map<String, String> headers = {
-            'Content-Type': 'application/json',
-            if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
-            if (_sessionCookie != null) 'Cookie': _sessionCookie!,
-        };
-
-        try {
-            final response = await _client.post(uri, headers: headers, body: '{}').timeout(const Duration(seconds: 2));
-            _updateHeadersFromResponse(response);
-            if (response.statusCode == 200) {
-                final dynamic data = jsonDecode(response.body);
-                if (data is Map<String, dynamic>) {
-                    final caList = data['ca_list'] as List<dynamic>?;
-                    if (caList != null && caList.isNotEmpty) {
-                        final bands = caList.map((e) => "B${e['band'] ?? e}").toList();
-                        return {'hasCa': true, 'bands': bands};
-                    }
-                }
-            }
-        } catch (e) {
-            // ignore
-        }
-        return {'hasCa': false, 'bands': <String>[]};
     }
 
     void _handleFetchFailure([String? message]) {
         _csrfToken = null;
         _sessionCookie = null;
-        _status = ConnectionStatus.error;
-        _errorMessage = message ?? "ルーターからのデータ取得に失敗しました";
+        _status = ConnectionStatus.connecting; // Mark as connecting/reconnecting rather than full disconnect
+        _errorMessage = message ?? "ルーターからのデータ取得に失敗しました (自動再試行中)";
         notifyListeners();
     }
 }

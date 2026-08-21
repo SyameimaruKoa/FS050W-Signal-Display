@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -7,21 +8,29 @@ import 'models/app_settings.dart';
 import 'services/api_service.dart';
 import 'services/background_service.dart';
 import 'services/notification_service.dart';
+import 'services/pip_service.dart';
+import 'services/overlay_service.dart';
 import 'services/storage_service.dart';
 import 'views/dashboard_screen.dart';
 import 'views/graph_screen.dart';
 import 'views/settings_screen.dart';
 import 'views/setup_wizard_screen.dart';
+import 'views/pip_screen.dart';
+import 'views/widgets/event_lamp_overlay.dart';
 
 void main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    // 1. Initialize Foreground and Notification Services
+    // 1. Initialize Pip, Foreground, and Notification Services
+    PipService.initialize();
     BackgroundService.initService();
     await NotificationService.initialize();
 
     // 2. Load Persisted Settings
     final settings = await StorageService.loadSettings();
+
+    // Synchronize auto PiP setting with native layer
+    PipService.setAutoEnterPip(settings.autoPipOnHome, settings.pipAspectRatio);
 
     runApp(
         MultiProvider(
@@ -33,8 +42,49 @@ void main() async {
     );
 }
 
-class Fs050wApp extends StatelessWidget {
+class Fs050wApp extends StatefulWidget {
     const Fs050wApp({super.key});
+
+    @override
+    State<Fs050wApp> createState() => _Fs050wAppState();
+}
+
+class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
+    static const MethodChannel _lifecycleChannel = MethodChannel('com.syameimarukoa.fs050w_monitor/lifecycle');
+
+    @override
+    void initState() {
+        super.initState();
+        WidgetsBinding.instance.addObserver(this);
+
+        _lifecycleChannel.setMethodCallHandler((call) async {
+            if (call.method == 'onScreenStateChanged') {
+                final bool isScreenOn = call.arguments as bool? ?? true;
+                if (mounted) {
+                    context.read<ApiService>().setScreenState(isScreenOn);
+                }
+            }
+        });
+    }
+
+    @override
+    void dispose() {
+        WidgetsBinding.instance.removeObserver(this);
+        super.dispose();
+    }
+
+    @override
+    void didChangeAppLifecycleState(AppLifecycleState state) {
+        super.didChangeAppLifecycleState(state);
+        final apiService = context.read<ApiService>();
+        if (state == AppLifecycleState.paused) {
+            // App paused (or screen off): allow battery-saving state
+            apiService.setScreenState(false);
+        } else if (state == AppLifecycleState.resumed) {
+            // App resumed: wake up polling
+            apiService.setScreenState(true);
+        }
+    }
 
     @override
     Widget build(BuildContext context) {
@@ -51,17 +101,24 @@ class Fs050wApp extends StatelessWidget {
         // Determine Theme
         final ThemeData themeData = _buildThemeData(settings.appTheme, context);
 
-        return MaterialApp(
-            title: 'FS050W Monitor',
-            debugShowCheckedModeBanner: false,
-            theme: themeData,
-            home: settings.isSetupCompleted
-                ? const MainNavigationShell()
-                : SetupWizardScreen(
-                    onComplete: () {
-                        // After wizard completion, state updates automatically via notifyListeners()
-                    },
-                ),
+        return ValueListenableBuilder<bool>(
+            valueListenable: PipService.isPipModeNotifier,
+            builder: (context, isInPipMode, _) {
+                return MaterialApp(
+                    title: 'FS050W Monitor',
+                    debugShowCheckedModeBanner: false,
+                    theme: themeData,
+                    home: isInPipMode
+                        ? const PipScreen()
+                        : EventLampOverlay(
+                            child: settings.isSetupCompleted
+                                ? const MainNavigationShell()
+                                : SetupWizardScreen(
+                                    onComplete: () {},
+                                ),
+                        ),
+                );
+            },
         );
     }
 
@@ -144,8 +201,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             _subscribedService = apiService;
             apiService.addListener(_onSignalUpdated);
             apiService.startPolling();
-            if (apiService.settings.foregroundNotificationEnabled) {
-                BackgroundService.startService();
+
+            // Initial overlay sync if enabled
+            if (apiService.settings.overlayEnabled) {
+                OverlayService.startOverlay(apiService.settings);
             }
         });
     }
@@ -163,7 +222,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         final signal = apiService.currentSignal;
         if (signal != null) {
             NotificationService.handleSignalEvents(signal, apiService.settings);
-            BackgroundService.updateNotification(signal, apiService.settings);
+            OverlayService.updateOverlayData(
+                signal,
+                apiService.settings,
+                isConnecting: apiService.isConnecting,
+            );
         }
     }
 
@@ -194,7 +257,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                         _currentIndex = index;
                     });
                 },
-
                 destinations: const [
                     NavigationDestination(
                         icon: Icon(Icons.dashboard_outlined),

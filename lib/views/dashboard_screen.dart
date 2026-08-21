@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
+import '../services/pip_service.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 import 'widgets/cell_card.dart';
@@ -32,6 +33,18 @@ class DashboardScreen extends StatelessWidget {
                     style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 actions: [
+                    IconButton(
+                        icon: const Icon(Icons.picture_in_picture_alt, color: Color(0xFF00E5FF)),
+                        tooltip: "PiP (小窓表示) 起動",
+                        onPressed: () async {
+                            final success = await PipService.enterPipMode(apiService.settings.pipAspectRatio);
+                            if (!success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("PiPモードの起動に失敗しました (端末の設定をご確認ください)")),
+                                );
+                            }
+                        },
+                    ),
                     IconButton(
                         icon: Icon(Icons.assignment_outlined, color: isDark ? Colors.white70 : Colors.black87),
                         tooltip: "診断ログを表示",
@@ -79,10 +92,15 @@ class DashboardScreen extends StatelessWidget {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final isConnected = apiService.status == ConnectionStatus.authenticated ||
             apiService.status == ConnectionStatus.unauthenticatedMode;
-        final statusColor = isConnected ? Colors.greenAccent : (apiService.status == ConnectionStatus.connecting ? Colors.orangeAccent : Colors.redAccent);
+        final isConnecting = apiService.status == ConnectionStatus.connecting;
+
+        final statusColor = isConnected
+            ? Colors.greenAccent
+            : (isConnecting ? Colors.orangeAccent : Colors.redAccent);
+
         final statusText = isConnected
             ? "🟢 接続中: ${apiService.settings.routerIp}"
-            : (apiService.status == ConnectionStatus.connecting ? "🟡 接続中..." : "🔴 未接続 / エラー");
+            : (isConnecting ? "🟡 接続試行中... (${apiService.settings.routerIp})" : "🔴 未接続 / エラー");
 
         final operatorName = signal?.operatorName ?? "--";
         final hasBattery = signal?.batteryPercent != null;
@@ -91,7 +109,7 @@ class DashboardScreen extends StatelessWidget {
             : null;
 
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
-        final modeBadge = ConnectionModeHelper.getIconBadgeText(mode);
+        final modeBadge = isConnecting ? "接続中..." : ConnectionModeHelper.getIconBadgeText(mode);
         final uiMode = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false);
 
         return Container(
@@ -169,15 +187,19 @@ class DashboardScreen extends StatelessWidget {
                                 Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                        color: isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15),
+                                        color: isConnecting
+                                            ? Colors.amber.withOpacity(0.2)
+                                            : (isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15)),
                                         borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                        "[ $modeBadge ] $uiMode",
+                                        isConnecting ? "[ 接続中... ]" : "[ $modeBadge ] $uiMode",
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.cyanAccent : const Color(0xFF007A78),
+                                            color: isConnecting
+                                                ? Colors.amberAccent
+                                                : (isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
                                         ),
                                     ),
                                 ),
@@ -188,7 +210,7 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                             apiService.errorMessage!,
-                            style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+                            style: const TextStyle(fontSize: 12, color: Colors.orangeAccent),
                         ),
                     ],
                 ],

@@ -4,6 +4,9 @@ import 'package:fs050w_monitor/utils/crypto_utils.dart';
 import 'package:fs050w_monitor/utils/color_gauge.dart';
 import 'package:fs050w_monitor/models/signal_data.dart';
 import 'package:fs050w_monitor/models/connection_state.dart';
+import 'package:fs050w_monitor/models/app_settings.dart';
+import 'package:fs050w_monitor/services/pip_service.dart';
+import 'package:fs050w_monitor/views/widgets/intensity_bar_metric.dart';
 
 void main() {
     group('3GPP Band Naming Tests', () {
@@ -158,5 +161,86 @@ void main() {
             expect(nextData.handoverDescription, equals("PCI 29 → 57 (B3)"));
         });
     });
-}
 
+    group('PiP Aspect Ratio & Clamping Tests', () {
+        test('7 Supported Aspect Ratios Parsing and Values', () {
+            expect(PipService.parseAspectRatio('16:9'), equals((16, 9)));
+            expect(PipService.parseAspectRatio('9:16'), equals((9, 16)));
+            expect(PipService.parseAspectRatio('1:1'), equals((1, 1)));
+            expect(PipService.parseAspectRatio('4:3'), equals((4, 3)));
+            expect(PipService.parseAspectRatio('3:4'), equals((3, 4)));
+            expect(PipService.parseAspectRatio('21:9'), equals((21, 9)));
+            expect(PipService.parseAspectRatio('9:21'), equals((9, 21)));
+
+            // Verify ratio is within Android PiP limit (0.418 to 2.39)
+            final minRatio = PipService.getAspectRatioValue('9:21');
+            final maxRatio = PipService.getAspectRatioValue('21:9');
+            expect(minRatio, greaterThan(0.418));
+            expect(maxRatio, lessThan(2.39));
+        });
+    });
+
+    group('Intensity Bar Normalization Tests', () {
+        test('RSRP Normalization (-140 to -50 dBm)', () {
+            expect(IntensityBarMetric.calculateNormalizedRatio(-140.0, -140.0, -50.0), equals(0.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(-50.0, -140.0, -50.0), equals(1.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(-95.0, -140.0, -50.0), closeTo(0.5, 0.001));
+            expect(IntensityBarMetric.calculateNormalizedRatio(-150.0, -140.0, -50.0), equals(0.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(-40.0, -140.0, -50.0), equals(1.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(null, -140.0, -50.0), equals(0.0));
+        });
+
+        test('RSRQ Normalization (-25 to -3 dB)', () {
+            expect(IntensityBarMetric.calculateNormalizedRatio(-25.0, -25.0, -3.0), equals(0.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(-3.0, -25.0, -3.0), equals(1.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(-14.0, -25.0, -3.0), equals(0.5));
+            expect(IntensityBarMetric.calculateNormalizedRatio(null, -25.0, -3.0), equals(0.0));
+        });
+
+        test('SINR/SNR Normalization (-10 to 30 dB)', () {
+            expect(IntensityBarMetric.calculateNormalizedRatio(-10.0, -10.0, 30.0), equals(0.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(30.0, -10.0, 30.0), equals(1.0));
+            expect(IntensityBarMetric.calculateNormalizedRatio(10.0, -10.0, 30.0), equals(0.5));
+            expect(IntensityBarMetric.calculateNormalizedRatio(null, -10.0, 30.0), equals(0.0));
+        });
+    });
+
+    group('AppSettings Serialization Tests', () {
+        test('Full JSON Roundtrip with PiP, Overlay and Lamp fields', () {
+            final original = AppSettings(
+                routerIp: "192.168.100.1",
+                webPassword: "secretPassword",
+                autoPipOnHome: false,
+                pipAspectRatio: "21:9",
+                overlayEnabled: true,
+                overlayStyle: "compact",
+                overlayOpacity: 0.65,
+                overlayScale: 1.25,
+                eventLampEnabled: true,
+                eventLampShape: "dot",
+                eventLampPosition: "topRight",
+                vibrateOn5gSub6: true,
+                vibrateOnHandover: false,
+                vibrateOnCriticalSignal: true,
+            );
+
+            final json = original.toJson();
+            final restored = AppSettings.fromJson(json);
+
+            expect(restored.routerIp, equals("192.168.100.1"));
+            expect(restored.webPassword, equals("secretPassword"));
+            expect(restored.autoPipOnHome, isFalse);
+            expect(restored.pipAspectRatio, equals("21:9"));
+            expect(restored.overlayEnabled, isTrue);
+            expect(restored.overlayStyle, equals("compact"));
+            expect(restored.overlayOpacity, equals(0.65));
+            expect(restored.overlayScale, equals(1.25));
+            expect(restored.eventLampEnabled, isTrue);
+            expect(restored.eventLampShape, equals("dot"));
+            expect(restored.eventLampPosition, equals("topRight"));
+            expect(restored.vibrateOn5gSub6, isTrue);
+            expect(restored.vibrateOnHandover, isFalse);
+            expect(restored.vibrateOnCriticalSignal, isTrue);
+        });
+    });
+}

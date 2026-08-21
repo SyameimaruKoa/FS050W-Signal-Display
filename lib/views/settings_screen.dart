@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../services/api_service.dart';
-import '../services/background_service.dart';
+import '../services/pip_service.dart';
+import '../services/overlay_service.dart';
 import '../services/storage_service.dart';
 import 'widgets/log_viewer_dialog.dart';
 
@@ -44,16 +45,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
             final api = context.read<ApiService>();
             api.updateSettings(_settings);
-            if (!_settings.foregroundNotificationEnabled) {
-                await BackgroundService.stopService();
-            } else if (api.currentSignal != null) {
-                BackgroundService.updateNotification(api.currentSignal!, _settings);
+
+            // Synchronize PiP auto-enter config
+            PipService.setAutoEnterPip(_settings.autoPipOnHome, _settings.pipAspectRatio);
+
+            // Synchronize Overlay Service
+            if (_settings.overlayEnabled) {
+                final hasPermission = await OverlayService.checkPermission();
+                if (hasPermission) {
+                    await OverlayService.startOverlay(_settings);
+                    if (api.currentSignal != null) {
+                        OverlayService.updateOverlayData(api.currentSignal, _settings);
+                    }
+                }
+            } else {
+                await OverlayService.stopOverlay();
             }
         }
     }
 
+    Future<void> _toggleOverlay(bool enabled) async {
+        if (enabled) {
+            final hasPermission = await OverlayService.checkPermission();
+            if (!hasPermission) {
+                if (!mounted) return;
+                final shouldOpenSettings = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                        title: const Text("権限の許可が必要です"),
+                        content: const Text("フローティングオーバーレイを表示するには、「他のアプリの上に重ねて表示」の権限を許可してください。"),
+                        actions: [
+                            TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text("キャンセル"),
+                            ),
+                            ElevatedButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text("設定を開く"),
+                            ),
+                        ],
+                    ),
+                );
+
+                if (shouldOpenSettings == true) {
+                    await OverlayService.requestPermission();
+                }
+                return;
+            }
+        }
+
+        setState(() {
+            _settings.overlayEnabled = enabled;
+        });
+        await _save();
+    }
+
     @override
     Widget build(BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Scaffold(
             appBar: AppBar(
                 title: Text(
@@ -64,7 +114,185 @@ class _SettingsScreenState extends State<SettingsScreen> {
             body: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                    _buildSectionHeader("1. 接続設定", Icons.router),
+                    // 1. 【監視 & フローティング表示】
+                    _buildSectionHeader("1. 監視 & フローティング表示", Icons.picture_in_picture_alt),
+                    _buildCard([
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("フローティングオーバーレイ"),
+                            subtitle: const Text("他アプリ使用中も最前面に電波ウィジェットを常時表示"),
+                            value: _settings.overlayEnabled,
+                            onChanged: (val) => _toggleOverlay(val),
+                        ),
+                        if (_settings.overlayEnabled) ...[
+                            ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text("オーバーレイ表示スタイル"),
+                                trailing: DropdownButton<String>(
+                                    value: _settings.overlayStyle,
+                                    items: const [
+                                        DropdownMenuItem(value: "card", child: Text("PiP共通カード型 (スタイルA)")),
+                                        DropdownMenuItem(value: "compact", child: Text("コンパクト行型 (スタイルB)")),
+                                    ],
+                                    onChanged: (val) {
+                                        if (val != null) {
+                                            setState(() => _settings.overlayStyle = val);
+                                            _save();
+                                        }
+                                    },
+                                ),
+                            ),
+                            ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text("背景透過度: ${(_settings.overlayOpacity * 100).toInt()}%"),
+                                subtitle: Slider(
+                                    value: _settings.overlayOpacity,
+                                    min: 0.2,
+                                    max: 1.0,
+                                    divisions: 16,
+                                    label: "${(_settings.overlayOpacity * 100).toInt()}%",
+                                    onChanged: (val) {
+                                        setState(() => _settings.overlayOpacity = val);
+                                        _save();
+                                    },
+                                ),
+                            ),
+                        ],
+                        const Divider(height: 16),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("ホーム画面に戻った時に自動でPiP起動"),
+                            subtitle: const Text("アプリ使用中にホーム操作を行うと自動で小窓化"),
+                            value: _settings.autoPipOnHome,
+                            onChanged: (val) {
+                                setState(() => _settings.autoPipOnHome = val);
+                                _save();
+                            },
+                        ),
+                        ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("PiP アスペクト比 (全7種)"),
+                            subtitle: Text("現在: ${_settings.pipAspectRatio}"),
+                            trailing: DropdownButton<String>(
+                                value: _settings.pipAspectRatio,
+                                items: const [
+                                    DropdownMenuItem(value: "16:9", child: Text("16:9 (横長標準)")),
+                                    DropdownMenuItem(value: "9:16", child: Text("9:16 (縦長標準)")),
+                                    DropdownMenuItem(value: "1:1", child: Text("1:1 (正方形)")),
+                                    DropdownMenuItem(value: "4:3", child: Text("4:3 (横長クラシック)")),
+                                    DropdownMenuItem(value: "3:4", child: Text("3:4 (縦長クラシック)")),
+                                    DropdownMenuItem(value: "21:9", child: Text("21:9 (ウルトラワイド)")),
+                                    DropdownMenuItem(value: "9:21", child: Text("9:21 (ウルトラトール)")),
+                                ],
+                                onChanged: (val) {
+                                    if (val != null) {
+                                        setState(() => _settings.pipAspectRatio = val);
+                                        _save();
+                                    }
+                                },
+                            ),
+                        ),
+                    ]),
+
+                    const SizedBox(height: 16),
+
+                    // 2. 【イベント検知 & LEDランプ】
+                    _buildSectionHeader("2. イベント検知 & LEDランプ", Icons.lightbulb_outline),
+                    _buildCard([
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("イベント画面上部LEDランプ"),
+                            subtitle: const Text("イベント発生時に画面最上部にパルスランプを3秒点灯"),
+                            value: _settings.eventLampEnabled,
+                            onChanged: (val) {
+                                setState(() => _settings.eventLampEnabled = val);
+                                _save();
+                            },
+                        ),
+                        if (_settings.eventLampEnabled) ...[
+                            ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text("ランプ形状"),
+                                trailing: DropdownButton<String>(
+                                    value: _settings.eventLampShape,
+                                    items: const [
+                                        DropdownMenuItem(value: "bar", child: Text("スリムバー型 (50x4px)")),
+                                        DropdownMenuItem(value: "dot", child: Text("LEDドット型 (8px丸)")),
+                                    ],
+                                    onChanged: (val) {
+                                        if (val != null) {
+                                            setState(() => _settings.eventLampShape = val);
+                                            _save();
+                                        }
+                                    },
+                                ),
+                            ),
+                            ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text("ランプ配置位置"),
+                                trailing: DropdownButton<String>(
+                                    value: _settings.eventLampPosition,
+                                    items: const [
+                                        DropdownMenuItem(value: "topCenter", child: Text("画面上部 中央")),
+                                        DropdownMenuItem(value: "topLeft", child: Text("画面上部 左角")),
+                                        DropdownMenuItem(value: "topRight", child: Text("画面上部 右角")),
+                                    ],
+                                    onChanged: (val) {
+                                        if (val != null) {
+                                            setState(() => _settings.eventLampPosition = val);
+                                            _save();
+                                        }
+                                    },
+                                ),
+                            ),
+                            Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: OutlinedButton.icon(
+                                    icon: const Icon(Icons.flash_on, size: 16, color: Color(0xFF00E5FF)),
+                                    label: const Text("LEDランプ点灯テスト"),
+                                    onPressed: () {
+                                        OverlayService.triggerLamp("5g", _settings);
+                                    },
+                                ),
+                            ),
+                        ],
+                        const Divider(height: 16),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("⚡ 5G+ (Sub6) 接続検知バイブ"),
+                            subtitle: const Text("超高速 Sub6 エリア突入時に二重振動"),
+                            value: _settings.vibrateOn5gSub6,
+                            onChanged: (val) {
+                                setState(() => _settings.vibrateOn5gSub6 = val);
+                                _save();
+                            },
+                        ),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("📡 ハンドオーバー検知バイブ"),
+                            subtitle: const Text("基地局 (PCI) 切り替わり時に振動"),
+                            value: _settings.vibrateOnHandover,
+                            onChanged: (val) {
+                                setState(() => _settings.vibrateOnHandover = val);
+                                _save();
+                            },
+                        ),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("⚠️ 電波微弱警告 (RSRP <= -115dBm)"),
+                            subtitle: const Text("圏外寸前突入時に警告バイブ & 赤点滅"),
+                            value: _settings.vibrateOnCriticalSignal,
+                            onChanged: (val) {
+                                setState(() => _settings.vibrateOnCriticalSignal = val);
+                                _save();
+                            },
+                        ),
+                    ]),
+
+                    const SizedBox(height: 16),
+
+                    // 3. 【通信 & ルーター接続】
+                    _buildSectionHeader("3. 通信 & ルーター接続", Icons.router),
                     _buildCard([
                         TextField(
                             controller: _ipController,
@@ -105,14 +333,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _save();
                             },
                         ),
-                    ]),
-
-                    const SizedBox(height: 16),
-                    _buildSectionHeader("2. ポーリング設定", Icons.timer),
-                    _buildCard([
                         ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text("フォアグラウンド更新間隔"),
+                            title: const Text("ポーリング間隔"),
                             trailing: DropdownButton<int>(
                                 value: _settings.foregroundIntervalSeconds,
                                 items: const [
@@ -129,103 +352,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 },
                             ),
                         ),
-                        ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text("バックグラウンド更新間隔"),
-                            trailing: DropdownButton<int>(
-                                value: _settings.backgroundIntervalSeconds,
-                                items: const [
-                                    DropdownMenuItem(value: 1, child: Text("1秒")),
-                                    DropdownMenuItem(value: 2, child: Text("2秒")),
-                                    DropdownMenuItem(value: 3, child: Text("3秒")),
-                                    DropdownMenuItem(value: 5, child: Text("5秒")),
-                                    DropdownMenuItem(value: 10, child: Text("10秒")),
-                                ],
-                                onChanged: (val) {
-                                    if (val != null) {
-                                        setState(() => _settings.backgroundIntervalSeconds = val);
-                                        _save();
-                                    }
-                                },
-                            ),
-                        ),
                     ]),
 
                     const SizedBox(height: 16),
-                    _buildSectionHeader("3. 常駐通知設定", Icons.notifications_active),
-                    _buildCard([
-                        SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text("常駐通知の有効化"),
-                            subtitle: const Text("ステータスバーに 6 種の電波アイコンと詳細を表示"),
-                            value: _settings.foregroundNotificationEnabled,
-                            onChanged: (val) {
-                                setState(() => _settings.foregroundNotificationEnabled = val);
-                                _save();
-                            },
-                        ),
-                        ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text("通知スタイル"),
-                            trailing: DropdownButton<NotificationDetailStyle>(
-                                value: _settings.notificationStyle,
-                                items: const [
-                                    DropdownMenuItem(
-                                        value: NotificationDetailStyle.detailed,
-                                        child: Text("詳細 2行スタイル"),
-                                    ),
-                                    DropdownMenuItem(
-                                        value: NotificationDetailStyle.compact,
-                                        child: Text("コンパクト 1行"),
-                                    ),
-                                ],
-                                onChanged: (val) {
-                                    if (val != null) {
-                                        setState(() => _settings.notificationStyle = val);
-                                        _save();
-                                    }
-                                },
-                            ),
-                        ),
-                    ]),
 
-                    const SizedBox(height: 16),
-                    _buildSectionHeader("4. イベント通知・バイブレーション設定", Icons.vibration),
-                    _buildCard([
-                        SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text("⚡ 5G+ (sub6) 突入バイブ通知"),
-                            subtitle: const Text("高速 sub6 エリア接続時に短い振動で通知"),
-                            value: _settings.vibrateOn5gSub6,
-                            onChanged: (val) {
-                                setState(() => _settings.vibrateOn5gSub6 = val);
-                                _save();
-                            },
-                        ),
-                        SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text("📡 基地局ハンドオーバー時通知"),
-                            subtitle: const Text("PCI 切り替わり時に極小振動 ＋ トースト"),
-                            value: _settings.vibrateOnHandover,
-                            onChanged: (val) {
-                                setState(() => _settings.vibrateOnHandover = val);
-                                _save();
-                            },
-                        ),
-                        SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text("⚠️ 限界電波 (RSRP < -120dBm) 警告"),
-                            subtitle: const Text("圏外寸前や微弱電波時に警告バイブ"),
-                            value: _settings.vibrateOnCriticalSignal,
-                            onChanged: (val) {
-                                setState(() => _settings.vibrateOnCriticalSignal = val);
-                                _save();
-                            },
-                        ),
-                    ]),
-
-                    const SizedBox(height: 16),
-                    _buildSectionHeader("5. UI・ナビゲーション・テーマ設定", Icons.palette),
+                    // 4. 【UI・テーマ & ログ】
+                    _buildSectionHeader("4. UI・テーマ & ログ", Icons.palette),
                     _buildCard([
                         ListTile(
                             contentPadding: EdgeInsets.zero,
@@ -297,15 +429,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 },
                             ),
                         ),
-                    ]),
-
-                    const SizedBox(height: 16),
-                    _buildSectionHeader("6. アプリ診断ログ & エクスポート", Icons.assignment),
-                    _buildCard([
+                        const Divider(height: 16),
                         ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text("アプリ診断ログを表示 / コピー"),
-                            subtitle: const Text("API通信履歴、エラー詳細、ハンドオーバー記録を確認・コピー"),
+                            subtitle: const Text("API通信履歴、エラー詳細、ハンドオーバー記録を確認"),
                             trailing: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.cyanAccent.shade700,
@@ -318,7 +446,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                     ]),
                     const SizedBox(height: 24),
-
                 ],
             ),
         );
