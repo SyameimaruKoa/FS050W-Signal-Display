@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'models/app_settings.dart';
-import 'models/signal_data.dart';
 import 'services/api_service.dart';
 import 'services/background_service.dart';
 import 'services/notification_service.dart';

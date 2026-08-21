@@ -7,14 +7,15 @@ class BackgroundService {
     static void initService() {
         FlutterForegroundTask.init(
             androidNotificationOptions: AndroidNotificationOptions(
-                channelId: 'fs050w_continuous_status',
+                channelId: 'fs050w_live_status_v5',
                 channelName: 'FS050W 電波常駐ステータス',
                 channelDescription: 'FS050Wの電波状態をリアルタイムで常駐通知します',
-                channelImportance: NotificationChannelImportance.LOW,
-                priority: NotificationPriority.LOW,
+                channelImportance: NotificationChannelImportance.HIGH,
+                priority: NotificationPriority.HIGH,
                 playSound: false,
                 enableVibration: false,
                 visibility: NotificationVisibility.VISIBILITY_PUBLIC,
+                showBadge: true,
             ),
             iosNotificationOptions: const IOSNotificationOptions(),
             foregroundTaskOptions: ForegroundTaskOptions(

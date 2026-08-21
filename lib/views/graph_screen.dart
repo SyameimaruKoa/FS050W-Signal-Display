@@ -413,6 +413,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                         ),
                                     ],
                                 ),
+                                duration: Duration.zero,
                             ),
                         ),
                     ],
