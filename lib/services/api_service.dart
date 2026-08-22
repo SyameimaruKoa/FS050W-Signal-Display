@@ -48,7 +48,6 @@ class ApiService extends ChangeNotifier {
     void updateSettings(AppSettings newSettings) {
         final bool ipChanged = _settings.routerIp != newSettings.routerIp;
         final bool passChanged = _settings.webPassword != newSettings.webPassword;
-        final bool intervalChanged = _settings.foregroundIntervalSeconds != newSettings.foregroundIntervalSeconds;
 
         _settings = newSettings;
         if (ipChanged || passChanged) {
@@ -59,7 +58,7 @@ class ApiService extends ChangeNotifier {
             if (_isPolling) {
                 restartPolling();
             }
-        } else if (intervalChanged && _isPolling) {
+        } else if (_isPolling) {
             _restartTimer();
         }
         notifyListeners();

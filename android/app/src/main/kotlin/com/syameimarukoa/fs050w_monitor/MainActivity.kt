@@ -267,10 +267,17 @@ class MainActivity : FlutterActivity() {
 
     private fun safeStartService(intent: Intent) {
         try {
-            startService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ContextCompat.startForegroundService(this, intent)
+            } else {
+                startService(intent)
+            }
         } catch (e: Exception) {
-            // Android 8.0+ Background Service Start Restriction (IllegalStateException) / SecurityException protection
-            e.printStackTrace()
+            try {
+                startService(intent)
+            } catch (e2: Exception) {
+                e2.printStackTrace()
+            }
         }
     }
 }

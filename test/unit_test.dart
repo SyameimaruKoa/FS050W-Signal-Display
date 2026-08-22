@@ -138,6 +138,43 @@ void main() {
 
             expect(nextData.handoverDescription, equals("4G PCI 29 → 57 (B3)"));
         });
+
+        test('PCI 0 or disconnected cell does NOT trigger false handover', () {
+            final validJson = {
+                'mnet_sysmode': 'nsa',
+                'mnet_wnw_pci': '29',
+                'mnet_wnw_band': '3',
+                'mnet_wnw_pspci': '454',
+                'mnet_wnw_psband': '77',
+            };
+            final validData = SignalData.fromApiResponse(validJson);
+
+            // 5G NSA Standby / Disconnected (pspci is "0")
+            final standbyJson = {
+                'mnet_sysmode': 'nsa',
+                'mnet_wnw_pci': '29',
+                'mnet_wnw_band': '3',
+                'mnet_wnw_pspci': '0',
+                'mnet_wnw_psband': '77',
+            };
+            final standbyData = SignalData.fromApiResponse(standbyJson, previousData: validData);
+            expect(standbyData.handoverDescription, isNull, reason: "454 -> 0 should not be a handover");
+
+            // Reconnection from 0 to 454
+            final reconnectData = SignalData.fromApiResponse(validJson, previousData: standbyData);
+            expect(reconnectData.handoverDescription, isNull, reason: "0 -> 454 should not be a handover");
+
+            // Legitimate 5G cell handover from 454 to 723
+            final handover5gJson = {
+                'mnet_sysmode': 'nsa',
+                'mnet_wnw_pci': '29',
+                'mnet_wnw_band': '3',
+                'mnet_wnw_pspci': '723',
+                'mnet_wnw_psband': '77',
+            };
+            final handover5gData = SignalData.fromApiResponse(handover5gJson, previousData: validData);
+            expect(handover5gData.handoverDescription, equals("5G PCI 454 → 723 (n77)"));
+        });
     });
 
     group('Graph & PiP Auto-Scaling Range Tests', () {

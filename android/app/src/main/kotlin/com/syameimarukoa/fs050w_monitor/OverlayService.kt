@@ -3,9 +3,12 @@ package com.syameimarukoa.fs050w_monitor
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -15,10 +18,10 @@ import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.*
-import android.content.res.Resources
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import kotlin.math.max
@@ -101,8 +104,42 @@ class OverlayService : Service() {
         screenHeight = dm.heightPixels
     }
 
+    private fun startForegroundIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "fs050w_overlay_channel"
+            val channelName = "FS050W オーバーレイ & 常時監視"
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (nm.getNotificationChannel(channelId) == null) {
+                val channel = NotificationChannel(
+                    channelId,
+                    channelName,
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "電波オーバーレイおよびイベントLEDランプの常時表示サービス"
+                    setShowBadge(false)
+                }
+                nm.createNotificationChannel(channel)
+            }
+
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("FS050W モニター")
+                .setContentText("オーバーレイ & イベントLEDランプ待機中")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .build()
+
+            try {
+                startForeground(1001, notification)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent == null) return START_NOT_STICKY
+        startForegroundIfNeeded()
 
         when (intent.action) {
             ACTION_START_OVERLAY -> {
@@ -963,12 +1000,24 @@ class OverlayService : Service() {
         super.onTaskRemoved(rootIntent)
         hideFloatingOverlay()
         removeLampOverlay()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
         stopSelf()
     }
 
     override fun onDestroy() {
         hideFloatingOverlay()
         removeLampOverlay()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
         super.onDestroy()
     }
 }

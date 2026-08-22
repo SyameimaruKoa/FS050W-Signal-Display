@@ -87,6 +87,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 data: chartData,
                                                 cutoffTime: cutoffTime,
                                                 totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                intervalSeconds: settings.foregroundIntervalSeconds,
                                                 getY4g: (d) => d.lteRsrp,
                                                 getY5g: (d) => d.nrRsrp,
                                                 isDark: isDark,
@@ -103,6 +104,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 data: chartData,
                                                 cutoffTime: cutoffTime,
                                                 totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                intervalSeconds: settings.foregroundIntervalSeconds,
                                                 getY4g: (d) => d.lteRsrq,
                                                 getY5g: (d) => d.nrRsrq,
                                                 isDark: isDark,
@@ -120,6 +122,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 data: chartData,
                                                 cutoffTime: cutoffTime,
                                                 totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                intervalSeconds: settings.foregroundIntervalSeconds,
                                                 getY4g: (d) => d.lteSinr,
                                                 getY5g: (d) => d.nrSnr,
                                                 isDark: isDark,
@@ -211,6 +214,7 @@ class _GraphScreenState extends State<GraphScreen> {
         required List<SignalData> data,
         required DateTime cutoffTime,
         required double totalSpanSeconds,
+        int intervalSeconds = 1,
         required double? Function(SignalData) getY4g,
         required double? Function(SignalData) getY5g,
         required bool isDark,
@@ -230,12 +234,13 @@ class _GraphScreenState extends State<GraphScreen> {
         List<FlSpot> currentSeg5g = [];
 
         final List<VerticalLine> handoverLines = [];
+        final double maxGapSeconds = max(intervalSeconds * 2.5, 8.0);
 
         for (int i = 0; i < data.length; i++) {
             final sample = data[i];
             final x = sample.timestamp.difference(cutoffTime).inMilliseconds / 1000.0;
 
-            final isTimeGap = i > 0 && sample.timestamp.difference(data[i - 1].timestamp).inSeconds > 4;
+            final isTimeGap = i > 0 && sample.timestamp.difference(data[i - 1].timestamp).inSeconds > maxGapSeconds;
 
             final y4g = getY4g(sample);
             if (isTimeGap || y4g == null || y4g.isNaN || y4g <= -200) {
@@ -313,7 +318,15 @@ class _GraphScreenState extends State<GraphScreen> {
                     isCurved: false,
                     color: const Color(0xFF2196F3),
                     barWidth: 2,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                        show: true,
+                        checkToShowDot: (spot, barData) => barData.spots.length == 1,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                            radius: 3,
+                            color: const Color(0xFF2196F3),
+                            strokeWidth: 0,
+                        ),
+                    ),
                 ),
             );
         }
@@ -324,7 +337,15 @@ class _GraphScreenState extends State<GraphScreen> {
                     isCurved: false,
                     color: const Color(0xFF00ADB5),
                     barWidth: 2,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                        show: true,
+                        checkToShowDot: (spot, barData) => barData.spots.length == 1,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                            radius: 3,
+                            color: const Color(0xFF00ADB5),
+                            strokeWidth: 0,
+                        ),
+                    ),
                 ),
             );
         }

@@ -113,7 +113,8 @@ class SignalData {
                     ? (adjust5gSnr ? (((rawEndcSnr - 1.0) / 2.0) - 23.0) : rawEndcSnr.toDouble())
                     : previousData?.nrSnr);
             nrBand = lteBandVal ?? endcBandVal ?? previousData?.nrBand;
-            nrPci = ltePciVal ?? endcPciVal ?? previousData?.nrPci;
+            final resolvedNrPci = ltePciVal ?? endcPciVal;
+            nrPci = (resolvedNrPci != null && resolvedNrPci > 0) ? resolvedNrPci : (resolvedNrPci == 0 ? null : previousData?.nrPci);
         } else {
             // 4G LTE Anchor / Primary
             lteRsrp = rawLteRsrp != null ? (rawLteRsrp - 141.0) : previousData?.lteRsrp;
@@ -121,7 +122,7 @@ class SignalData {
             lteRsrq = rawLteRsrq != null ? ((rawLteRsrq - 40.0) / 2.0) : previousData?.lteRsrq;
             lteSinr = lteSinrVal ?? previousData?.lteSinr;
             lteBand = lteBandVal ?? previousData?.lteBand;
-            ltePci = ltePciVal ?? previousData?.ltePci;
+            ltePci = (ltePciVal != null && ltePciVal > 0) ? ltePciVal : (ltePciVal == 0 ? null : previousData?.ltePci);
 
             // 5G NR ENDC Secondary
             if (rawEndcRsrp != null && rawEndcRsrp > 0) {
@@ -145,7 +146,7 @@ class SignalData {
             }
 
             nrBand = endcBandVal ?? previousData?.nrBand;
-            nrPci = endcPciVal ?? previousData?.nrPci;
+            nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? null : previousData?.nrPci);
         }
 
         // Battery
@@ -171,18 +172,27 @@ class SignalData {
             mode = Fs050wConnectionMode.lte;
         }
 
-        // Check Handover (PCI change)
+        // Check Handover (PCI change: both previous and current must be valid > 0)
         String? handover;
         if (isSa) {
-            if (previousData != null && nrPci != null && previousData.nrPci != null && nrPci != previousData.nrPci) {
+            if (previousData != null &&
+                nrPci != null && nrPci > 0 &&
+                previousData.nrPci != null && previousData.nrPci! > 0 &&
+                nrPci != previousData.nrPci) {
                 final bandStr = nrBand != null ? "n$nrBand" : "";
                 handover = "5G PCI ${previousData.nrPci} → $nrPci ($bandStr)";
             }
         } else {
-            if (previousData != null && ltePci != null && previousData.ltePci != null && ltePci != previousData.ltePci) {
+            if (previousData != null &&
+                ltePci != null && ltePci > 0 &&
+                previousData.ltePci != null && previousData.ltePci! > 0 &&
+                ltePci != previousData.ltePci) {
                 final bandStr = lteBand != null ? "B$lteBand" : "";
                 handover = "4G PCI ${previousData.ltePci} → $ltePci ($bandStr)";
-            } else if (previousData != null && nrPci != null && previousData.nrPci != null && nrPci != previousData.nrPci) {
+            } else if (previousData != null &&
+                nrPci != null && nrPci > 0 &&
+                previousData.nrPci != null && previousData.nrPci! > 0 &&
+                nrPci != previousData.nrPci) {
                 final bandStr = nrBand != null ? "n$nrBand" : "";
                 handover = "5G PCI ${previousData.nrPci} → $nrPci ($bandStr)";
             }
