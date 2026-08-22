@@ -15,6 +15,7 @@ import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.*
+import android.content.res.Resources
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -95,7 +96,7 @@ class OverlayService : Service() {
     }
 
     private fun updateScreenDimensions() {
-        val dm = resources.displayMetrics
+        val dm = Resources.getSystem().displayMetrics
         screenWidth = dm.widthPixels
         screenHeight = dm.heightPixels
     }
@@ -341,7 +342,7 @@ class OverlayService : Service() {
         return android.util.TypedValue.applyDimension(
             android.util.TypedValue.COMPLEX_UNIT_DIP,
             dp,
-            resources.displayMetrics
+            Resources.getSystem().displayMetrics
         ).toInt()
     }
 
