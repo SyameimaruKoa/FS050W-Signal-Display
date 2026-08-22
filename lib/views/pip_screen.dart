@@ -536,8 +536,8 @@ class PipMiniChartPainter extends CustomPainter {
             ? history.sublist(history.length - 30)
             : history;
 
-        final double minVal;
-        final double maxVal;
+        double minVal;
+        double maxVal;
 
         if (graphType == 'rsrp') {
             minVal = -140.0;
@@ -549,6 +549,38 @@ class PipMiniChartPainter extends CustomPainter {
             // rsrq
             minVal = -25.0;
             maxVal = -3.0;
+        }
+
+        // Auto scale if data points exceed default bounds
+        double? dataMin;
+        double? dataMax;
+        for (final item in dataPoints) {
+            double? v5;
+            double? v4;
+            if (graphType == 'rsrp') {
+                v5 = item.nrRsrp;
+                v4 = item.lteRsrp;
+            } else if (graphType == 'snr') {
+                v5 = item.nrSnr;
+                v4 = item.lteSinr;
+            } else {
+                v5 = item.nrRsrq;
+                v4 = item.lteRsrq;
+            }
+            if (v5 != null && !v5.isNaN && v5 > -200) {
+                if (dataMin == null || v5 < dataMin) dataMin = v5;
+                if (dataMax == null || v5 > dataMax) dataMax = v5;
+            }
+            if (v4 != null && !v4.isNaN && v4 > -200) {
+                if (dataMin == null || v4 < dataMin) dataMin = v4;
+                if (dataMax == null || v4 > dataMax) dataMax = v4;
+            }
+        }
+        if (dataMin != null && dataMin < minVal) {
+            minVal = dataMin - 2.0;
+        }
+        if (dataMax != null && dataMax > maxVal) {
+            maxVal = dataMax + 2.0;
         }
 
         final p5g = Paint()

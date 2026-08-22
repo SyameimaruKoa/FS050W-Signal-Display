@@ -898,9 +898,9 @@ class OverlayService : Service() {
         val container = lampContainer ?: return
         container.removeAllViews()
 
-        // Lamp Shape: bar (画面幅半分の3dpスリムバー) or dot (8dp インジケータサイズ真円)
+        // Lamp Shape: bar (画面幅1/4の3dpスリムバー) or dot (8dp インジケータサイズ真円)
         val lampView = View(this).apply {
-            val w = if (shape == "dot") dpToPx(8f) else (screenWidth / 2)
+            val w = if (shape == "dot") dpToPx(8f) else (screenWidth / 4)
             val h = if (shape == "dot") dpToPx(8f) else dpToPx(3f)
             layoutParams = FrameLayout.LayoutParams(w, h)
             val drawable = GradientDrawable().apply {

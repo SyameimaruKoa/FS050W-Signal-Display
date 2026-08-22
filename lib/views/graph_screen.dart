@@ -275,6 +275,35 @@ class _GraphScreenState extends State<GraphScreen> {
 
         final double maxX = max(totalSpanSeconds, 10.0);
 
+        // Auto scale if data points exceed default minY / maxY
+        double effectiveMinY = minY;
+        double effectiveMaxY = maxY;
+
+        double? dataMin;
+        double? dataMax;
+
+        for (final seg in segments4g) {
+            for (final spot in seg) {
+                if (dataMin == null || spot.y < dataMin) dataMin = spot.y;
+                if (dataMax == null || spot.y > dataMax) dataMax = spot.y;
+            }
+        }
+        for (final seg in segments5g) {
+            for (final spot in seg) {
+                if (dataMin == null || spot.y < dataMin) dataMin = spot.y;
+                if (dataMax == null || spot.y > dataMax) dataMax = spot.y;
+            }
+        }
+
+        if (dataMin != null && dataMin < minY) {
+            final diff = minY - dataMin;
+            effectiveMinY = minY - (diff + 2.0).ceilToDouble();
+        }
+        if (dataMax != null && dataMax > maxY) {
+            final diff = dataMax - maxY;
+            effectiveMaxY = maxY + (diff + 2.0).ceilToDouble();
+        }
+
         // 各セグメントを LineChartBarData に変換
         final List<LineChartBarData> lineBarsData = [];
         for (final seg in segments4g) {
@@ -357,8 +386,8 @@ class _GraphScreenState extends State<GraphScreen> {
                             height: chartHeight,
                             child: LineChart(
                                 LineChartData(
-                                    minY: minY,
-                                    maxY: maxY,
+                                    minY: effectiveMinY,
+                                    maxY: effectiveMaxY,
                                     minX: 0,
                                     maxX: maxX,
                                     clipData: const FlClipData.all(),

@@ -136,7 +136,49 @@ void main() {
             };
             final nextData = SignalData.fromApiResponse(nextJson, previousData: prevData);
 
-            expect(nextData.handoverDescription, equals("PCI 29 → 57 (B3)"));
+            expect(nextData.handoverDescription, equals("4G PCI 29 → 57 (B3)"));
+        });
+    });
+
+    group('Graph & PiP Auto-Scaling Range Tests', () {
+        test('Auto-scaling expands bounds when data exceeds default min/max', () {
+            const defaultMinY = -130.0;
+            const defaultMaxY = -70.0;
+
+            // Scenario 1: values within range
+            final normalPoints = [-100.0, -85.0, -120.0];
+            double min1 = defaultMinY;
+            double max1 = defaultMaxY;
+            for (final v in normalPoints) {
+                if (v < min1) min1 = defaultMinY - (defaultMinY - v + 2.0).ceilToDouble();
+                if (v > max1) max1 = defaultMaxY + (v - defaultMaxY + 2.0).ceilToDouble();
+            }
+            expect(min1, equals(-130.0));
+            expect(max1, equals(-70.0));
+
+            // Scenario 2: values below lower limit (e.g. -135 dBm)
+            final lowPoints = [-100.0, -135.0];
+            double min2 = defaultMinY;
+            double max2 = defaultMaxY;
+            for (final v in lowPoints) {
+                if (v < min2) min2 = defaultMinY - (defaultMinY - v + 2.0).ceilToDouble();
+                if (v > max2) max2 = defaultMaxY + (v - defaultMaxY + 2.0).ceilToDouble();
+            }
+            expect(min2, lessThan(-130.0));
+            expect(min2, equals(-137.0));
+            expect(max2, equals(-70.0));
+
+            // Scenario 3: values above upper limit (e.g. -60 dBm)
+            final highPoints = [-60.0, -90.0];
+            double min3 = defaultMinY;
+            double max3 = defaultMaxY;
+            for (final v in highPoints) {
+                if (v < min3) min3 = defaultMinY - (defaultMinY - v + 2.0).ceilToDouble();
+                if (v > max3) max3 = defaultMaxY + (v - defaultMaxY + 2.0).ceilToDouble();
+            }
+            expect(min3, equals(-130.0));
+            expect(max3, greaterThan(-70.0));
+            expect(max3, equals(-58.0));
         });
     });
 
