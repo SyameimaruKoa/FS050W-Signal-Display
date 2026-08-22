@@ -11,9 +11,12 @@
 
 ## 📸 スクリーンショット
 
-| リアルタイムダッシュボード | 同期タイムシリーズグラフ | HUD常時表示モード (OLED省電力) | 各種設定 & 自動保存 |
-| :---: | :---: | :---: | :---: |
-| ![Dashboard](assets/screenshots/dashboard.png) | ![Sync Graph](assets/screenshots/sync_graph.png) | ![HUD Mode](assets/screenshots/hud_mode.png) | ![Settings](assets/screenshots/settings.png) |
+| 機能 | スクリーンショット |
+| :---:|:---:|
+| **ダッシュボード** | <img src="assets/screenshots/dashboard.png" width="220" /> |
+| **同期グラフ** | <img src="assets/screenshots/sync_graph.png" width="220" /> |
+| **HUD / PiP (小窓)** | <img src="assets/screenshots/hud_mode.png" width="220" /> |
+| **設定・その他** | <img src="assets/screenshots/settings.png" width="220" /> |
 
 ---
 
@@ -60,7 +63,9 @@
 
 ## 🛠 動作環境
 
-- **対応OS**: Android 8.0 以上 (API レベル 26 以上)
+**バージョン:** v1.0.0 (Release)  
+**ターゲットOS:** Android 8.0 以上 (API 26+)  
+**対応アーキテクチャ:** arm64-v8a, armeabi-v7a, x86_64
   - Android 14 / 15 / 16 (Samsung One UI, Google Pixel, AOSP) 動作確認済み
 - **対応ルーター**: 富士ソフト +F FS050W (Wi-Fi接続)
 - **開発フレームワーク**: Flutter 3.0+ / Dart 3.0+
@@ -113,7 +118,12 @@ flutter build apk --release --split-per-abi
 
 ---
 
-## 📝 リリースノート (Changelog)
+## 📝 更新履歴
+
+### v1.0.0 (2026-08-22)
+- **正式版リリース（v1.0.0）**: 実機・エミュレーターでの徹底的な動作デバッグをクリアし、安定版としてリリース。
+- **PiPモード時のレイアウト崩れを修正**: Android標準的のPicture-in-Picture起動時に、システムの影響でフローティングオーバーレイが極小サイズに歪む不具合を修正。(`Resources.getSystem().displayMetrics` を使用して絶対的な解像度ベースでの描画に対応)
+- **アーキテクチャ別（ABI別）APKに対応**: ファイルサイズを大幅に削減。
 
 ### v0.1.0 (2026-08-22)
 - **HUD（常時表示モード）のレイアウト改善**: 文字の重なりを防ぐため、レイアウトを最適化し、消費電力を抑えたミニマルなデザインに変更。
