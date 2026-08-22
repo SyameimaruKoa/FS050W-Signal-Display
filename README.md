@@ -88,9 +88,17 @@ flutter run
 
 ### 4. リリースAPKのビルド
 ```bash
+# 全アーキテクチャ統合ユニバーサル版
 flutter build apk --release
+
+# アーキテクチャ別（ABI別）分割ビルド（推奨: ファイルサイズ大幅削減）
+flutter build apk --release --split-per-abi
 ```
-生成されたAPKファイルは `build/app/outputs/flutter-apk/app-release.apk` に出力されます。
+生成されたAPKファイルは `build/app/outputs/flutter-apk/` に出力されます：
+- `app-arm64-v8a-release.apk`: 最近の一般的な64bit Androidスマートフォン向け（推奨）
+- `app-armeabi-v7a-release.apk`: 古い32bit Android端末向け
+- `app-x86_64-release.apk`: エミュレーター / PC向け
+- `app-release.apk`: 全アーキテクチャ対応ユニバーサル版
 
 ---
 
