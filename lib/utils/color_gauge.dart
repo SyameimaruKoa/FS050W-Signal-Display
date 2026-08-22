@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 enum SignalRatingLevel {
@@ -10,6 +11,20 @@ enum SignalRatingLevel {
     unknown,     // 未取得
 }
 
+class MetricThreshold {
+    final double value;
+    final SignalRatingLevel level;
+    final Color color;
+    final String label;
+
+    const MetricThreshold({
+        required this.value,
+        required this.level,
+        required this.color,
+        required this.label,
+    });
+}
+
 class ColorGauge {
     static const Color colorExcellent = Color(0xFF2196F3); // 青 (極めて優秀)
     static const Color colorGood = Color(0xFF4CAF50);      // 緑 (良好)
@@ -18,6 +33,39 @@ class ColorGauge {
     static const Color colorVeryWeak = Color(0xFFF44336);  // 赤 (極めて微弱)
     static const Color colorCritical = Color(0xFF9C27B0);  // 深紫 (限界 / 圏外寸前)
     static const Color colorUnknown = Color(0xFF757575);   // グレー (未取得)
+
+    // 実運用に即した電波バー表示範囲 (下限・上限のデッドスペースを解消)
+    static const double rsrpMin = -120.0;
+    static const double rsrpMax = -70.0;
+    static const double rsrqMin = -22.0;
+    static const double rsrqMax = -8.0;
+    static const double sinrMin = -6.0;
+    static const double sinrMax = 24.0;
+
+    // 各指標の色替え閾値定義 (同期グラフ等の基準線用)
+    static const List<MetricThreshold> rsrpThresholds = [
+        MetricThreshold(value: -80.0, level: SignalRatingLevel.excellent, color: colorExcellent, label: "極めて優秀"),
+        MetricThreshold(value: -90.0, level: SignalRatingLevel.good, color: colorGood, label: "良好"),
+        MetricThreshold(value: -100.0, level: SignalRatingLevel.moderate, color: colorModerate, label: "普通"),
+        MetricThreshold(value: -110.0, level: SignalRatingLevel.weak, color: colorWeak, label: "微弱"),
+        MetricThreshold(value: -120.0, level: SignalRatingLevel.veryWeak, color: colorVeryWeak, label: "極めて微弱"),
+    ];
+
+    static const List<MetricThreshold> rsrqThresholds = [
+        MetricThreshold(value: -10.0, level: SignalRatingLevel.excellent, color: colorExcellent, label: "極めて優秀"),
+        MetricThreshold(value: -15.0, level: SignalRatingLevel.good, color: colorGood, label: "良好"),
+        MetricThreshold(value: -18.0, level: SignalRatingLevel.moderate, color: colorModerate, label: "普通"),
+        MetricThreshold(value: -20.0, level: SignalRatingLevel.weak, color: colorWeak, label: "微弱"),
+        MetricThreshold(value: -22.0, level: SignalRatingLevel.veryWeak, color: colorVeryWeak, label: "極めて微弱"),
+    ];
+
+    static const List<MetricThreshold> sinrThresholds = [
+        MetricThreshold(value: 20.0, level: SignalRatingLevel.excellent, color: colorExcellent, label: "極めて優秀"),
+        MetricThreshold(value: 13.0, level: SignalRatingLevel.good, color: colorGood, label: "良好"),
+        MetricThreshold(value: 0.0, level: SignalRatingLevel.moderate, color: colorModerate, label: "普通"),
+        MetricThreshold(value: -3.0, level: SignalRatingLevel.weak, color: colorWeak, label: "微弱"),
+        MetricThreshold(value: -6.0, level: SignalRatingLevel.veryWeak, color: colorVeryWeak, label: "極めて微弱"),
+    ];
 
     static SignalRatingLevel rateRsrp(double? rsrp) {
         if (rsrp == null) return SignalRatingLevel.unknown;
@@ -68,10 +116,32 @@ class ColorGauge {
         }
     }
 
+    /// イージング曲線の適用
+    static double applyCurve(double ratio, String curveType) {
+        final r = ratio.clamp(0.0, 1.0);
+        switch (curveType) {
+            case "easeOut":
+                // 弱電界側の変化を敏感に表現 (Ease-out Quad)
+                return 1.0 - math.pow(1.0 - r, 2.0).toDouble();
+            case "easeIn":
+                // 強電界側の変化を敏感に表現 (Ease-in Quad)
+                return math.pow(r, 2.0).toDouble();
+            case "easeInOut":
+                // 中間域の変化を強調 (Ease-in-out Quad)
+                return r < 0.5
+                    ? 2.0 * r * r
+                    : 1.0 - math.pow(-2.0 * r + 2.0, 2.0) / 2.0;
+            case "linear":
+            default:
+                return r;
+        }
+    }
+
     /// シームレスカラー (グラデーション補間)
     /// ratio: 0.0 (紫) -> 0.2 (赤) -> 0.4 (橙) -> 0.6 (黄緑) -> 0.8 (緑) -> 1.0 (青)
-    static Color getSmoothColor(double ratio) {
-        final r = ratio.clamp(0.0, 1.0);
+    static Color getSmoothColor(double ratio, {String curve = "linear"}) {
+        final curvedRatio = applyCurve(ratio, curve);
+        final r = curvedRatio.clamp(0.0, 1.0);
         if (r < 0.20) {
             final t = r / 0.20;
             return Color.lerp(colorCritical, colorVeryWeak, t)!;
@@ -88,6 +158,18 @@ class ColorGauge {
             final t = (r - 0.80) / 0.20;
             return Color.lerp(colorGood, colorExcellent, t)!;
         }
+    }
+
+    /// 連続値から正規化されたプログレス比率を計算 (イージング対応)
+    static double calculateNormalizedRatio(
+        double? val,
+        double min,
+        double max, {
+        String curve = "linear",
+    }) {
+        if (val == null || val.isNaN) return 0.0;
+        final rawRatio = ((val - min) / (max - min)).clamp(0.0, 1.0);
+        return applyCurve(rawRatio, curve);
     }
 
     static String getLabel(SignalRatingLevel level) {

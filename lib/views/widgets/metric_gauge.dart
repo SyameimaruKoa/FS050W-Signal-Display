@@ -9,6 +9,7 @@ class MetricGauge extends StatelessWidget {
     final SignalRatingLevel level;
     final String? annotation;
     final bool smoothGaugeColor;
+    final String smoothGaugeCurve;
     final double? minVal;
     final double? maxVal;
 
@@ -20,6 +21,7 @@ class MetricGauge extends StatelessWidget {
         required this.level,
         this.annotation,
         this.smoothGaugeColor = false,
+        this.smoothGaugeCurve = "easeOut",
         this.minVal,
         this.maxVal,
     });
@@ -28,11 +30,15 @@ class MetricGauge extends StatelessWidget {
     Widget build(BuildContext context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         Color color = ColorGauge.getColor(level);
-        if (smoothGaugeColor && value != null && minVal != null && maxVal != null) {
-            final ratio = ((value! - minVal!) / (maxVal! - minVal!)).clamp(0.0, 1.0);
-            color = ColorGauge.getSmoothColor(ratio);
+        double progress = ColorGauge.getProgress(level);
+
+        if (value != null && minVal != null && maxVal != null) {
+            final rawRatio = ((value! - minVal!) / (maxVal! - minVal!)).clamp(0.0, 1.0);
+            progress = ColorGauge.applyCurve(rawRatio, smoothGaugeCurve);
+            if (smoothGaugeColor) {
+                color = ColorGauge.getSmoothColor(rawRatio, curve: smoothGaugeCurve);
+            }
         }
-        final progress = ColorGauge.getProgress(level);
         final levelText = ColorGauge.getLabel(level);
 
         final valueText = value != null

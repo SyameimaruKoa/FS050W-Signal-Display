@@ -61,6 +61,7 @@ class OverlayService {
                 'modeText': modeText,
                 'generationNotation': notation,
                 'smoothGaugeColor': settings.smoothGaugeColor,
+                'smoothGaugeCurve': settings.smoothGaugeCurve,
                 'operatorName': signal?.operatorName ?? '--',
                 'lteBand': signal?.lteBand != null ? 'B${signal!.lteBand}' : '--',
                 'ltePci': signal?.ltePci != null ? '${signal!.ltePci}' : '--',
@@ -79,6 +80,7 @@ class OverlayService {
                 'overlayStyle': settings.overlayStyle,
                 'overlayOpacity': settings.overlayOpacity,
                 'overlayScale': settings.overlayScale,
+                'smoothGaugeCurve': settings.smoothGaugeCurve,
             });
         } catch (_) {}
     }

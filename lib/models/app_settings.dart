@@ -54,6 +54,7 @@ class AppSettings {
     bool adjust5gSnr;                   // 5G SNR値の補正 (-23dB) を適用するか
     String generationNotation;          // "4g_5g" (4G / 5G / e4G), "lte_nr" (LTE / NR / eLTE)
     bool smoothGaugeColor;              // シームレスゲージカラー (グラデーション変化)
+    String smoothGaugeCurve;            // "easeOut", "easeIn", "easeInOut", "linear"
 
     // 7. レガシー通知設定 (非推奨/互換性保持用)
     bool foregroundNotificationEnabled;
@@ -87,6 +88,7 @@ class AppSettings {
         this.adjust5gSnr = true,
         this.generationNotation = "4g_5g",
         this.smoothGaugeColor = false,
+        this.smoothGaugeCurve = "easeOut",
         this.foregroundNotificationEnabled = false,
         this.notificationStyle = NotificationDetailStyle.detailed,
     });
@@ -120,6 +122,7 @@ class AppSettings {
             'adjust5gSnr': adjust5gSnr,
             'generationNotation': generationNotation,
             'smoothGaugeColor': smoothGaugeColor,
+            'smoothGaugeCurve': smoothGaugeCurve,
             'foregroundNotificationEnabled': foregroundNotificationEnabled,
             'notificationStyle': notificationStyle.index,
         };
@@ -154,6 +157,7 @@ class AppSettings {
             adjust5gSnr: json['adjust5gSnr'] ?? true,
             generationNotation: json['generationNotation'] ?? "4g_5g",
             smoothGaugeColor: json['smoothGaugeColor'] ?? false,
+            smoothGaugeCurve: json['smoothGaugeCurve'] ?? "easeOut",
             foregroundNotificationEnabled: json['foregroundNotificationEnabled'] ?? false,
             notificationStyle: NotificationDetailStyle.values[json['notificationStyle'] ?? 0],
         );

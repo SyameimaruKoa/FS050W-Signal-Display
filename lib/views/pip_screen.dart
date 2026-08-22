@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
+import '../utils/color_gauge.dart';
 import 'widgets/intensity_bar_metric.dart';
 
 class PipScreen extends StatelessWidget {
@@ -123,7 +124,8 @@ class PipScreen extends StatelessWidget {
     ) {
         final notation = apiService.settings.generationNotation;
         final smooth = apiService.settings.smoothGaugeColor;
-        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth, height);
+        final curve = apiService.settings.smoothGaugeCurve;
+        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth, curve, height);
 
         if (!showGraph) {
             return signalSection;
@@ -146,6 +148,7 @@ class PipScreen extends StatelessWidget {
         String aspectRatioStr,
         String notation,
         bool smoothGaugeColor,
+        String smoothGaugeCurve,
         double totalHeight,
     ) {
         final is5gActive = signal?.nrRsrp != null && signal!.nrRsrp! < 0;
@@ -154,9 +157,9 @@ class PipScreen extends StatelessWidget {
             case '1:1':
                 // 1:1 は 4G/5G の片方のみ大画面表示 (5G 接続中は 5G、圏外時は 4G)
                 if (is5gActive) {
-                    return _build5gSection(signal, notation, smoothGaugeColor, isSingleMode: true);
+                    return _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true);
                 } else {
-                    return _build4gSection(signal, notation, smoothGaugeColor, isSingleMode: true);
+                    return _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true);
                 }
             case '16:9':
             case '4:3':
@@ -164,9 +167,9 @@ class PipScreen extends StatelessWidget {
                 return Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor)),
+                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
                         const SizedBox(width: 4.0),
-                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor)),
+                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
                     ],
                 );
             case '9:16':
@@ -176,9 +179,9 @@ class PipScreen extends StatelessWidget {
                 return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor)),
+                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
                         const SizedBox(height: 3.0),
-                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor)),
+                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
                     ],
                 );
         }
@@ -187,7 +190,8 @@ class PipScreen extends StatelessWidget {
     Widget _build5gSection(
         SignalData? signal,
         String notation,
-        bool smoothGaugeColor, {
+        bool smoothGaugeColor,
+        String smoothGaugeCurve, {
         bool isSingleMode = false,
     }) {
         final isSub6 = signal?.connectionMode == Fs050wConnectionMode.nr5gSub6;
@@ -236,34 +240,37 @@ class PipScreen extends StatelessWidget {
                         label: "RSRP",
                         value: signal?.nrRsrp,
                         unit: "dBm",
-                        minVal: -140.0,
-                        maxVal: -50.0,
+                        minVal: ColorGauge.rsrpMin,
+                        maxVal: ColorGauge.rsrpMax,
                         barColor: const Color(0xFF00ADB5),
                         height: barH,
                         fontSize: fontSz,
                         smoothGaugeColor: smoothGaugeColor,
+                        smoothGaugeCurve: smoothGaugeCurve,
                     ),
                     IntensityBarMetric(
                         label: "RSRQ",
                         value: signal?.nrRsrq,
                         unit: "dB",
-                        minVal: -25.0,
-                        maxVal: -3.0,
+                        minVal: ColorGauge.rsrqMin,
+                        maxVal: ColorGauge.rsrqMax,
                         barColor: const Color(0xFF00ADB5),
                         height: barH,
                         fontSize: fontSz,
                         smoothGaugeColor: smoothGaugeColor,
+                        smoothGaugeCurve: smoothGaugeCurve,
                     ),
                     IntensityBarMetric(
                         label: "SNR",
                         value: signal?.nrSnr,
                         unit: "dB",
-                        minVal: -10.0,
-                        maxVal: 30.0,
+                        minVal: ColorGauge.sinrMin,
+                        maxVal: ColorGauge.sinrMax,
                         barColor: const Color(0xFF00ADB5),
                         height: barH,
                         fontSize: fontSz,
                         smoothGaugeColor: smoothGaugeColor,
+                        smoothGaugeCurve: smoothGaugeCurve,
                     ),
                 ],
             ),
@@ -273,7 +280,8 @@ class PipScreen extends StatelessWidget {
     Widget _build4gSection(
         SignalData? signal,
         String notation,
-        bool smoothGaugeColor, {
+        bool smoothGaugeColor,
+        String smoothGaugeCurve, {
         bool isSingleMode = false,
     }) {
         final genName = ConnectionModeHelper.getGenerationName(false, notation: notation);
@@ -320,34 +328,37 @@ class PipScreen extends StatelessWidget {
                         label: "RSRP",
                         value: signal?.lteRsrp,
                         unit: "dBm",
-                        minVal: -140.0,
-                        maxVal: -50.0,
+                        minVal: ColorGauge.rsrpMin,
+                        maxVal: ColorGauge.rsrpMax,
                         barColor: const Color(0xFF2196F3),
                         height: barH,
                         fontSize: fontSz,
                         smoothGaugeColor: smoothGaugeColor,
+                        smoothGaugeCurve: smoothGaugeCurve,
                     ),
                     IntensityBarMetric(
                         label: "RSRQ",
                         value: signal?.lteRsrq,
                         unit: "dB",
-                        minVal: -25.0,
-                        maxVal: -3.0,
+                        minVal: ColorGauge.rsrqMin,
+                        maxVal: ColorGauge.rsrqMax,
                         barColor: const Color(0xFF2196F3),
                         height: barH,
                         fontSize: fontSz,
                         smoothGaugeColor: smoothGaugeColor,
+                        smoothGaugeCurve: smoothGaugeCurve,
                     ),
                     IntensityBarMetric(
                         label: "SINR",
                         value: signal?.lteSinr,
                         unit: "dB",
-                        minVal: -10.0,
-                        maxVal: 30.0,
+                        minVal: ColorGauge.sinrMin,
+                        maxVal: ColorGauge.sinrMax,
                         barColor: const Color(0xFF2196F3),
                         height: barH,
                         fontSize: fontSz,
                         smoothGaugeColor: smoothGaugeColor,
+                        smoothGaugeCurve: smoothGaugeCurve,
                     ),
                 ],
             ),

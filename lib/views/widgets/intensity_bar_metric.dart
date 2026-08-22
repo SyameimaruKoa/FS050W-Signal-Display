@@ -12,6 +12,7 @@ class IntensityBarMetric extends StatelessWidget {
     final double height;
     final double fontSize;
     final bool smoothGaugeColor;
+    final String smoothGaugeCurve;
 
     const IntensityBarMetric({
         super.key,
@@ -24,18 +25,28 @@ class IntensityBarMetric extends StatelessWidget {
         this.height = 20.0,
         this.fontSize = 11.0,
         this.smoothGaugeColor = false,
+        this.smoothGaugeCurve = "easeOut",
     });
 
-    static double calculateNormalizedRatio(double? val, double min, double max) {
+    static double calculateNormalizedRatio(
+        double? val,
+        double min,
+        double max, {
+        String curve = "linear",
+    }) {
         if (val == null || val.isNaN) return 0.0;
-        return ((val - min) / (max - min)).clamp(0.0, 1.0);
+        final raw = ((val - min) / (max - min)).clamp(0.0, 1.0);
+        return ColorGauge.applyCurve(raw, curve);
     }
 
     @override
     Widget build(BuildContext context) {
-        final double ratio = calculateNormalizedRatio(value, minVal, maxVal);
+        final double rawRatio = (value != null && !value!.isNaN)
+            ? ((value! - minVal) / (maxVal - minVal)).clamp(0.0, 1.0)
+            : 0.0;
+        final double ratio = ColorGauge.applyCurve(rawRatio, smoothGaugeCurve);
         final Color activeColor = smoothGaugeColor
-            ? (value != null && !value!.isNaN ? ColorGauge.getSmoothColor(ratio) : barColor)
+            ? (value != null && !value!.isNaN ? ColorGauge.getSmoothColor(rawRatio, curve: smoothGaugeCurve) : barColor)
             : barColor;
         final String textValue = (value != null && !value!.isNaN)
             ? "${value!.toStringAsFixed(1)} $unit"

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
+import '../utils/color_gauge.dart';
 
 class GraphScreen extends StatefulWidget {
     const GraphScreen({super.key});
@@ -81,8 +82,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                             _buildTierChart(
                                                 title: "1. RSRP (電波受信強度)",
                                                 unit: "dBm",
-                                                minY: -140,
-                                                maxY: -50,
+                                                minY: -130,
+                                                maxY: -70,
                                                 cardHeight: cardHeight,
                                                 data: chartData,
                                                 cutoffTime: cutoffTime,
@@ -91,13 +92,14 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 getY5g: (d) => d.nrRsrp,
                                                 isDark: isDark,
                                                 notation: notation,
+                                                thresholds: ColorGauge.rsrpThresholds,
                                             ),
                                             const SizedBox(height: 6),
                                             _buildTierChart(
                                                 title: "2. RSRQ (受信信号品質)",
                                                 unit: "dB",
-                                                minY: -25,
-                                                maxY: -3,
+                                                minY: -24,
+                                                maxY: -8,
                                                 cardHeight: cardHeight,
                                                 data: chartData,
                                                 cutoffTime: cutoffTime,
@@ -106,13 +108,14 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 getY5g: (d) => d.nrRsrq,
                                                 isDark: isDark,
                                                 notation: notation,
+                                                thresholds: ColorGauge.rsrqThresholds,
                                             ),
                                             const SizedBox(height: 6),
                                             _buildTierChart(
                                                 title: "3. SINR / SNR (信号対雑音比)",
                                                 unit: "dB",
-                                                minY: -15,
-                                                maxY: 35,
+                                                minY: -10,
+                                                maxY: 25,
                                                 cardHeight: cardHeight,
                                                 hasZeroLine: true,
                                                 data: chartData,
@@ -122,6 +125,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 getY5g: (d) => d.nrSnr,
                                                 isDark: isDark,
                                                 notation: notation,
+                                                thresholds: ColorGauge.sinrThresholds,
                                             ),
                                         ],
                                     );
@@ -212,6 +216,7 @@ class _GraphScreenState extends State<GraphScreen> {
         required double? Function(SignalData) getY5g,
         required bool isDark,
         required String notation,
+        List<MetricThreshold>? thresholds,
         bool hasZeroLine = false,
     }) {
         if (data.isEmpty) return const SizedBox.shrink();
@@ -296,6 +301,21 @@ class _GraphScreenState extends State<GraphScreen> {
             );
         }
 
+        // 閾値に応じた色付きの水平ガイドライン
+        final List<HorizontalLine> horizontalThresholdLines = [];
+        if (thresholds != null) {
+            for (final t in thresholds) {
+                horizontalThresholdLines.add(
+                    HorizontalLine(
+                        y: t.value,
+                        color: t.color.withOpacity(0.45),
+                        strokeWidth: 1.0,
+                        dashArray: [4, 4],
+                    ),
+                );
+            }
+        }
+
         // チャート本体の高さはカード高さからヘッダー・パディング分を引いた値
         final chartHeight = max(60.0, cardHeight - 48.0);
 
@@ -374,6 +394,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                     gridData: FlGridData(
                                         show: true,
                                         drawVerticalLine: true,
+                                        drawHorizontalLine: thresholds == null,
                                         getDrawingHorizontalLine: (val) {
                                             if (hasZeroLine && val == 0) {
                                                 return FlLine(
@@ -396,13 +417,39 @@ class _GraphScreenState extends State<GraphScreen> {
                                     ),
                                     extraLinesData: ExtraLinesData(
                                         verticalLines: handoverLines,
+                                        horizontalLines: horizontalThresholdLines,
                                     ),
                                     titlesData: FlTitlesData(
                                         leftTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                                 showTitles: true,
-                                                reservedSize: 38,
+                                                reservedSize: 32,
+                                                interval: 1.0,
                                                 getTitlesWidget: (value, meta) {
+                                                    if (thresholds != null) {
+                                                        MetricThreshold? matched;
+                                                        for (final t in thresholds) {
+                                                            if ((t.value - value).abs() < 0.1) {
+                                                                matched = t;
+                                                                break;
+                                                            }
+                                                        }
+                                                        if (matched != null) {
+                                                            return Container(
+                                                                alignment: Alignment.centerRight,
+                                                                padding: const EdgeInsets.only(right: 3),
+                                                                child: Text(
+                                                                    "${matched.value.toInt()}",
+                                                                    style: GoogleFonts.notoSansMono(
+                                                                        fontSize: 9.5,
+                                                                        fontWeight: FontWeight.bold,
+                                                                        color: matched.color,
+                                                                    ),
+                                                                ),
+                                                            );
+                                                        }
+                                                        return const SizedBox.shrink();
+                                                    }
                                                     return Container(
                                                         alignment: Alignment.centerRight,
                                                         padding: const EdgeInsets.only(right: 2),

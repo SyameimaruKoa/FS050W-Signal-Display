@@ -94,6 +94,7 @@ class MainActivity : FlutterActivity() {
                         val opacity = call.argument<Double>("overlayOpacity")?.toFloat() ?: 0.85f
                         val scale = call.argument<Double>("overlayScale")?.toFloat() ?: 1.0f
                         val ratio = call.argument<String>("pipAspectRatio") ?: "16:9"
+                        val curve = call.argument<String>("smoothGaugeCurve") ?: "easeOut"
 
                         val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
                             action = OverlayService.ACTION_START_OVERLAY
@@ -101,15 +102,16 @@ class MainActivity : FlutterActivity() {
                             putExtra("overlayOpacity", opacity)
                             putExtra("overlayScale", scale)
                             putExtra("pipAspectRatio", ratio)
+                            putExtra("smoothGaugeCurve", curve)
                         }
-                        startService(intent)
+                        safeStartService(intent)
                         result.success(true)
                     }
                     "stopOverlay" -> {
                         val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
                             action = OverlayService.ACTION_STOP_OVERLAY
                         }
-                        startService(intent)
+                        safeStartService(intent)
                         result.success(true)
                     }
                     "updateOverlayData" -> {
@@ -118,6 +120,7 @@ class MainActivity : FlutterActivity() {
                         val opacity = call.argument<Double>("overlayOpacity")?.toFloat()
                         val scale = call.argument<Double>("overlayScale")?.toFloat()
                         val ratio = call.argument<String>("pipAspectRatio")
+                        val curve = call.argument<String>("smoothGaugeCurve")
 
                         val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
                             action = OverlayService.ACTION_UPDATE_DATA
@@ -126,8 +129,9 @@ class MainActivity : FlutterActivity() {
                             if (opacity != null) putExtra("overlayOpacity", opacity)
                             if (scale != null) putExtra("overlayScale", scale)
                             if (ratio != null) putExtra("pipAspectRatio", ratio)
+                            if (curve != null) putExtra("smoothGaugeCurve", curve)
                         }
-                        startService(intent)
+                        safeStartService(intent)
                         result.success(true)
                     }
                     "triggerLamp" -> {
@@ -143,7 +147,7 @@ class MainActivity : FlutterActivity() {
                             putExtra(OverlayService.EXTRA_LAMP_POSITION, position)
                             if (color != null) putExtra(OverlayService.EXTRA_LAMP_COLOR, color)
                         }
-                        startService(intent)
+                        safeStartService(intent)
                         result.success(true)
                     }
                     else -> result.notImplemented()
@@ -259,5 +263,14 @@ class MainActivity : FlutterActivity() {
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         pipMethodChannel?.invokeMethod("onPipModeChanged", isInPictureInPictureMode)
+    }
+
+    private fun safeStartService(intent: Intent) {
+        try {
+            startService(intent)
+        } catch (e: Exception) {
+            // Android 8.0+ Background Service Start Restriction (IllegalStateException) / SecurityException protection
+            e.printStackTrace()
+        }
     }
 }

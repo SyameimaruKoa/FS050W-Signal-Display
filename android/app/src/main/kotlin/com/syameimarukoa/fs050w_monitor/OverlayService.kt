@@ -43,6 +43,7 @@ class OverlayService : Service() {
     private var overlayOpacity = 0.85f
     private var overlayScale = 1.0f
     private var aspectRatioStr = "16:9"
+    private var smoothGaugeCurve = "easeOut"
 
     // Signal Data Cache
     private var lastSignalJson: JSONObject? = null
@@ -55,6 +56,7 @@ class OverlayService : Service() {
     private var isResizing = false
     private var initialWidth = 0
     private var initialHeight = 0
+    private var snapAnimator: ValueAnimator? = null
 
     // Screen Dimensions
     private var screenWidth = 1080
@@ -71,6 +73,17 @@ class OverlayService : Service() {
         const val EXTRA_LAMP_SHAPE = "extra_lamp_shape"
         const val EXTRA_LAMP_POSITION = "extra_lamp_position"
         const val EXTRA_LAMP_COLOR = "extra_lamp_color"
+
+        fun applyCurve(ratio: Double, curveType: String): Double {
+            val r = ratio.coerceIn(0.0, 1.0)
+            return when (curveType) {
+                "easeOut" -> 1.0 - (1.0 - r) * (1.0 - r)
+                "easeIn" -> r * r
+                "easeInOut" -> if (r < 0.5) 2.0 * r * r else 1.0 - (-2.0 * r + 2.0) * (-2.0 * r + 2.0) / 2.0
+                "linear" -> r
+                else -> 1.0 - (1.0 - r) * (1.0 - r)
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -135,7 +148,12 @@ class OverlayService : Service() {
         val maxVal: Double,
         val defaultBarColor: Int
     ) {
-        fun update(value: Double?, customPrefix: String? = null, smoothColor: Boolean = false) {
+        fun update(
+            value: Double?,
+            customPrefix: String? = null,
+            smoothColor: Boolean = false,
+            curveType: String = "easeOut"
+        ) {
             val displayLabel = if (customPrefix != null) "$customPrefix $label" else label
             val textValue = if (value != null && !value.isNaN() && value > -200) {
                 val formatted = String.format("%.1f", value)
@@ -145,14 +163,15 @@ class OverlayService : Service() {
             }
             labelView.text = textValue
 
-            val normalized = if (value != null && !value.isNaN() && value > -200) {
-                ((value - minVal) / (maxVal - minVal)).coerceIn(0.0, 1.0).toFloat()
+            val rawRatio = if (value != null && !value.isNaN() && value > -200) {
+                ((value - minVal) / (maxVal - minVal)).coerceIn(0.0, 1.0)
             } else {
-                0.0f
+                0.0
             }
+            val normalized = applyCurve(rawRatio, curveType).toFloat()
 
             if (smoothColor && value != null && !value.isNaN() && value > -200) {
-                barView.setBackgroundColor(calculateSmoothColor(normalized.toDouble()))
+                barView.setBackgroundColor(calculateSmoothColor(rawRatio, curveType))
             } else {
                 barView.setBackgroundColor(defaultBarColor)
             }
@@ -161,23 +180,28 @@ class OverlayService : Service() {
             if (totalWidth > 0) {
                 val barW = (totalWidth * normalized).toInt()
                 val lp = barView.layoutParams
-                if (lp.width != barW) {
+                if (lp != null && lp.width != barW) {
                     lp.width = barW
                     barView.layoutParams = lp
                 }
             } else {
                 rootCell.post {
-                    val w = rootCell.width
-                    val barW = (w * normalized).toInt()
-                    val lp = barView.layoutParams
-                    lp.width = barW
-                    barView.layoutParams = lp
+                    if (rootCell.isAttachedToWindow) {
+                        val w = rootCell.width
+                        val barW = (w * normalized).toInt()
+                        val lp = barView.layoutParams
+                        if (lp != null && lp.width != barW) {
+                            lp.width = barW
+                            barView.layoutParams = lp
+                        }
+                    }
                 }
             }
         }
 
-        private fun calculateSmoothColor(ratio: Double): Int {
-            val r = ratio.coerceIn(0.0, 1.0)
+        private fun calculateSmoothColor(ratio: Double, curveType: String): Int {
+            val curvedRatio = applyCurve(ratio, curveType)
+            val r = curvedRatio.coerceIn(0.0, 1.0)
             val cCritical = Color.parseColor("#9C27B0")
             val cVeryWeak = Color.parseColor("#F44336")
             val cWeak = Color.parseColor("#FF9800")
@@ -247,6 +271,9 @@ class OverlayService : Service() {
         if (intent.hasExtra("overlayScale") && userCustomWidthPx == null) {
             overlayScale = intent.getFloatExtra("overlayScale", overlayScale)
         }
+        if (intent.hasExtra("smoothGaugeCurve")) {
+            smoothGaugeCurve = intent.getStringExtra("smoothGaugeCurve") ?: smoothGaugeCurve
+        }
     }
 
     // ----------------------------------------------------
@@ -291,9 +318,13 @@ class OverlayService : Service() {
     }
 
     private fun hideFloatingOverlay() {
+        snapAnimator?.cancel()
+        snapAnimator = null
         if (overlayContainer != null) {
             try {
-                windowManager?.removeView(overlayContainer)
+                if (overlayContainer?.isAttachedToWindow == true) {
+                    windowManager?.removeView(overlayContainer)
+                }
             } catch (_: Exception) {}
             overlayContainer = null
             overlayLayoutParams = null
@@ -430,13 +461,13 @@ class OverlayService : Service() {
             holder.nrHeader.text = nrTitle
             holder.lteHeader.text = lteTitle
 
-            holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor)
-            holder.nrRsrqCell.update(nrRsrq, smoothColor = smoothColor)
-            holder.nrSnrCell.update(nrSnr, smoothColor = smoothColor)
+            holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.nrRsrqCell.update(nrRsrq, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.nrSnrCell.update(nrSnr, smoothColor = smoothColor, curveType = smoothGaugeCurve)
 
-            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor)
-            holder.lteRsrqCell.update(lteRsrq, smoothColor = smoothColor)
-            holder.lteSinrCell.update(lteSinr, smoothColor = smoothColor)
+            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.lteRsrqCell.update(lteRsrq, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.lteSinrCell.update(lteSinr, smoothColor = smoothColor, curveType = smoothGaugeCurve)
         } else {
             val holder = compactHolder ?: return
             holder.mainCard.alpha = overlayOpacity
@@ -445,8 +476,8 @@ class OverlayService : Service() {
             val nrTitle = if (modeBadge.contains("+")) "$nrLabel+ $nrBand" else "$nrLabel $nrBand"
             val lteTitle = "$lteLabel $lteBand"
 
-            holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor)
-            holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor)
+            holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
         }
     }
 
@@ -528,9 +559,9 @@ class OverlayService : Service() {
         }
         root.addView(nrHeader)
 
-        val nrRsrpCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#00ADB5"))
-        val nrRsrqCell = createMetricCellHolder("RSRQ", "dB", -25.0, -3.0, Color.parseColor("#00ADB5"))
-        val nrSnrCell = createMetricCellHolder("SNR", "dB", -10.0, 30.0, Color.parseColor("#00ADB5"))
+        val nrRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#00ADB5"))
+        val nrRsrqCell = createMetricCellHolder("RSRQ", "dB", -22.0, -8.0, Color.parseColor("#00ADB5"))
+        val nrSnrCell = createMetricCellHolder("SNR", "dB", -6.0, 24.0, Color.parseColor("#00ADB5"))
 
         root.addView(nrRsrpCell.rootCell)
         root.addView(nrRsrqCell.rootCell)
@@ -546,9 +577,9 @@ class OverlayService : Service() {
         }
         root.addView(lteHeader)
 
-        val lteRsrpCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#2196F3"))
-        val lteRsrqCell = createMetricCellHolder("RSRQ", "dB", -25.0, -3.0, Color.parseColor("#2196F3"))
-        val lteSinrCell = createMetricCellHolder("SINR", "dB", -10.0, 30.0, Color.parseColor("#2196F3"))
+        val lteRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#2196F3"))
+        val lteRsrqCell = createMetricCellHolder("RSRQ", "dB", -22.0, -8.0, Color.parseColor("#2196F3"))
+        val lteSinrCell = createMetricCellHolder("SINR", "dB", -6.0, 24.0, Color.parseColor("#2196F3"))
 
         root.addView(lteRsrpCell.rootCell)
         root.addView(lteRsrqCell.rootCell)
@@ -586,8 +617,8 @@ class OverlayService : Service() {
         }
         root.addView(statusView)
 
-        val nrCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#00E5FF"))
-        val lteCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#2196F3"))
+        val nrCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#00E5FF"))
+        val lteCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#2196F3"))
 
         root.addView(nrCell.rootCell)
         root.addView(lteCell.rootCell)
@@ -782,16 +813,19 @@ class OverlayService : Service() {
         val maxY = max(0, screenHeight - overlayH - dpToPx(10f))
         params.y = params.y.coerceIn(0, maxY)
 
-        val animator = ValueAnimator.ofInt(currentX, targetX).apply {
+        snapAnimator?.cancel()
+        snapAnimator = ValueAnimator.ofInt(currentX, targetX).apply {
             duration = 200
             addUpdateListener { anim ->
-                params.x = anim.animatedValue as Int
-                try {
-                    windowManager?.updateViewLayout(overlayContainer, params)
-                } catch (_: Exception) {}
+                if (overlayContainer != null && overlayContainer?.isAttachedToWindow == true) {
+                    params.x = anim.animatedValue as Int
+                    try {
+                        windowManager?.updateViewLayout(overlayContainer, params)
+                    } catch (_: Exception) {}
+                }
             }
         }
-        animator.start()
+        snapAnimator?.start()
     }
 
     // ----------------------------------------------------
@@ -812,6 +846,7 @@ class OverlayService : Service() {
     private fun showLampOverlay(color: Int, shape: String, position: String, isBlinking: Boolean) {
         lampHideHandler.removeCallbacksAndMessages(null)
         lampBlinkAnimator?.cancel()
+        lampBlinkAnimator = null
 
         if (lampContainer == null) {
             val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -906,9 +941,14 @@ class OverlayService : Service() {
     }
 
     private fun removeLampOverlay() {
+        lampHideHandler.removeCallbacksAndMessages(null)
+        lampBlinkAnimator?.cancel()
+        lampBlinkAnimator = null
         if (lampContainer != null) {
             try {
-                windowManager?.removeView(lampContainer)
+                if (lampContainer?.isAttachedToWindow == true) {
+                    windowManager?.removeView(lampContainer)
+                }
             } catch (_: Exception) {}
             lampContainer = null
             lampLayoutParams = null

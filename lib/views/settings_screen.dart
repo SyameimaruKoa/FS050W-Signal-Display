@@ -423,6 +423,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _save();
                             },
                         ),
+                        if (_settings.smoothGaugeColor)
+                            Padding(
+                                padding: const EdgeInsets.only(left: 12.0, right: 0.0, top: 4.0, bottom: 8.0),
+                                child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                        const Text(
+                                            "グラデーション曲線 (イージング)",
+                                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                            "電波バーと色の変化カーブを調整",
+                                            style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                                            decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Theme.of(context).dividerColor,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                                child: DropdownButton<String>(
+                                                    isExpanded: true,
+                                                    value: _settings.smoothGaugeCurve,
+                                                    items: const [
+                                                        DropdownMenuItem(
+                                                            value: "easeOut",
+                                                            child: Text("Ease Out (推奨: 弱電界の変化を強調)"),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                            value: "easeIn",
+                                                            child: Text("Ease In (強電界の変化を強調)"),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                            value: "easeInOut",
+                                                            child: Text("Ease In-Out (S字曲線)"),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                            value: "linear",
+                                                            child: Text("Linear (リニア / 線形)"),
+                                                        ),
+                                                    ],
+                                                    onChanged: (val) {
+                                                        if (val != null) {
+                                                            setState(() => _settings.smoothGaugeCurve = val);
+                                                            _save();
+                                                        }
+                                                    },
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
                         SwitchListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text("画面の常時点灯 (スリープ防止)"),

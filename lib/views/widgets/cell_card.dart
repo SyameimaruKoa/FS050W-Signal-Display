@@ -67,6 +67,7 @@ class CellCard extends StatelessWidget {
         SignalData? signal, {
         String notation = "4g_5g",
         bool smoothGaugeColor = false,
+        String smoothGaugeCurve = "easeOut",
     }) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final isLteNr = notation == "lte_nr";
@@ -203,8 +204,9 @@ class CellCard extends StatelessWidget {
                     unit: "dBm",
                     level: rsrpLevel,
                     smoothGaugeColor: smoothGaugeColor,
-                    minVal: -140.0,
-                    maxVal: -50.0,
+                    smoothGaugeCurve: smoothGaugeCurve,
+                    minVal: ColorGauge.rsrpMin,
+                    maxVal: ColorGauge.rsrpMax,
                 ),
                 MetricGauge(
                     label: "RSRQ",
@@ -212,8 +214,9 @@ class CellCard extends StatelessWidget {
                     unit: "dB",
                     level: rsrqLevel,
                     smoothGaugeColor: smoothGaugeColor,
-                    minVal: -25.0,
-                    maxVal: -3.0,
+                    smoothGaugeCurve: smoothGaugeCurve,
+                    minVal: ColorGauge.rsrqMin,
+                    maxVal: ColorGauge.rsrqMax,
                 ),
                 MetricGauge(
                     label: "SNR (補正済)",
@@ -221,8 +224,9 @@ class CellCard extends StatelessWidget {
                     unit: "dB",
                     level: snrLevel,
                     smoothGaugeColor: smoothGaugeColor,
-                    minVal: -10.0,
-                    maxVal: 30.0,
+                    smoothGaugeCurve: smoothGaugeCurve,
+                    minVal: ColorGauge.sinrMin,
+                    maxVal: ColorGauge.sinrMax,
                 ),
             ],
         );
@@ -233,6 +237,7 @@ class CellCard extends StatelessWidget {
         SignalData? signal, {
         String notation = "4g_5g",
         bool smoothGaugeColor = false,
+        String smoothGaugeCurve = "easeOut",
     }) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final genLabel = ConnectionModeHelper.getGenerationName(false, notation: notation);
@@ -356,8 +361,9 @@ class CellCard extends StatelessWidget {
                     unit: "dBm",
                     level: rsrpLevel,
                     smoothGaugeColor: smoothGaugeColor,
-                    minVal: -140.0,
-                    maxVal: -50.0,
+                    smoothGaugeCurve: smoothGaugeCurve,
+                    minVal: ColorGauge.rsrpMin,
+                    maxVal: ColorGauge.rsrpMax,
                 ),
                 MetricGauge(
                     label: "RSRQ",
@@ -365,8 +371,9 @@ class CellCard extends StatelessWidget {
                     unit: "dB",
                     level: rsrqLevel,
                     smoothGaugeColor: smoothGaugeColor,
-                    minVal: -25.0,
-                    maxVal: -3.0,
+                    smoothGaugeCurve: smoothGaugeCurve,
+                    minVal: ColorGauge.rsrqMin,
+                    maxVal: ColorGauge.rsrqMax,
                 ),
                 MetricGauge(
                     label: "SINR",
@@ -374,8 +381,9 @@ class CellCard extends StatelessWidget {
                     unit: "dB",
                     level: sinrLevel,
                     smoothGaugeColor: smoothGaugeColor,
-                    minVal: -10.0,
-                    maxVal: 30.0,
+                    smoothGaugeCurve: smoothGaugeCurve,
+                    minVal: ColorGauge.sinrMin,
+                    maxVal: ColorGauge.sinrMax,
                 ),
             ],
         );
