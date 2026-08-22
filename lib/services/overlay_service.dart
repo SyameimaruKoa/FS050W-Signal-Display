@@ -32,7 +32,6 @@ class OverlayService {
                 'overlayStyle': settings.overlayStyle,
                 'overlayOpacity': settings.overlayOpacity,
                 'overlayScale': settings.overlayScale,
-                'pipAspectRatio': settings.pipAspectRatio,
             });
         } catch (_) {}
     }
@@ -58,12 +57,11 @@ class OverlayService {
 
             final Map<String, dynamic> dataMap = {
                 'isConnecting': isConnecting,
-                'operatorName': signal?.operatorName ?? '--',
-                'connectionModeBadge': modeBadge,
-                'connectionModeText': modeText,
+                'modeBadge': modeBadge,
+                'modeText': modeText,
                 'generationNotation': notation,
                 'smoothGaugeColor': settings.smoothGaugeColor,
-                'rsrp': signal?.lteRsrp ?? signal?.nrRsrp ?? -140.0,
+                'operatorName': signal?.operatorName ?? '--',
                 'lteBand': signal?.lteBand != null ? 'B${signal!.lteBand}' : '--',
                 'ltePci': signal?.ltePci != null ? '${signal!.ltePci}' : '--',
                 'lteRsrp': signal?.lteRsrp,
@@ -81,7 +79,6 @@ class OverlayService {
                 'overlayStyle': settings.overlayStyle,
                 'overlayOpacity': settings.overlayOpacity,
                 'overlayScale': settings.overlayScale,
-                'pipAspectRatio': settings.pipAspectRatio,
             });
         } catch (_) {}
     }

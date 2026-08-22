@@ -10,23 +10,28 @@ import 'package:fs050w_monitor/services/pip_service.dart';
 import 'package:fs050w_monitor/views/widgets/intensity_bar_metric.dart';
 
 void main() {
-    group('3GPP & Rakuten Specific Band Naming Tests', () {
+    group('3GPP & Rakuten Specific Band Naming and Badge Tests', () {
         test('Standard LTE & 5G Band Names', () {
-            expect(FrequencyCalculator.getLteBandName(3), equals("B3 (1.7GHz帯 FDD 主力/東名阪)"));
-            expect(FrequencyCalculator.getLteBandName(1), equals("B1 (2.1GHz帯 FDD 主力)"));
-            expect(FrequencyCalculator.getLteBandName(18), equals("B18 (800MHz帯 FDD プラチナ)"));
-            expect(FrequencyCalculator.getLteBandName(41), equals("B41 (2.5GHz帯 TDD 大容量)"));
-            expect(FrequencyCalculator.getNrBandName(77), equals("n77 (3.7GHz帯 sub6)"));
-            expect(FrequencyCalculator.getNrBandName(28), equals("n28 (700MHz帯 転用5G)"));
+            expect(FrequencyCalculator.getLteBandName(3), equals("B3 (1.7GHz)"));
+            expect(FrequencyCalculator.getLteBandName(1), equals("B1 (2.1GHz)"));
+            expect(FrequencyCalculator.getLteBandName(18), equals("B18 (800MHz)"));
+            expect(FrequencyCalculator.getLteBandName(41), equals("B41 (2.5GHz)"));
+            expect(FrequencyCalculator.getNrBandName(77), equals("n77 (3.8GHz)"));
+            expect(FrequencyCalculator.getNrBandName(28), equals("n28 (700MHz)"));
             expect(FrequencyCalculator.isSub6Band(77), isTrue);
             expect(FrequencyCalculator.isSub6Band(28), isFalse);
         });
 
-        test('Rakuten Specific Band Names', () {
-            expect(FrequencyCalculator.getLteBandName(3, operatorName: "Rakuten"), equals("B3 楽天回線 (1.7GHz帯 FDD)"));
-            expect(FrequencyCalculator.getLteBandName(18, operatorName: "Rakuten"), equals("B18 auローミング (800MHz帯 プラチナ)"));
-            expect(FrequencyCalculator.getLteBandName(28, operatorName: "Rakuten"), equals("B28 楽天プラチナ (700MHz帯 プラチナ)"));
-            expect(FrequencyCalculator.getNrBandName(77, operatorName: "Rakuten"), equals("n77 楽天Sub6 (3.8GHz帯 sub6)"));
+        test('Rakuten and General Badge Tests', () {
+            expect(FrequencyCalculator.getLteBadgeText(3, operatorName: "Rakuten"), equals("楽天回線"));
+            expect(FrequencyCalculator.getLteBadgeText(18, operatorName: "Rakuten"), equals("auローミング"));
+            expect(FrequencyCalculator.getLteBadgeText(28, operatorName: "Rakuten"), equals("楽天プラチナ"));
+            expect(FrequencyCalculator.getLteBadgeText(1), equals("FDD"));
+            expect(FrequencyCalculator.getLteBadgeText(19), equals("プラチナ"));
+            expect(FrequencyCalculator.getLteBadgeText(41), equals("TDD"));
+
+            expect(FrequencyCalculator.getNrBadgeText(77), equals("Sub6"));
+            expect(FrequencyCalculator.getNrBadgeText(28), equals("転用5G"));
         });
     });
 

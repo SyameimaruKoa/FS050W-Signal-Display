@@ -236,8 +236,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 trailing: DropdownButton<String>(
                                     value: _settings.eventLampShape,
                                     items: const [
-                                        DropdownMenuItem(value: "bar", child: Text("スリムバー型 (50x4px)")),
-                                        DropdownMenuItem(value: "dot", child: Text("LEDドット型 (8px丸)")),
+                                        DropdownMenuItem(value: "bar", child: Text("スリムバー型 (画面幅半分/1px)")),
+                                        DropdownMenuItem(value: "dot", child: Text("ドット型 (6dp)")),
                                     ],
                                     onChanged: (val) {
                                         if (val != null) {

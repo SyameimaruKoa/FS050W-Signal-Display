@@ -21,51 +21,42 @@ class PipScreen extends StatelessWidget {
 
         return Scaffold(
             backgroundColor: Colors.black,
-            body: SafeArea(
-                child: LayoutBuilder(
-                    builder: (context, constraints) {
-                        final width = constraints.maxWidth;
-                        final height = constraints.maxHeight;
+            body: LayoutBuilder(
+                builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final height = constraints.maxHeight;
 
-                        // 拡大判定: 幅240以上かつ高さ120以上、またはアスペクト比に応じて十分な領域がある場合
-                        final showGraph = settings.pipGraphType != 'none' &&
-                            history.length >= 2 &&
-                            ((width >= 240 && height >= 120) || (width >= 300 && height >= 100) || (height >= 180));
+                    // 拡大判定: グラフ表示設定かつ十分な領域がある場合
+                    final showGraph = settings.pipGraphType != 'none' &&
+                        history.length >= 2 &&
+                        (height >= 140 || (width >= 240 && height >= 100));
 
-                        return Container(
-                            color: Colors.black,
-                            width: width,
-                            height: height,
-                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                            child: FittedBox(
-                                fit: BoxFit.contain,
-                                alignment: Alignment.center,
-                                child: SizedBox(
-                                    // 基準キャンバスサイズを設定（FittedBoxで自動スケーリング）
-                                    width: showGraph ? 320.0 : 260.0,
-                                    height: showGraph ? (aspectRatioStr.contains("9:16") || aspectRatioStr.contains("3:4") ? 240.0 : 160.0) : 130.0,
-                                    child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                            _buildHeader(context, apiService, signal, isConnecting),
-                                            const SizedBox(height: 2.0),
-                                            Expanded(
-                                                child: _buildMainContent(
-                                                    context,
-                                                    apiService,
-                                                    signal,
-                                                    aspectRatioStr,
-                                                    showGraph,
-                                                    history,
-                                                ),
-                                            ),
-                                        ],
+                    return Container(
+                        color: Colors.black,
+                        width: width,
+                        height: height,
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 3.0),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                                _buildHeader(context, apiService, signal, isConnecting, aspectRatioStr),
+                                const SizedBox(height: 3.0),
+                                Expanded(
+                                    child: _buildMainContent(
+                                        context,
+                                        apiService,
+                                        signal,
+                                        aspectRatioStr,
+                                        showGraph,
+                                        history,
+                                        width,
+                                        height,
                                     ),
                                 ),
-                            ),
-                        );
-                    },
-                ),
+                            ],
+                        ),
+                    );
+                },
             ),
         );
     }
@@ -75,31 +66,33 @@ class PipScreen extends StatelessWidget {
         ApiService apiService,
         SignalData? signal,
         bool isConnecting,
+        String aspectRatioStr,
     ) {
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
         final notation = apiService.settings.generationNotation;
         final modeBadge = ConnectionModeHelper.getIconBadgeText(mode, notation: notation);
         final opName = signal?.operatorName ?? "--";
+        final is1to1 = aspectRatioStr == '1:1';
 
         return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+            padding: EdgeInsets.symmetric(horizontal: 5.0, vertical: is1to1 ? 3.0 : 2.0),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(4.0),
             ),
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                     Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 1.5),
                         decoration: BoxDecoration(
-                            color: isConnecting ? Colors.amber.withOpacity(0.2) : const Color(0xFF00E5FF).withOpacity(0.2),
+                            color: isConnecting ? Colors.amber.withOpacity(0.25) : const Color(0xFF00E5FF).withOpacity(0.25),
                             borderRadius: BorderRadius.circular(3.0),
                         ),
                         child: Text(
                             isConnecting ? "[ 接続中... ]" : "[ $modeBadge ]",
                             style: GoogleFonts.notoSansJp(
-                                fontSize: 9.5,
+                                fontSize: is1to1 ? 11.0 : 9.5,
                                 fontWeight: FontWeight.bold,
                                 color: isConnecting ? Colors.amberAccent : const Color(0xFF00E5FF),
                             ),
@@ -108,7 +101,7 @@ class PipScreen extends StatelessWidget {
                     Text(
                         opName,
                         style: GoogleFonts.notoSansJp(
-                            fontSize: 9.5,
+                            fontSize: is1to1 ? 11.0 : 9.5,
                             fontWeight: FontWeight.bold,
                             color: Colors.white70,
                         ),
@@ -125,10 +118,12 @@ class PipScreen extends StatelessWidget {
         String aspectRatioStr,
         bool showGraph,
         List<SignalData> history,
+        double width,
+        double height,
     ) {
         final notation = apiService.settings.generationNotation;
         final smooth = apiService.settings.smoothGaugeColor;
-        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth);
+        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth, height);
 
         if (!showGraph) {
             return signalSection;
@@ -139,9 +134,9 @@ class PipScreen extends StatelessWidget {
 
         return Column(
             children: [
-                Expanded(flex: 3, child: signalSection),
-                const SizedBox(height: 2.0),
-                Expanded(flex: 2, child: graphWidget),
+                Expanded(flex: aspectRatioStr.contains("9:16") || aspectRatioStr.contains("3:4") ? 3 : 2, child: signalSection),
+                const SizedBox(height: 3.0),
+                Expanded(flex: aspectRatioStr.contains("9:16") || aspectRatioStr.contains("3:4") ? 2 : 1, child: graphWidget),
             ],
         );
     }
@@ -151,12 +146,13 @@ class PipScreen extends StatelessWidget {
         String aspectRatioStr,
         String notation,
         bool smoothGaugeColor,
+        double totalHeight,
     ) {
         final is5gActive = signal?.nrRsrp != null && signal!.nrRsrp! < 0;
 
         switch (aspectRatioStr) {
             case '1:1':
-                // 1:1 は 4G/5G の片方のみ拡大表示 (5G 接続中は 5G、圏外時は 4G)
+                // 1:1 は 4G/5G の片方のみ大画面表示 (5G 接続中は 5G、圏外時は 4G)
                 if (is5gActive) {
                     return _build5gSection(signal, notation, smoothGaugeColor, isSingleMode: true);
                 } else {
@@ -166,6 +162,7 @@ class PipScreen extends StatelessWidget {
             case '4:3':
             case '21:9':
                 return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                         Expanded(child: _build5gSection(signal, notation, smoothGaugeColor)),
                         const SizedBox(width: 4.0),
@@ -177,9 +174,10 @@ class PipScreen extends StatelessWidget {
             case '9:21':
             default:
                 return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                         Expanded(child: _build5gSection(signal, notation, smoothGaugeColor)),
-                        const SizedBox(height: 2.0),
+                        const SizedBox(height: 3.0),
                         Expanded(child: _build4gSection(signal, notation, smoothGaugeColor)),
                     ],
                 );
@@ -198,15 +196,15 @@ class PipScreen extends StatelessWidget {
         final nrBandStr = signal?.nrBand != null ? "n${signal!.nrBand}" : "--";
         final pciStr = signal?.nrPci != null ? "${signal!.nrPci}" : "--";
 
-        final barH = isSingleMode ? 16.0 : 12.0;
-        final fontSz = isSingleMode ? 9.5 : 8.0;
+        final barH = isSingleMode ? 22.0 : 13.0;
+        final fontSz = isSingleMode ? 10.5 : 8.5;
 
         return Container(
-            padding: const EdgeInsets.all(2.0),
+            padding: EdgeInsets.all(isSingleMode ? 4.0 : 3.0),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: Colors.white.withOpacity(0.03),
                 borderRadius: BorderRadius.circular(4.0),
-                border: Border.all(color: const Color(0xFF00ADB5).withOpacity(0.2), width: 0.5),
+                border: Border.all(color: const Color(0xFF00ADB5).withOpacity(0.3), width: 0.8),
             ),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,7 +216,7 @@ class PipScreen extends StatelessWidget {
                             Text(
                                 "$titlePrefix ($nrBandStr)",
                                 style: GoogleFonts.notoSansJp(
-                                    fontSize: fontSz + 0.5,
+                                    fontSize: fontSz + 1.0,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF00E5FF),
                                 ),
@@ -229,7 +227,7 @@ class PipScreen extends StatelessWidget {
                                 "PCI: $pciStr",
                                 style: GoogleFonts.notoSansMono(
                                     fontSize: fontSz + 0.5,
-                                    color: Colors.white60,
+                                    color: Colors.white70,
                                 ),
                             ),
                         ],
@@ -282,15 +280,15 @@ class PipScreen extends StatelessWidget {
         final lteBandStr = signal?.lteBand != null ? "B${signal!.lteBand}" : "--";
         final pciStr = signal?.ltePci != null ? "${signal!.ltePci}" : "--";
 
-        final barH = isSingleMode ? 16.0 : 12.0;
-        final fontSz = isSingleMode ? 9.5 : 8.0;
+        final barH = isSingleMode ? 22.0 : 13.0;
+        final fontSz = isSingleMode ? 10.5 : 8.5;
 
         return Container(
-            padding: const EdgeInsets.all(2.0),
+            padding: EdgeInsets.all(isSingleMode ? 4.0 : 3.0),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: Colors.white.withOpacity(0.03),
                 borderRadius: BorderRadius.circular(4.0),
-                border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.2), width: 0.5),
+                border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.3), width: 0.8),
             ),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -302,7 +300,7 @@ class PipScreen extends StatelessWidget {
                             Text(
                                 "$genName ($lteBandStr)",
                                 style: GoogleFonts.notoSansJp(
-                                    fontSize: fontSz + 0.5,
+                                    fontSize: fontSz + 1.0,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF64B5F6),
                                 ),
@@ -313,7 +311,7 @@ class PipScreen extends StatelessWidget {
                                 "PCI: $pciStr",
                                 style: GoogleFonts.notoSansMono(
                                     fontSize: fontSz + 0.5,
-                                    color: Colors.white60,
+                                    color: Colors.white70,
                                 ),
                             ),
                         ],

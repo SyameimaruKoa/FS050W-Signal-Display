@@ -128,29 +128,29 @@ class CellCard extends StatelessWidget {
         final rsrqLevel = ColorGauge.rateRsrq(signal.nrRsrq);
         final snrLevel = ColorGauge.rateSinr(signal.nrSnr);
 
-        final tagText = isSub6
-            ? "sub6"
-            : (FrequencyCalculator.isRefarmed5gBand(signal.nrBand) ? "転用" : "通常");
+        final tagText = FrequencyCalculator.getNrBadgeText(signal.nrBand, operatorName: signal.operatorName);
 
         return CellCard(
             title: nrTitle,
             icon: Icons.cell_tower,
             accentColor: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
-            headerTrailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                    color: (isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50)).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                    tagText,
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
+            headerTrailing: tagText != null
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                        color: (isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50)).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
                     ),
-                ),
-            ),
+                    child: Text(
+                        tagText,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
+                        ),
+                    ),
+                )
+                : null,
             children: [
                 Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -254,6 +254,7 @@ class CellCard extends StatelessWidget {
         }
 
         final bandName = FrequencyCalculator.getLteBandName(signal.lteBand, operatorName: signal.operatorName);
+        final lteBadge = FrequencyCalculator.getLteBadgeText(signal.lteBand, operatorName: signal.operatorName);
         final titleText = "● ${ConnectionModeHelper.get4gCardTitle(signal.connectionMode, notation: notation)}";
 
         final rsrpLevel = ColorGauge.rateRsrp(signal.lteRsrp);
@@ -264,19 +265,45 @@ class CellCard extends StatelessWidget {
             title: titleText,
             icon: Icons.network_cell,
             accentColor: const Color(0xFF2196F3),
-            headerTrailing: signal.hasCa
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                        color: Colors.blueAccent.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                        "CA 有効",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueAccent),
-                    ),
-                )
-                : null,
+            headerTrailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                    if (lteBadge != null) ...[
+                        Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                                color: (lteBadge.contains("楽天") || lteBadge.contains("au"))
+                                    ? Colors.pinkAccent.withOpacity(0.2)
+                                    : Colors.blueAccent.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                                lteBadge,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: (lteBadge.contains("楽天") || lteBadge.contains("au"))
+                                        ? Colors.pinkAccent
+                                        : Colors.blueAccent,
+                                ),
+                            ),
+                        ),
+                        const SizedBox(width: 4),
+                    ],
+                    if (signal.hasCa)
+                        Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                                color: Colors.blueAccent.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                                "CA 有効",
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                            ),
+                        ),
+                ],
+            ),
             children: [
                 Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

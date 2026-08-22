@@ -247,13 +247,6 @@ class OverlayService : Service() {
         if (intent.hasExtra("overlayScale") && userCustomWidthPx == null) {
             overlayScale = intent.getFloatExtra("overlayScale", overlayScale)
         }
-        if (intent.hasExtra("pipAspectRatio")) {
-            val newRatio = intent.getStringExtra("pipAspectRatio") ?: aspectRatioStr
-            if (newRatio != aspectRatioStr) {
-                aspectRatioStr = newRatio
-                currentModeViewType = null
-            }
-        }
     }
 
     // ----------------------------------------------------
@@ -311,19 +304,6 @@ class OverlayService : Service() {
         }
     }
 
-    private fun getAspectRatioValue(): Float {
-        return when (aspectRatioStr) {
-            "16:9" -> 16f / 9f
-            "9:16" -> 9f / 16f
-            "1:1" -> 1f
-            "4:3" -> 4f / 3f
-            "3:4" -> 3f / 4f
-            "21:9" -> 21f / 9f
-            "9:21" -> 9f / 21f
-            else -> 16f / 9f
-        }
-    }
-
     private fun dpToPx(dp: Float): Int {
         return android.util.TypedValue.applyDimension(
             android.util.TypedValue.COMPLEX_UNIT_DIP,
@@ -345,8 +325,7 @@ class OverlayService : Service() {
             return
         }
 
-        val ratio = getAspectRatioValue()
-        val baseWidthDp = if (ratio >= 1.0f) 280f * overlayScale else 200f * overlayScale
+        val baseWidthDp = 280f * overlayScale
         val widthPx = userCustomWidthPx ?: dpToPx(baseWidthDp)
 
         val mainCard = FrameLayout(this).apply {
@@ -371,7 +350,7 @@ class OverlayService : Service() {
             mainCard.addView(contentView)
         } else {
             currentModeViewType = "card"
-            val contentView = createCardContentView(mainCard, ratio)
+            val contentView = createCardContentView(mainCard)
             mainCard.addView(contentView)
         }
 
@@ -503,7 +482,7 @@ class OverlayService : Service() {
         return pill
     }
 
-    private fun createCardContentView(mainCard: FrameLayout, ratio: Float): View {
+    private fun createCardContentView(mainCard: FrameLayout): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dpToPx(8f), dpToPx(6f), dpToPx(8f), dpToPx(6f))
@@ -848,22 +827,22 @@ class OverlayService : Service() {
                 else -> Gravity.TOP or Gravity.CENTER_HORIZONTAL
             }
 
-            // スリムバーは最上部密着(y=0)、ドットはステータスバー真上(y=6dp)
-            val lampY = if (shape == "bar") 0 else dpToPx(6f)
-
             lampLayoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 overlayType,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT
             ).apply {
                 gravity = gravityFlag
-                y = lampY
-                if (position == "topLeft") x = dpToPx(16f)
-                if (position == "topRight") x = dpToPx(16f)
+                x = if (position == "topLeft" || position == "topRight") dpToPx(16f) else 0
+                y = 0 // 画面最上端（ステータスバーを完全に無視して絶対物理最上部に密着配置）
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
             }
 
             val container = FrameLayout(this)
@@ -880,14 +859,14 @@ class OverlayService : Service() {
         val container = lampContainer ?: return
         container.removeAllViews()
 
-        // Lamp Shape: bar (1pxスリムバー) or dot (7pxカメラ/マイクインジケータサイズ)
+        // Lamp Shape: bar (画面幅半分の1pxスリムバー) or dot (6dp カメラ/マイクインジケータサイズ真円)
         val lampView = View(this).apply {
-            val w = if (shape == "dot") dpToPx(7f) else dpToPx(80f)
-            val h = if (shape == "dot") dpToPx(7f) else dpToPx(1f).coerceAtLeast(1)
+            val w = if (shape == "dot") dpToPx(6f) else (screenWidth / 2)
+            val h = if (shape == "dot") dpToPx(6f) else 1
             layoutParams = FrameLayout.LayoutParams(w, h)
             val drawable = GradientDrawable().apply {
                 setColor(color)
-                cornerRadius = if (shape == "dot") dpToPx(3.5f).toFloat() else 0f
+                cornerRadius = if (shape == "dot") dpToPx(3f).toFloat() else 0f
             }
             background = drawable
             alpha = 0.0f
@@ -934,6 +913,13 @@ class OverlayService : Service() {
             lampContainer = null
             lampLayoutParams = null
         }
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        hideFloatingOverlay()
+        removeLampOverlay()
+        stopSelf()
     }
 
     override fun onDestroy() {
