@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../services/pip_service.dart';
 import '../models/signal_data.dart';
@@ -28,9 +27,9 @@ class DashboardScreen extends StatelessWidget {
 
         return Scaffold(
             appBar: AppBar(
-                title: Text(
+                title: const Text(
                     "📶 FS050W Monitor",
-                    style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 actions: [
                     IconButton(

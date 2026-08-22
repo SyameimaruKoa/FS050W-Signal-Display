@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../services/api_service.dart';
 import '../services/pip_service.dart';
@@ -16,9 +15,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+    late AppSettings _settings;
     late TextEditingController _ipController;
     late TextEditingController _passController;
-    late AppSettings _settings;
     bool _isPasswordVisible = false;
 
     @override
@@ -41,25 +40,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _settings.routerIp = _ipController.text.trim();
         _settings.webPassword = _passController.text;
 
+        final apiService = context.read<ApiService>();
+        apiService.updateSettings(_settings);
         await StorageService.saveSettings(_settings);
+
         if (mounted) {
-            final api = context.read<ApiService>();
-            api.updateSettings(_settings);
-
-            // Synchronize PiP auto-enter config
             PipService.setAutoEnterPip(_settings.autoPipOnHome, _settings.pipAspectRatio);
-
-            // Synchronize Overlay Service
-            if (_settings.overlayEnabled) {
-                final hasPermission = await OverlayService.checkPermission();
-                if (hasPermission) {
-                    await OverlayService.startOverlay(_settings);
-                    if (api.currentSignal != null) {
-                        OverlayService.updateOverlayData(api.currentSignal, _settings);
-                    }
-                }
-            } else {
-                await OverlayService.stopOverlay();
+            if (apiService.currentSignal != null) {
+                OverlayService.updateOverlayData(apiService.currentSignal, _settings);
             }
         }
     }
@@ -106,9 +94,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         return Scaffold(
             appBar: AppBar(
-                title: Text(
+                title: const Text(
                     "⚙ 設定",
-                    style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
                 ),
             ),
             body: ListView(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../utils/color_gauge.dart';
 
 class IntensityBarMetric extends StatelessWidget {
@@ -9,7 +8,7 @@ class IntensityBarMetric extends StatelessWidget {
     final double minVal;
     final double maxVal;
     final Color barColor;
-    final double height;
+    final double? height;
     final double fontSize;
     final bool smoothGaugeColor;
     final String smoothGaugeCurve;
@@ -52,9 +51,9 @@ class IntensityBarMetric extends StatelessWidget {
             ? "${value!.toStringAsFixed(1)} $unit"
             : "-- $unit";
 
-        return Container(
+        final content = Container(
             height: height,
-            margin: const EdgeInsets.symmetric(vertical: 2.0),
+            margin: const EdgeInsets.symmetric(vertical: 1.0),
             decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(4.0),
@@ -76,25 +75,48 @@ class IntensityBarMetric extends StatelessWidget {
                         ),
                         // Label & Numeric Value Text
                         Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 5.0),
                             child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                    Text(
-                                        label,
-                                        style: GoogleFonts.notoSansJp(
-                                            fontSize: fontSize,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white70,
+                                    Expanded(
+                                        flex: 2,
+                                        child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerLeft,
+                                                child: Text(
+                                                    label,
+                                                    style: TextStyle(
+                                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                                        fontSize: fontSize,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.white70,
+                                                    ),
+                                                ),
+                                            ),
                                         ),
                                     ),
-                                    Text(
-                                        textValue,
-                                        style: GoogleFonts.notoSansMono(
-                                            fontSize: fontSize,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                        flex: 3,
+                                        child: Align(
+                                            alignment: Alignment.centerRight,
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerRight,
+                                                child: Text(
+                                                    textValue,
+                                                    style: TextStyle(
+                                                        fontFamily: 'monospace',
+                                                        fontSize: fontSize,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                    ),
+                                                ),
+                                            ),
                                         ),
                                     ),
                                 ],
@@ -104,5 +126,8 @@ class IntensityBarMetric extends StatelessWidget {
                 ),
             ),
         );
+
+        return content;
     }
 }
+

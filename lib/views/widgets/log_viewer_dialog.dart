@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../services/app_logger.dart';
 
 class LogViewerDialog extends StatefulWidget {
@@ -57,7 +56,8 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                 Expanded(
                                     child: Text(
                                         "アプリ診断ログ (${logs.length}件)",
-                                        style: GoogleFonts.notoSansJp(
+                                        style: TextStyle(
+                                            fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
                                             color: isDark ? Colors.white : Colors.black87,
@@ -68,18 +68,20 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                 IconButton(
                                     icon: const Icon(Icons.copy, color: Colors.greenAccent, size: 20),
                                     tooltip: "全ログをクリップボードにコピー",
-                                    visualDensity: VisualDensity.compact,
                                     onPressed: () {
-                                        Clipboard.setData(ClipboardData(text: AppLogger.exportText()));
+                                        final text = AppLogger.exportText();
+                                        Clipboard.setData(ClipboardData(text: text));
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text("ログをクリップボードにコピーしました")),
+                                            const SnackBar(
+                                                content: Text("診断ログをクリップボードにコピーしました"),
+                                                duration: Duration(seconds: 2),
+                                            ),
                                         );
                                     },
                                 ),
                                 IconButton(
                                     icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                     tooltip: "ログをクリア",
-                                    visualDensity: VisualDensity.compact,
                                     onPressed: () {
                                         setState(() {
                                             AppLogger.clear();
@@ -87,57 +89,80 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                     },
                                 ),
                                 IconButton(
-                                    icon: Icon(Icons.close, color: isDark ? Colors.white70 : Colors.black54, size: 20),
-                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(Icons.close, size: 20),
                                     onPressed: () => Navigator.of(context).pop(),
                                 ),
                             ],
                         ),
                     ),
-
-                    // Filter Search Box
+                    // Search bar
                     Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: TextField(
                             decoration: InputDecoration(
-                                hintText: "ログ内を検索 (エラー, retcode, IP...)",
+                                hintText: "ログ内を検索...",
                                 prefixIcon: const Icon(Icons.search, size: 18),
+                                suffixIcon: _filter.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, size: 16),
+                                        onPressed: () => setState(() => _filter = ""),
+                                    )
+                                    : null,
                                 isDense: true,
-                                filled: true,
-                                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                                 border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
                                 ),
                             ),
-                            onChanged: (v) => setState(() => _filter = v.trim()),
+                            onChanged: (val) => setState(() => _filter = val),
                         ),
                     ),
-
-                    // Log List
+                    // Log entries list
                     Expanded(
                         child: logs.isEmpty
                             ? Center(
-                                child: Text("ログはありません", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38)),
+                                child: Text(
+                                    _filter.isEmpty ? "ログはありません" : "一致するログが見つかりません",
+                                    style: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                                ),
                             )
                             : ListView.builder(
                                 controller: _scrollController,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                 itemCount: logs.length,
-                                itemBuilder: (ctx, index) {
-                                    final entry = logs[logs.length - 1 - index]; // latest first
-                                    Color levelColor = isDark ? Colors.white70 : Colors.black54;
-                                    if (entry.level == LogLevel.error) levelColor = Colors.redAccent;
-                                    if (entry.level == LogLevel.warn) levelColor = Colors.orangeAccent;
-                                    if (entry.level == LogLevel.debug) levelColor = Colors.blueAccent;
+                                itemBuilder: (context, index) {
+                                    final entry = logs[index];
+                                    Color levelColor;
+                                    Color levelBg;
+                                    switch (entry.level) {
+                                        case LogLevel.error:
+                                            levelColor = Colors.redAccent;
+                                            levelBg = Colors.redAccent.withOpacity(0.15);
+                                            break;
+                                        case LogLevel.warn:
+                                            levelColor = Colors.amberAccent;
+                                            levelBg = Colors.amberAccent.withOpacity(0.15);
+                                            break;
+                                        case LogLevel.debug:
+                                            levelColor = Colors.blueAccent;
+                                            levelBg = Colors.blueAccent.withOpacity(0.15);
+                                            break;
+                                        case LogLevel.info:
+                                        default:
+                                            levelColor = Colors.greenAccent;
+                                            levelBg = Colors.greenAccent.withOpacity(0.15);
+                                            break;
+                                    }
 
                                     return Container(
-                                        margin: const EdgeInsets.only(bottom: 6),
+                                        margin: const EdgeInsets.symmetric(vertical: 3),
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+                                            color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
                                             borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+                                            border: Border.all(
+                                                color: isDark ? Colors.white10 : Colors.black12,
+                                                width: 0.5,
+                                            ),
                                         ),
                                         child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,10 +170,10 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                 Row(
                                                     children: [
                                                         Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                                             decoration: BoxDecoration(
-                                                                color: levelColor.withOpacity(0.2),
-                                                                borderRadius: BorderRadius.circular(3),
+                                                                color: levelBg,
+                                                                borderRadius: BorderRadius.circular(4),
                                                             ),
                                                             child: Text(
                                                                 entry.level.name.toUpperCase(),
@@ -162,9 +187,10 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                         const SizedBox(width: 6),
                                                         Text(
                                                             "${entry.timestamp.hour.toString().padLeft(2, '0')}:${entry.timestamp.minute.toString().padLeft(2, '0')}:${entry.timestamp.second.toString().padLeft(2, '0')}.${entry.timestamp.millisecond.toString().padLeft(3, '0')}",
-                                                            style: GoogleFonts.notoSansMono(
+                                                            style: const TextStyle(
+                                                                fontFamily: 'monospace',
                                                                 fontSize: 11,
-                                                                color: isDark ? Colors.white38 : Colors.black45,
+                                                                color: Colors.grey,
                                                             ),
                                                         ),
                                                     ],
@@ -172,7 +198,8 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                 const SizedBox(height: 4),
                                                 SelectableText(
                                                     entry.message,
-                                                    style: GoogleFonts.notoSansMono(
+                                                    style: TextStyle(
+                                                        fontFamily: 'monospace',
                                                         fontSize: 12,
                                                         color: isDark ? Colors.white : Colors.black87,
                                                     ),
@@ -181,7 +208,8 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                     const SizedBox(height: 2),
                                                     SelectableText(
                                                         entry.details!,
-                                                        style: GoogleFonts.notoSansMono(
+                                                        style: TextStyle(
+                                                            fontFamily: 'monospace',
                                                             fontSize: 11,
                                                             color: isDark ? Colors.white60 : Colors.black54,
                                                         ),

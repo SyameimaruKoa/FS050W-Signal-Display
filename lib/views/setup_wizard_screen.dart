@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 
 class SetupWizardScreen extends StatefulWidget {
-    final VoidCallback onComplete;
+    final VoidCallback? onComplete;
 
-    const SetupWizardScreen({super.key, required this.onComplete});
+    const SetupWizardScreen({super.key, this.onComplete});
 
     @override
     State<SetupWizardScreen> createState() => _SetupWizardScreenState();
@@ -100,7 +99,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
         await StorageService.saveSettings(settings);
         apiService.updateSettings(settings);
         apiService.startPolling();
-        widget.onComplete();
+        widget.onComplete?.call();
     }
 
     @override
@@ -123,7 +122,8 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                             Text(
                                 "+F FS050W 電波監視アプリ",
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.notoSansJp(
+                                style: TextStyle(
+                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? Colors.white : Colors.black87,
@@ -193,7 +193,8 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                         children: [
                                             Text(
                                                 "接続設定",
-                                                style: GoogleFonts.notoSansJp(
+                                                style: TextStyle(
+                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                 ),

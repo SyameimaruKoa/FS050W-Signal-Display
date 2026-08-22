@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../utils/color_gauge.dart';
 
 class MetricGauge extends StatelessWidget {
@@ -69,7 +68,8 @@ class MetricGauge extends StatelessWidget {
                                         child: Text(
                                             valueText,
                                             textAlign: TextAlign.right,
-                                            style: GoogleFonts.notoSansMono(
+                                            style: TextStyle(
+                                                fontFamily: 'monospace',
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,
                                                 color: color,

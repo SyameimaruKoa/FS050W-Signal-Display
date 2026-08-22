@@ -1,7 +1,7 @@
 name: fs050w_monitor
 description: "FS050W 5G/4G Signal Monitor and Engineering App"
 publish_to: 'none'
-version: 0.0.7+7
+version: 0.0.8+8
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -16,7 +16,6 @@ dependencies:
   shared_preferences: ^2.2.2
   flutter_foreground_task: ^11.0.1
   flutter_local_notifications: ^17.1.2
-  google_fonts: ^6.2.1
   wakelock_plus: ^1.2.8
   network_info_plus: ^5.0.1
 

@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/api_service.dart';
 import '../models/connection_state.dart';
@@ -18,34 +17,15 @@ class HudScreen extends StatefulWidget {
 }
 
 class _HudScreenState extends State<HudScreen> {
-    Timer? _pixelShiftTimer;
-    double _offsetX = 0.0;
-    double _offsetY = 0.0;
-    final Random _random = Random();
-
     @override
     void initState() {
         super.initState();
-        WakelockPlus.enable();
-        // Immersive sticky fullscreen (hides status bar and navigation buttons)
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-        // 1-minute interval pixel shift to prevent OLED burn-in
-        _pixelShiftTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-            if (mounted) {
-                setState(() {
-                    _offsetX = (_random.nextDouble() * 30) - 15;
-                    _offsetY = (_random.nextDouble() * 40) - 20;
-                });
-            }
-        });
+        WakelockPlus.enable();
     }
 
     @override
     void dispose() {
-        _pixelShiftTimer?.cancel();
-        WakelockPlus.disable();
-        // Restore standard system UI mode
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
         super.dispose();
     }
@@ -54,150 +34,174 @@ class _HudScreenState extends State<HudScreen> {
     Widget build(BuildContext context) {
         final apiService = context.watch<ApiService>();
         final signal = apiService.currentSignal;
-
+        final settings = apiService.settings;
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
-        final modeBadge = ConnectionModeHelper.getIconBadgeText(mode);
-        final uiMode = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false);
+        final notation = settings.generationNotation;
+        final modeBadge = ConnectionModeHelper.getIconBadgeText(mode, notation: notation);
+        final uiMode = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false, notation: notation);
 
         final isCharging = signal?.isCharging ?? false;
 
         return Scaffold(
-            backgroundColor: Colors.black, // #000000 OLED True Black
-            body: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => Navigator.of(context).pop(),
-                child: SafeArea(
-                    child: Center(
-                        child: Transform.translate(
-                            offset: Offset(_offsetX, _offsetY),
-                            child: SingleChildScrollView(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                        // Top Bar
-                                        Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                            decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.05),
-                                                borderRadius: BorderRadius.circular(20),
-                                            ),
-                                            child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                    Text(
-                                                        "[ $modeBadge ] $uiMode",
-                                                        style: GoogleFonts.notoSansJp(
-                                                            fontSize: 14,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: const Color(0xFF00E5FF),
-                                                        ),
-                                                    ),
-                                                    if (signal?.batteryPercent != null) ...[
-                                                        const SizedBox(width: 12),
-                                                        Text(
-                                                            "🔋 ${signal!.batteryPercent}%${isCharging ? '⚡' : ''}",
-                                                            style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                                        ),
-                                                    ],
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                        signal?.operatorName ?? "--",
-                                                        style: const TextStyle(fontSize: 12, color: Colors.white54),
-                                                    ),
-                                                ],
-                                            ),
-                                        ),
-                                        const SizedBox(height: 24),
-
-                                        // 5G NR Section (if available)
-                                        if (mode == Fs050wConnectionMode.nr5g || mode == Fs050wConnectionMode.nr5gSub6) ...[
-                                            _buildMetricSection(
-                                                title: "5G NR (${FrequencyCalculator.getNrBandName(signal?.nrBand)}  PCI: ${signal?.nrPci ?? '--'})",
-                                                titleColor: const Color(0xFF00E5FF),
-                                                rsrp: signal?.nrRsrp,
-                                                rsrq: signal?.nrRsrq,
-                                                sinr: signal?.nrSnr,
-                                                sinrLabel: "SNR",
-                                            ),
-                                            const SizedBox(height: 20),
-                                        ],
-
-                                        // 4G LTE Section
-                                        if (!(signal?.isSa ?? false)) ...[
-                                            _buildMetricSection(
-                                                title: "4G LTE (${FrequencyCalculator.getLteBandName(signal?.lteBand)}  PCI: ${signal?.ltePci ?? '--'})",
-                                                titleColor: const Color(0xFF2196F3),
-                                                rsrp: signal?.lteRsrp,
-                                                rsrq: signal?.lteRsrq,
-                                                sinr: signal?.lteSinr,
-                                                sinrLabel: "SINR",
-                                            ),
-                                        ],
-
-                                        const SizedBox(height: 32),
-                                        const Text(
-                                            "画面をタップして通常表示に戻る",
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Color(0xFF444444),
-                                            ),
-                                        ),
-                                    ],
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        );
-    }
-
-    Widget _buildMetricSection({
-        required String title,
-        required Color titleColor,
-        required double? rsrp,
-        required double? rsrq,
-        required double? sinr,
-        required String sinrLabel,
-    }) {
-        return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: titleColor.withOpacity(0.25)),
-            ),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            backgroundColor: Colors.black,
+            body: Stack(
                 children: [
-                    Text(
-                        title,
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: titleColor,
+                    SafeArea(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                                // Top status bar
+                                Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                            IconButton(
+                                                icon: const Icon(Icons.close, color: Colors.white70),
+                                                onPressed: () => Navigator.of(context).pop(),
+                                            ),
+                                            Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.05),
+                                                    borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                        Text(
+                                                            "[ $modeBadge ] $uiMode",
+                                                            style: const TextStyle(
+                                                                fontFamilyFallback: ['Noto Sans JP', 'sans-serif'],
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: Color(0xFF00E5FF),
+                                                            ),
+                                                        ),
+                                                        if (signal?.batteryPercent != null) ...[
+                                                            const SizedBox(width: 12),
+                                                            Text(
+                                                                "🔋 ${signal!.batteryPercent}%${isCharging ? '⚡' : ''}",
+                                                                style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                                            ),
+                                                        ],
+                                                    ],
+                                                ),
+                                            ),
+                                            Text(
+                                                signal?.operatorName ?? "--",
+                                                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+
+                                // Main signal gauges
+                                Expanded(
+                                    child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Row(
+                                            children: [
+                                                // 5G Gauges
+                                                Expanded(
+                                                    child: _buildHudPanel(
+                                                        context,
+                                                        title: ConnectionModeHelper.getGenerationName(true, notation: notation),
+                                                        bandStr: signal?.nrBand != null ? "n${signal!.nrBand}" : "--",
+                                                        pciStr: signal?.nrPci != null ? "${signal!.nrPci}" : "--",
+                                                        rsrp: signal?.nrRsrp,
+                                                        rsrq: signal?.nrRsrq,
+                                                        sinr: signal?.nrSnr,
+                                                        accentColor: const Color(0xFF00ADB5),
+                                                    ),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                // 4G Gauges
+                                                Expanded(
+                                                    child: _buildHudPanel(
+                                                        context,
+                                                        title: ConnectionModeHelper.getGenerationName(false, notation: notation),
+                                                        bandStr: signal?.lteBand != null ? "B${signal!.lteBand}" : "--",
+                                                        pciStr: signal?.ltePci != null ? "${signal!.ltePci}" : "--",
+                                                        rsrp: signal?.lteRsrp,
+                                                        rsrq: signal?.lteRsrq,
+                                                        sinr: signal?.lteSinr,
+                                                        accentColor: const Color(0xFF2196F3),
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                ),
+                            ],
                         ),
-                    ),
-                    const Divider(color: Colors.white12, height: 14),
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                            _buildSingleMetric("RSRP", rsrp, "dBm", ColorGauge.rateRsrp(rsrp)),
-                            _buildSingleMetric("RSRQ", rsrq, "dB", ColorGauge.rateRsrq(rsrq)),
-                            _buildSingleMetric(sinrLabel, sinr, "dB", ColorGauge.rateSinr(sinr)),
-                        ],
                     ),
                 ],
             ),
         );
     }
 
-    Widget _buildSingleMetric(String label, double? value, String unit, SignalRatingLevel level) {
-        final valStr = value != null ? value.toStringAsFixed(1) : "--";
-        final color = ColorGauge.getColor(level);
+    Widget _buildHudPanel(
+        BuildContext context, {
+        required String title,
+        required String bandStr,
+        required String pciStr,
+        required double? rsrp,
+        required double? rsrq,
+        required double? sinr,
+        required Color accentColor,
+    }) {
+        return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: accentColor.withOpacity(0.4), width: 1.5),
+            ),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                            Text(
+                                "$title ($bandStr)",
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: accentColor,
+                                ),
+                            ),
+                            Text(
+                                "PCI: $pciStr",
+                                style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                ),
+                            ),
+                        ],
+                    ),
+                    const Divider(color: Colors.white12, height: 24),
+                    Expanded(
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                                _buildHudMetric("RSRP", rsrp, "dBm", ColorGauge.getColor(ColorGauge.rateRsrp(rsrp))),
+                                _buildHudMetric("RSRQ", rsrq, "dB", ColorGauge.getColor(ColorGauge.rateRsrq(rsrq))),
+                                _buildHudMetric("SINR", sinr, "dB", ColorGauge.getColor(ColorGauge.rateSinr(sinr))),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        );
+    }
 
+    Widget _buildHudMetric(String label, double? val, String unit, Color color) {
+        final valStr = val != null ? val.toStringAsFixed(1) : "--";
         return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
                 Text(
                     label,
@@ -206,7 +210,8 @@ class _HudScreenState extends State<HudScreen> {
                 const SizedBox(height: 2),
                 Text(
                     valStr,
-                    style: GoogleFonts.notoSansMono(
+                    style: TextStyle(
+                        fontFamily: 'monospace',
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: color,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'models/app_settings.dart';
@@ -16,7 +15,7 @@ import 'views/graph_screen.dart';
 import 'views/settings_screen.dart';
 import 'views/setup_wizard_screen.dart';
 import 'views/pip_screen.dart';
-import 'views/widgets/event_lamp_overlay.dart';
+import 'views/widgets/in_app_event_lamp.dart';
 
 void main() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -59,15 +58,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
     void initState() {
         super.initState();
         WidgetsBinding.instance.addObserver(this);
-
-        _lifecycleChannel.setMethodCallHandler((call) async {
-            if (call.method == 'onScreenStateChanged') {
-                final bool isScreenOn = call.arguments as bool? ?? true;
-                if (mounted) {
-                    context.read<ApiService>().setScreenState(isScreenOn);
-                }
-            }
-        });
+        _lifecycleChannel.setMethodCallHandler(_handleLifecycleCall);
     }
 
     @override
@@ -76,11 +67,29 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
         super.dispose();
     }
 
+    Future<dynamic> _handleLifecycleCall(MethodCall call) async {
+        if (call.method == 'onScreenStateChanged') {
+            final isScreenOn = call.arguments as bool? ?? true;
+            if (mounted) {
+                final api = context.read<ApiService>();
+                if (isScreenOn) {
+                    api.startPolling();
+                } else {
+                    api.stopPolling();
+                }
+            }
+        }
+    }
+
     @override
     void didChangeAppLifecycleState(AppLifecycleState state) {
-        super.didChangeAppLifecycleState(state);
-        // Do not pause polling on app backgrounding if screen is still ON
-        // Screen OFF/ON lifecycle is managed accurately via _lifecycleChannel
+        final api = context.read<ApiService>();
+        if (state == AppLifecycleState.resumed) {
+            api.startPolling();
+            PipService.setAutoEnterPip(api.settings.autoPipOnHome, api.settings.pipAspectRatio);
+        } else if (state == AppLifecycleState.paused) {
+            // Background handling
+        }
     }
 
     @override
@@ -88,34 +97,18 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
         final apiService = context.watch<ApiService>();
         final settings = apiService.settings;
 
-        // Manage Wakelock (Screen Always On)
+        // Keep Screen On
         if (settings.keepScreenOn) {
             WakelockPlus.enable();
         } else {
             WakelockPlus.disable();
         }
 
-        // Determine Theme
-        final ThemeData themeData = _buildThemeData(settings.appTheme, context);
-
-        return ValueListenableBuilder<bool>(
-            valueListenable: PipService.isPipModeNotifier,
-            builder: (context, isInPipMode, _) {
-                return MaterialApp(
-                    title: 'FS050W Monitor',
-                    debugShowCheckedModeBanner: false,
-                    theme: themeData,
-                    home: isInPipMode
-                        ? const PipScreen()
-                        : EventLampOverlay(
-                            child: settings.isSetupCompleted
-                                ? const MainNavigationShell()
-                                : SetupWizardScreen(
-                                    onComplete: () {},
-                                ),
-                        ),
-                );
-            },
+        return MaterialApp(
+            title: 'FS050W Signal Monitor',
+            debugShowCheckedModeBanner: false,
+            theme: _buildThemeData(settings.appTheme, context),
+            home: const PiPDetectorShell(),
         );
     }
 
@@ -131,7 +124,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                         foregroundColor: Colors.white,
                         elevation: 0,
                     ),
-                    textTheme: GoogleFonts.notoSansJpTextTheme(ThemeData.dark().textTheme),
+                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                     colorScheme: const ColorScheme.dark(
                         primary: Color(0xFF00ADB5),
                         secondary: Color(0xFF00E5FF),
@@ -148,7 +141,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                         foregroundColor: Colors.white,
                         elevation: 0,
                     ),
-                    textTheme: GoogleFonts.notoSansJpTextTheme(ThemeData.dark().textTheme),
+                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                     colorScheme: const ColorScheme.dark(
                         primary: Color(0xFF00ADB5),
                         secondary: Color(0xFF00E5FF),
@@ -165,7 +158,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                         foregroundColor: Colors.black87,
                         elevation: 1,
                     ),
-                    textTheme: GoogleFonts.notoSansJpTextTheme(ThemeData.light().textTheme),
+                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                     colorScheme: const ColorScheme.light(
                         primary: Color(0xFF00ADB5),
                         secondary: Color(0xFF007A78),
@@ -176,6 +169,45 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                 final isPlatformDark = WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
                 return _buildThemeData(isPlatformDark ? AppThemeMode.dark : AppThemeMode.light, context);
         }
+    }
+}
+
+class PiPDetectorShell extends StatefulWidget {
+    const PiPDetectorShell({super.key});
+
+    @override
+    State<PiPDetectorShell> createState() => _PiPDetectorShellState();
+}
+
+class _PiPDetectorShellState extends State<PiPDetectorShell> {
+    bool _isPipMode = false;
+
+    @override
+    void initState() {
+        super.initState();
+        PipService.isPipModeNotifier.addListener(_onPipChanged);
+    }
+
+    @override
+    void dispose() {
+        PipService.isPipModeNotifier.removeListener(_onPipChanged);
+        super.dispose();
+    }
+
+    void _onPipChanged() {
+        if (mounted) {
+            setState(() {
+                _isPipMode = PipService.isPipModeNotifier.value;
+            });
+        }
+    }
+
+    @override
+    Widget build(BuildContext context) {
+        if (_isPipMode) {
+            return const PipScreen();
+        }
+        return const MainNavigationShell();
     }
 }
 
@@ -199,9 +231,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             apiService.addListener(_onSignalUpdated);
             apiService.startPolling();
 
-            // Initial overlay sync if enabled
-            if (apiService.settings.overlayEnabled) {
-                OverlayService.startOverlay(apiService.settings);
+            if (apiService.settings.routerIp.isEmpty) {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SetupWizardScreen()),
+                );
             }
         });
     }
@@ -213,18 +246,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     }
 
     void _onSignalUpdated() {
-        final apiService = _subscribedService;
-        if (apiService == null) return;
-
+        final apiService = context.read<ApiService>();
         final signal = apiService.currentSignal;
-        if (signal != null) {
-            NotificationService.handleSignalEvents(signal, apiService.settings);
-            OverlayService.updateOverlayData(
-                signal,
-                apiService.settings,
-                isConnecting: apiService.isConnecting,
-            );
-        }
+        final settings = apiService.settings;
+        final isConnecting = apiService.isConnecting;
+
+        OverlayService.updateOverlayData(signal, settings, isConnecting: isConnecting);
     }
 
     @override
@@ -241,37 +268,42 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             const SettingsScreen(),
         ];
 
-        if (!isBottomNav) {
-            return pages[_currentIndex];
-        }
+        final mainContent = isBottomNav
+            ? Scaffold(
+                body: pages[_currentIndex],
+                bottomNavigationBar: NavigationBar(
+                    selectedIndex: _currentIndex,
+                    onDestinationSelected: (index) {
+                        setState(() {
+                            _currentIndex = index;
+                        });
+                    },
+                    destinations: const [
+                        NavigationDestination(
+                            icon: Icon(Icons.dashboard_outlined),
+                            selectedIcon: Icon(Icons.dashboard),
+                            label: 'ダッシュボード',
+                        ),
+                        NavigationDestination(
+                            icon: Icon(Icons.show_chart_outlined),
+                            selectedIcon: Icon(Icons.show_chart),
+                            label: '同期グラフ',
+                        ),
+                        NavigationDestination(
+                            icon: Icon(Icons.settings_outlined),
+                            selectedIcon: Icon(Icons.settings),
+                            label: '設定',
+                        ),
+                    ],
+                ),
+            )
+            : pages[_currentIndex];
 
-        return Scaffold(
-            body: pages[_currentIndex],
-            bottomNavigationBar: NavigationBar(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: (index) {
-                    setState(() {
-                        _currentIndex = index;
-                    });
-                },
-                destinations: const [
-                    NavigationDestination(
-                        icon: Icon(Icons.dashboard_outlined),
-                        selectedIcon: Icon(Icons.dashboard),
-                        label: 'ダッシュボード',
-                    ),
-                    NavigationDestination(
-                        icon: Icon(Icons.show_chart_outlined),
-                        selectedIcon: Icon(Icons.show_chart),
-                        label: '同期グラフ',
-                    ),
-                    NavigationDestination(
-                        icon: Icon(Icons.settings_outlined),
-                        selectedIcon: Icon(Icons.settings),
-                        label: '設定',
-                    ),
-                ],
-            ),
+        return Stack(
+            children: [
+                mainContent,
+                const InAppEventLamp(),
+            ],
         );
     }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../models/signal_data.dart';
 import '../../models/connection_state.dart';
 import '../../utils/calc_frequency.dart';
@@ -167,7 +166,8 @@ class CellCard extends StatelessWidget {
                                     Text("PCI: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
                                         signal.nrPci != null ? "${signal.nrPci}" : "--",
-                                        style: GoogleFonts.notoSansMono(
+                                        style: TextStyle(
+                                            fontFamily: 'monospace',
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: isDark ? Colors.white : Colors.black87,
@@ -183,7 +183,8 @@ class CellCard extends StatelessWidget {
                                         Flexible(
                                             child: Text(
                                                 nrBandName,
-                                                style: GoogleFonts.notoSansMono(
+                                                style: TextStyle(
+                                                    fontFamily: 'monospace',
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                     color: isDark ? Colors.white : Colors.black87,
@@ -324,7 +325,8 @@ class CellCard extends StatelessWidget {
                                     Text("PCI: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
                                         signal.ltePci != null ? "${signal.ltePci}" : "--",
-                                        style: GoogleFonts.notoSansMono(
+                                        style: TextStyle(
+                                            fontFamily: 'monospace',
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: isDark ? Colors.white : Colors.black87,
@@ -340,7 +342,8 @@ class CellCard extends StatelessWidget {
                                         Flexible(
                                             child: Text(
                                                 bandName,
-                                                style: GoogleFonts.notoSansMono(
+                                                style: TextStyle(
+                                                    fontFamily: 'monospace',
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                     color: isDark ? Colors.white : Colors.black87,

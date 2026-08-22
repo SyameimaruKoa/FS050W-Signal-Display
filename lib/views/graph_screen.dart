@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
@@ -48,9 +47,9 @@ class _GraphScreenState extends State<GraphScreen> {
 
         return Scaffold(
             appBar: AppBar(
-                title: Text(
+                title: const Text(
                     "📊 リアルタイム同期グラフ",
-                    style: GoogleFonts.notoSansJp(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
                 ),
             ),
             body: Column(
@@ -440,7 +439,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                                                 padding: const EdgeInsets.only(right: 3),
                                                                 child: Text(
                                                                     "${matched.value.toInt()}",
-                                                                    style: GoogleFonts.notoSansMono(
+                                                                    style: TextStyle(
+                                                                        fontFamily: 'monospace',
                                                                         fontSize: 9.5,
                                                                         fontWeight: FontWeight.bold,
                                                                         color: matched.color,
@@ -455,7 +455,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                                         padding: const EdgeInsets.only(right: 2),
                                                         child: Text(
                                                             "${value.toInt()}",
-                                                            style: GoogleFonts.notoSansMono(
+                                                            style: TextStyle(
+                                                                fontFamily: 'monospace',
                                                                 fontSize: 9,
                                                                 color: isDark ? Colors.white54 : Colors.black54,
                                                             ),
@@ -476,7 +477,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                                     if (diffSec <= 2) {
                                                         return Text(
                                                             "現在",
-                                                            style: GoogleFonts.notoSansJp(
+                                                            style: TextStyle(
+                                                                fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                                 fontSize: 9,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: isDark ? Colors.white70 : Colors.black87,
@@ -495,7 +497,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                                     }
                                                     return Text(
                                                         label,
-                                                        style: GoogleFonts.notoSansMono(
+                                                        style: TextStyle(
+                                                            fontFamily: 'monospace',
                                                             fontSize: 9,
                                                             color: isDark ? Colors.white54 : Colors.black54,
                                                         ),
