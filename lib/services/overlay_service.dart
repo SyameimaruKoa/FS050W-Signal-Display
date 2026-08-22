@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/signal_data.dart';
@@ -7,9 +6,6 @@ import '../models/connection_state.dart';
 
 class OverlayService {
     static const MethodChannel _channel = MethodChannel('com.syameimarukoa.fs050w_monitor/overlay');
-
-    // Callback stream for in-app LED lamp overlay
-    static final ValueNotifier<Map<String, dynamic>?> inAppLampNotifier = ValueNotifier<Map<String, dynamic>?>(null);
 
     static Future<bool> checkPermission() async {
         try {
@@ -32,6 +28,8 @@ class OverlayService {
                 'overlayStyle': settings.overlayStyle,
                 'overlayOpacity': settings.overlayOpacity,
                 'overlayScale': settings.overlayScale,
+                'pipAspectRatio': settings.pipAspectRatio,
+                'smoothGaugeCurve': settings.smoothGaugeCurve,
             });
         } catch (_) {}
     }
@@ -81,6 +79,7 @@ class OverlayService {
                 'overlayOpacity': settings.overlayOpacity,
                 'overlayScale': settings.overlayScale,
                 'smoothGaugeCurve': settings.smoothGaugeCurve,
+                'pipAspectRatio': settings.pipAspectRatio,
             });
         } catch (_) {}
     }
@@ -88,15 +87,6 @@ class OverlayService {
     static Future<void> triggerLamp(String type, AppSettings settings) async {
         if (!settings.eventLampEnabled) return;
 
-        // In-app lamp update
-        inAppLampNotifier.value = {
-            'type': type,
-            'shape': settings.eventLampShape,
-            'position': settings.eventLampPosition,
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-        };
-
-        // System overlay lamp update
         try {
             await _channel.invokeMethod('triggerLamp', {
                 'type': type,

@@ -15,7 +15,6 @@ import 'views/graph_screen.dart';
 import 'views/settings_screen.dart';
 import 'views/setup_wizard_screen.dart';
 import 'views/pip_screen.dart';
-import 'views/widgets/in_app_event_lamp.dart';
 
 void main() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -31,8 +30,14 @@ void main() async {
     // 2. Load Persisted Settings
     final settings = await StorageService.loadSettings();
 
-    // Synchronize auto PiP setting with native layer
+    // Synchronize auto PiP and overlay setting with native layer
     PipService.setAutoEnterPip(settings.autoPipOnHome, settings.pipAspectRatio);
+    if (settings.overlayEnabled) {
+        final hasPermission = await OverlayService.checkPermission();
+        if (hasPermission) {
+            await OverlayService.startOverlay(settings);
+        }
+    }
 
     runApp(
         MultiProvider(
@@ -299,11 +304,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             )
             : pages[_currentIndex];
 
-        return Stack(
-            children: [
-                mainContent,
-                const InAppEventLamp(),
-            ],
-        );
+        return mainContent;
     }
 }

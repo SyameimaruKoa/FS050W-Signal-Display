@@ -46,8 +46,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (mounted) {
             PipService.setAutoEnterPip(_settings.autoPipOnHome, _settings.pipAspectRatio);
-            if (apiService.currentSignal != null) {
-                OverlayService.updateOverlayData(apiService.currentSignal, _settings);
+            if (_settings.overlayEnabled) {
+                await OverlayService.startOverlay(_settings);
+                if (apiService.currentSignal != null) {
+                    OverlayService.updateOverlayData(apiService.currentSignal, _settings);
+                }
+            } else {
+                await OverlayService.stopOverlay();
             }
         }
     }
@@ -80,6 +85,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
                 return;
             }
+            await OverlayService.startOverlay(_settings);
+            final apiService = context.read<ApiService>();
+            if (apiService.currentSignal != null) {
+                OverlayService.updateOverlayData(apiService.currentSignal, _settings);
+            }
+        } else {
+            await OverlayService.stopOverlay();
         }
 
         setState(() {

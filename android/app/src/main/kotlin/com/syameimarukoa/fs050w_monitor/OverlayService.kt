@@ -305,6 +305,7 @@ class OverlayService : Service() {
             y = (screenHeight * 0.15).toInt()
         }
 
+        updateScreenDimensions()
         val container = FrameLayout(this)
         overlayContainer = container
 
@@ -315,6 +316,7 @@ class OverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        updateFloatingViewContent()
     }
 
     private fun hideFloatingOverlay() {
@@ -411,7 +413,7 @@ class OverlayService : Service() {
 
         val json = lastSignalJson
         val opName = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
-        val modeBadge = json?.optString("connectionModeBadge", "5G+") ?: "5G+"
+        val modeBadge = json?.optString("modeBadge", json.optString("connectionModeBadge", "5G+")) ?: "5G+"
         val isConnecting = json?.optBoolean("isConnecting", false) ?: false
         val notation = json?.optString("generationNotation", "4g_5g") ?: "4g_5g"
         val smoothColor = json?.optBoolean("smoothGaugeColor", false) ?: false

@@ -1,7 +1,7 @@
 name: fs050w_monitor
 description: "FS050W 5G/4G Signal Monitor and Engineering App"
 publish_to: 'none'
-version: 0.0.8+8
+version: 0.0.9+9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
