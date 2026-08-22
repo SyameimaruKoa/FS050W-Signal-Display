@@ -21,6 +21,9 @@ import 'views/widgets/event_lamp_overlay.dart';
 void main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
+    // Lock orientation to portrait Up
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
     // 1. Initialize Pip, Foreground, and Notification Services
     PipService.initialize();
     BackgroundService.initService();
@@ -76,14 +79,8 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
     @override
     void didChangeAppLifecycleState(AppLifecycleState state) {
         super.didChangeAppLifecycleState(state);
-        final apiService = context.read<ApiService>();
-        if (state == AppLifecycleState.paused) {
-            // App paused (or screen off): allow battery-saving state
-            apiService.setScreenState(false);
-        } else if (state == AppLifecycleState.resumed) {
-            // App resumed: wake up polling
-            apiService.setScreenState(true);
-        }
+        // Do not pause polling on app backgrounding if screen is still ON
+        // Screen OFF/ON lifecycle is managed accurately via _lifecycleChannel
     }
 
     @override

@@ -121,18 +121,138 @@ class OverlayService : Service() {
         return START_NOT_STICKY
     }
 
+    // UI References & ViewHolders for Flicker-Free In-Place Updates
+    private var currentModeViewType: String? = null // "pill", "card", "compact"
+    private var userCustomWidthPx: Int? = null
+
+    private class MetricCellHolder(
+        val rootCell: FrameLayout,
+        val barView: View,
+        val labelView: TextView,
+        val label: String,
+        val unit: String,
+        val minVal: Double,
+        val maxVal: Double,
+        val defaultBarColor: Int
+    ) {
+        fun update(value: Double?, customPrefix: String? = null, smoothColor: Boolean = false) {
+            val displayLabel = if (customPrefix != null) "$customPrefix $label" else label
+            val textValue = if (value != null && !value.isNaN() && value > -200) {
+                val formatted = String.format("%.1f", value)
+                "$displayLabel: $formatted $unit"
+            } else {
+                "$displayLabel: -- $unit"
+            }
+            labelView.text = textValue
+
+            val normalized = if (value != null && !value.isNaN() && value > -200) {
+                ((value - minVal) / (maxVal - minVal)).coerceIn(0.0, 1.0).toFloat()
+            } else {
+                0.0f
+            }
+
+            if (smoothColor && value != null && !value.isNaN() && value > -200) {
+                barView.setBackgroundColor(calculateSmoothColor(normalized.toDouble()))
+            } else {
+                barView.setBackgroundColor(defaultBarColor)
+            }
+
+            val totalWidth = rootCell.width
+            if (totalWidth > 0) {
+                val barW = (totalWidth * normalized).toInt()
+                val lp = barView.layoutParams
+                if (lp.width != barW) {
+                    lp.width = barW
+                    barView.layoutParams = lp
+                }
+            } else {
+                rootCell.post {
+                    val w = rootCell.width
+                    val barW = (w * normalized).toInt()
+                    val lp = barView.layoutParams
+                    lp.width = barW
+                    barView.layoutParams = lp
+                }
+            }
+        }
+
+        private fun calculateSmoothColor(ratio: Double): Int {
+            val r = ratio.coerceIn(0.0, 1.0)
+            val cCritical = Color.parseColor("#9C27B0")
+            val cVeryWeak = Color.parseColor("#F44336")
+            val cWeak = Color.parseColor("#FF9800")
+            val cModerate = Color.parseColor("#8BC34A")
+            val cGood = Color.parseColor("#4CAF50")
+            val cExcellent = Color.parseColor("#2196F3")
+
+            return when {
+                r < 0.20 -> interpolateColor(cCritical, cVeryWeak, (r / 0.20).toFloat())
+                r < 0.40 -> interpolateColor(cVeryWeak, cWeak, ((r - 0.20) / 0.20).toFloat())
+                r < 0.60 -> interpolateColor(cWeak, cModerate, ((r - 0.40) / 0.20).toFloat())
+                r < 0.80 -> interpolateColor(cModerate, cGood, ((r - 0.60) / 0.20).toFloat())
+                else -> interpolateColor(cGood, cExcellent, ((r - 0.80) / 0.20).toFloat())
+            }
+        }
+
+        private fun interpolateColor(c1: Int, c2: Int, t: Float): Int {
+            val a = (Color.alpha(c1) + (Color.alpha(c2) - Color.alpha(c1)) * t).toInt()
+            val r = (Color.red(c1) + (Color.red(c2) - Color.red(c1)) * t).toInt()
+            val g = (Color.green(c1) + (Color.green(c2) - Color.green(c1)) * t).toInt()
+            val b = (Color.blue(c1) + (Color.blue(c2) - Color.blue(c1)) * t).toInt()
+            return Color.argb(a, r, g, b)
+        }
+    }
+
+    private class PillViewHolder(
+        val pillLayout: LinearLayout,
+        val badgeText: TextView
+    )
+
+    private class CardViewHolder(
+        val mainCard: FrameLayout,
+        val badgeView: TextView,
+        val opView: TextView,
+        val nrHeader: TextView,
+        val nrRsrpCell: MetricCellHolder,
+        val nrRsrqCell: MetricCellHolder,
+        val nrSnrCell: MetricCellHolder,
+        val lteHeader: TextView,
+        val lteRsrpCell: MetricCellHolder,
+        val lteRsrqCell: MetricCellHolder,
+        val lteSinrCell: MetricCellHolder
+    )
+
+    private class CompactViewHolder(
+        val mainCard: FrameLayout,
+        val statusView: TextView,
+        val nrCell: MetricCellHolder,
+        val lteCell: MetricCellHolder
+    )
+
+    private var pillHolder: PillViewHolder? = null
+    private var cardHolder: CardViewHolder? = null
+    private var compactHolder: CompactViewHolder? = null
+
     private fun parseConfigFromIntent(intent: Intent) {
         if (intent.hasExtra("overlayStyle")) {
-            overlayStyle = intent.getStringExtra("overlayStyle") ?: overlayStyle
+            val newStyle = intent.getStringExtra("overlayStyle") ?: overlayStyle
+            if (newStyle != overlayStyle) {
+                overlayStyle = newStyle
+                currentModeViewType = null
+            }
         }
         if (intent.hasExtra("overlayOpacity")) {
             overlayOpacity = intent.getFloatExtra("overlayOpacity", overlayOpacity)
         }
-        if (intent.hasExtra("overlayScale")) {
+        if (intent.hasExtra("overlayScale") && userCustomWidthPx == null) {
             overlayScale = intent.getFloatExtra("overlayScale", overlayScale)
         }
         if (intent.hasExtra("pipAspectRatio")) {
-            aspectRatioStr = intent.getStringExtra("pipAspectRatio") ?: aspectRatioStr
+            val newRatio = intent.getStringExtra("pipAspectRatio") ?: aspectRatioStr
+            if (newRatio != aspectRatioStr) {
+                aspectRatioStr = newRatio
+                currentModeViewType = null
+            }
         }
     }
 
@@ -184,6 +304,10 @@ class OverlayService : Service() {
             } catch (_: Exception) {}
             overlayContainer = null
             overlayLayoutParams = null
+            pillHolder = null
+            cardHolder = null
+            compactHolder = null
+            currentModeViewType = null
         }
     }
 
@@ -201,8 +325,8 @@ class OverlayService : Service() {
     }
 
     private fun dpToPx(dp: Float): Int {
-        return TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
+        return android.util.TypedValue.applyDimension(
+            android.util.TypedValue.COMPLEX_UNIT_DIP,
             dp,
             resources.displayMetrics
         ).toInt()
@@ -213,16 +337,17 @@ class OverlayService : Service() {
         container.removeAllViews()
 
         if (!isExpanded) {
-            // Folded Mini Pill (約 110dp x 36dp)
+            currentModeViewType = "pill"
             val pillView = createMiniPillView()
             container.addView(pillView)
             setupTouchAndGesture(container, isHandle = false)
+            updateFloatingViewContent()
             return
         }
 
         val ratio = getAspectRatioValue()
         val baseWidthDp = if (ratio >= 1.0f) 280f * overlayScale else 200f * overlayScale
-        val widthPx = dpToPx(baseWidthDp)
+        val widthPx = userCustomWidthPx ?: dpToPx(baseWidthDp)
 
         val mainCard = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
@@ -240,12 +365,15 @@ class OverlayService : Service() {
         }
 
         // Inner Content
-        val contentView = if (overlayStyle == "compact") {
-            createCompactContentView()
+        if (overlayStyle == "compact") {
+            currentModeViewType = "compact"
+            val contentView = createCompactContentView(mainCard)
+            mainCard.addView(contentView)
         } else {
-            createCardContentView(ratio)
+            currentModeViewType = "card"
+            val contentView = createCardContentView(mainCard, ratio)
+            mainCard.addView(contentView)
         }
-        mainCard.addView(contentView)
 
         // Resize Handle (◢) at Bottom-Right
         val resizeHandle = createResizeHandleView()
@@ -258,11 +386,88 @@ class OverlayService : Service() {
 
         setupTouchAndGesture(mainCard, isHandle = false)
         setupResizeHandleTouch(resizeHandle, mainCard)
+
+        updateFloatingViewContent()
     }
 
     private fun updateFloatingViewContent() {
-        if (overlayContainer != null) {
+        if (overlayContainer == null) return
+
+        val requiredType = if (!isExpanded) "pill" else overlayStyle
+        if (currentModeViewType != requiredType) {
             buildOverlayView()
+            return
+        }
+
+        val json = lastSignalJson
+        val opName = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
+        val modeBadge = json?.optString("connectionModeBadge", "5G+") ?: "5G+"
+        val isConnecting = json?.optBoolean("isConnecting", false) ?: false
+        val notation = json?.optString("generationNotation", "4g_5g") ?: "4g_5g"
+        val smoothColor = json?.optBoolean("smoothGaugeColor", false) ?: false
+
+        val isLteNr = notation == "lte_nr"
+        val nrLabel = if (isLteNr) "NR" else "5G"
+        val lteLabel = if (isLteNr) "LTE" else "4G"
+
+        val isSub6 = modeBadge.contains("+")
+        val badge = if (isSub6) "$nrLabel+" else if (modeBadge.contains("5G") || modeBadge.contains("NR")) nrLabel else if (modeBadge.contains("4G") || modeBadge.contains("LTE")) lteLabel else modeBadge
+
+        val nrBand = json?.optString("nrBand", "--") ?: "--"
+        val nrPci = json?.optString("nrPci", "--") ?: "--"
+        val nrRsrp = json?.optDouble("nrRsrp", Double.NaN)
+        val nrRsrq = json?.optDouble("nrRsrq", Double.NaN)
+        val nrSnr = json?.optDouble("nrSnr", Double.NaN)
+
+        val lteBand = json?.optString("lteBand", "--") ?: "--"
+        val ltePci = json?.optString("ltePci", "--") ?: "--"
+        val lteRsrp = json?.optDouble("lteRsrp", Double.NaN)
+        val lteRsrq = json?.optDouble("lteRsrq", Double.NaN)
+        val lteSinr = json?.optDouble("lteSinr", Double.NaN)
+
+        if (!isExpanded) {
+            val holder = pillHolder ?: return
+            val mainRsrp = if (nrRsrp != null && !nrRsrp.isNaN() && nrRsrp > -150) nrRsrp else lteRsrp
+            val mainSnr = if (nrSnr != null && !nrSnr.isNaN()) nrSnr else lteSinr
+
+            val rpStr = if (mainRsrp != null && !mainRsrp.isNaN() && mainRsrp > -150) "${mainRsrp.toInt()}" else "--"
+            val snrStr = if (mainSnr != null && !mainSnr.isNaN()) String.format("%.0f", mainSnr) else "--"
+
+            holder.badgeText.text = " $badge RP:$rpStr SNR:$snrStr"
+            holder.pillLayout.alpha = overlayOpacity
+            return
+        }
+
+        if (overlayStyle == "card") {
+            val holder = cardHolder ?: return
+            holder.mainCard.alpha = overlayOpacity
+            holder.badgeView.text = if (isConnecting) "[ 接続中... ]" else "[ $modeBadge ]"
+            holder.badgeView.setTextColor(if (isConnecting) Color.YELLOW else Color.parseColor("#00E5FF"))
+            holder.opView.text = "  $opName"
+
+            val nrTitle = if (modeBadge.contains("+")) "$nrLabel+ ($nrBand/$nrPci)" else "$nrLabel ($nrBand/$nrPci)"
+            val lteTitle = "$lteLabel ($lteBand/$ltePci)"
+
+            holder.nrHeader.text = nrTitle
+            holder.lteHeader.text = lteTitle
+
+            holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor)
+            holder.nrRsrqCell.update(nrRsrq, smoothColor = smoothColor)
+            holder.nrSnrCell.update(nrSnr, smoothColor = smoothColor)
+
+            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor)
+            holder.lteRsrqCell.update(lteRsrq, smoothColor = smoothColor)
+            holder.lteSinrCell.update(lteSinr, smoothColor = smoothColor)
+        } else {
+            val holder = compactHolder ?: return
+            holder.mainCard.alpha = overlayOpacity
+            holder.statusView.text = "[$modeBadge] $opName"
+
+            val nrTitle = if (modeBadge.contains("+")) "$nrLabel+ $nrBand" else "$nrLabel $nrBand"
+            val lteTitle = "$lteLabel $lteBand"
+
+            holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor)
+            holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor)
         }
     }
 
@@ -280,28 +485,12 @@ class OverlayService : Service() {
             alpha = overlayOpacity
         }
 
-        val json = lastSignalJson
-        val modeBadge = json?.optString("connectionModeBadge", "5G") ?: "5G"
-        val isSub6 = modeBadge.contains("+")
-        val badge = if (isSub6) "5G+" else if (modeBadge.contains("5G")) "5G" else if (modeBadge.contains("4G")) "4G" else modeBadge
-
-        val nrRsrp = json?.optDouble("nrRsrp", Double.NaN)
-        val lteRsrp = json?.optDouble("lteRsrp", Double.NaN)
-        val mainRsrp = if (nrRsrp != null && !nrRsrp.isNaN() && nrRsrp > -150) nrRsrp else lteRsrp
-
-        val nrSnr = json?.optDouble("nrSnr", Double.NaN)
-        val lteSinr = json?.optDouble("lteSinr", Double.NaN)
-        val mainSnr = if (nrSnr != null && !nrSnr.isNaN()) nrSnr else lteSinr
-
-        val rpStr = if (mainRsrp != null && !mainRsrp.isNaN() && mainRsrp > -150) "${mainRsrp.toInt()}" else "--"
-        val snrStr = if (mainSnr != null && !mainSnr.isNaN()) String.format("%.0f", mainSnr) else "--"
-
         val iconText = TextView(this).apply {
             text = "📶"
             textSize = 11f
         }
         val labelText = TextView(this).apply {
-            text = " $badge RP:$rpStr SNR:$snrStr"
+            text = " 5G RP:-- SNR:--"
             textSize = 11f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
@@ -309,19 +498,16 @@ class OverlayService : Service() {
 
         pill.addView(iconText)
         pill.addView(labelText)
+
+        pillHolder = PillViewHolder(pill, labelText)
         return pill
     }
 
-    private fun createCardContentView(ratio: Float): View {
+    private fun createCardContentView(mainCard: FrameLayout, ratio: Float): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dpToPx(8f), dpToPx(6f), dpToPx(8f), dpToPx(6f))
         }
-
-        val json = lastSignalJson
-        val opName = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
-        val modeBadge = json?.optString("connectionModeBadge", "5G+") ?: "5G+"
-        val isConnecting = json?.optBoolean("isConnecting", false) ?: false
 
         // Header Row
         val header = LinearLayout(this).apply {
@@ -330,9 +516,9 @@ class OverlayService : Service() {
         }
 
         val badgeView = TextView(this).apply {
-            text = if (isConnecting) "[ 接続中... ]" else "[ $modeBadge ]"
+            text = "[ 5G+ ]"
             textSize = 10f
-            setTextColor(if (isConnecting) Color.YELLOW else Color.parseColor("#00E5FF"))
+            setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
             val bg = GradientDrawable().apply {
                 setColor(Color.parseColor("#2200E5FF"))
@@ -343,7 +529,7 @@ class OverlayService : Service() {
         }
 
         val opView = TextView(this).apply {
-            text = "  $opName"
+            text = "  Rakuten"
             textSize = 10f
             setTextColor(Color.LTGRAY)
             typeface = Typeface.DEFAULT_BOLD
@@ -353,160 +539,97 @@ class OverlayService : Service() {
         header.addView(opView)
         root.addView(header)
 
-        // Metrics Section based on Aspect Ratio
-        val isHorizontal = ratio >= 1.0f
-
-        val nrBand = json?.optString("nrBand", "n77") ?: "n77"
-        val nrPci = json?.optString("nrPci", "384") ?: "384"
-        val nrRsrp = json?.optDouble("nrRsrp", -85.0)
-        val nrRsrq = json?.optDouble("nrRsrq", -11.0)
-        val nrSnr = json?.optDouble("nrSnr", 15.0)
-
-        val lteBand = json?.optString("lteBand", "B3") ?: "B3"
-        val ltePci = json?.optString("ltePci", "63") ?: "63"
-        val lteRsrp = json?.optDouble("lteRsrp", -78.0)
-        val lteRsrq = json?.optDouble("lteRsrq", -9.0)
-        val lteSinr = json?.optDouble("lteSinr", 18.0)
-
-        val nrTitle = if (modeBadge.contains("+")) "5G+ ($nrBand/$nrPci)" else "5G ($nrBand/$nrPci)"
-        val lteTitle = "4G ($lteBand/$ltePci)"
-
-        if (isHorizontal) {
-            // Horizontal: 2 Columns (Left: 5G, Right: 4G)
-            val columnsLayout = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-            }
-
-            val col5g = createMetricColumn(nrTitle, nrRsrp, nrRsrq, nrSnr, is5g = true)
-            val col4g = createMetricColumn(lteTitle, lteRsrp, lteRsrq, lteSinr, is5g = false)
-
-            col5g.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f)
-            col4g.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f)
-
-            columnsLayout.addView(col5g)
-            columnsLayout.addView(col4g)
-            root.addView(columnsLayout)
-        } else {
-            // Vertical: 2 Rows (Top: 5G, Bottom: 4G)
-            val row5g = createMetricRow(nrTitle, nrRsrp, nrRsrq, nrSnr, is5g = true)
-            val row4g = createMetricRow(lteTitle, lteRsrp, lteRsrq, lteSinr, is5g = false)
-
-            root.addView(row5g)
-            root.addView(row4g)
-        }
-
-        return root
-    }
-
-    private fun createCompactContentView(): View {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(8f), dpToPx(4f), dpToPx(8f), dpToPx(4f))
-        }
-
-        val json = lastSignalJson
-        val opName = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
-        val modeBadge = json?.optString("connectionModeBadge", "5G+") ?: "5G+"
-
-        val nrBand = json?.optString("nrBand", "n77") ?: "n77"
-        val nrRsrp = json?.optDouble("nrRsrp", -85.0)
-
-        val lteBand = json?.optString("lteBand", "B3") ?: "B3"
-        val lteRsrp = json?.optDouble("lteRsrp", -78.0)
-
-        // Line 1: Status
-        val l1 = TextView(this).apply {
-            text = "[$modeBadge] $opName"
-            textSize = 10f
+        // 5G Header & Metric Cells
+        val nrHeader = TextView(this).apply {
+            text = "5G (n77/--)"
+            textSize = 9.5f
             setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, dpToPx(4f), 0, dpToPx(2f))
         }
-        root.addView(l1)
+        root.addView(nrHeader)
 
-        val nrTitle = if (modeBadge.contains("+")) "5G+ $nrBand" else "5G $nrBand"
+        val nrRsrpCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#00ADB5"))
+        val nrRsrqCell = createMetricCellHolder("RSRQ", "dB", -25.0, -3.0, Color.parseColor("#00ADB5"))
+        val nrSnrCell = createMetricCellHolder("SNR", "dB", -10.0, 30.0, Color.parseColor("#00ADB5"))
 
-        // Line 2: 5G Metrics with bar
-        val l2 = createCompactMetricCell(nrTitle, "RSRP", nrRsrp, -140.0, -50.0, Color.parseColor("#00E5FF"))
-        root.addView(l2)
+        root.addView(nrRsrpCell.rootCell)
+        root.addView(nrRsrqCell.rootCell)
+        root.addView(nrSnrCell.rootCell)
 
-        // Line 3: 4G Metrics with bar
-        val l3 = createCompactMetricCell("4G $lteBand", "RSRP", lteRsrp, -140.0, -50.0, Color.parseColor("#2196F3"))
-        root.addView(l3)
+        // 4G Header & Metric Cells
+        val lteHeader = TextView(this).apply {
+            text = "4G (B3/--)"
+            textSize = 9.5f
+            setTextColor(Color.parseColor("#64B5F6"))
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, dpToPx(4f), 0, dpToPx(2f))
+        }
+        root.addView(lteHeader)
+
+        val lteRsrpCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#2196F3"))
+        val lteRsrqCell = createMetricCellHolder("RSRQ", "dB", -25.0, -3.0, Color.parseColor("#2196F3"))
+        val lteSinrCell = createMetricCellHolder("SINR", "dB", -10.0, 30.0, Color.parseColor("#2196F3"))
+
+        root.addView(lteRsrpCell.rootCell)
+        root.addView(lteRsrqCell.rootCell)
+        root.addView(lteSinrCell.rootCell)
+
+        cardHolder = CardViewHolder(
+            mainCard = mainCard,
+            badgeView = badgeView,
+            opView = opView,
+            nrHeader = nrHeader,
+            nrRsrpCell = nrRsrpCell,
+            nrRsrqCell = nrRsrqCell,
+            nrSnrCell = nrSnrCell,
+            lteHeader = lteHeader,
+            lteRsrpCell = lteRsrpCell,
+            lteRsrqCell = lteRsrqCell,
+            lteSinrCell = lteSinrCell
+        )
 
         return root
     }
 
-    private fun createMetricColumn(title: String, rsrp: Double?, rsrq: Double?, snr: Double?, is5g: Boolean): View {
-        val col = LinearLayout(this).apply {
+    private fun createCompactContentView(mainCard: FrameLayout): View {
+        val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(2f), dpToPx(2f), dpToPx(2f), dpToPx(2f))
+            setPadding(dpToPx(6f), dpToPx(4f), dpToPx(6f), dpToPx(4f))
         }
 
-        val header = TextView(this).apply {
-            text = title
-            textSize = 9f
-            setTextColor(if (is5g) Color.parseColor("#00E5FF") else Color.parseColor("#64B5F6"))
+        val statusView = TextView(this).apply {
+            text = "[5G+] Rakuten"
+            textSize = 9.5f
+            setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 0, 0, dpToPx(2f))
         }
-        col.addView(header)
+        root.addView(statusView)
 
-        val accentColor = if (is5g) Color.parseColor("#00ADB5") else Color.parseColor("#1976D2")
-        col.addView(createProgressBarCell("RSRP", rsrp, "dBm", -140.0, -50.0, accentColor))
-        col.addView(createProgressBarCell("RSRQ", rsrq, "dB", -25.0, -3.0, accentColor))
-        col.addView(createProgressBarCell(if (is5g) "SNR" else "SINR", snr, "dB", -10.0, 30.0, accentColor))
+        val nrCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#00E5FF"))
+        val lteCell = createMetricCellHolder("RSRP", "dBm", -140.0, -50.0, Color.parseColor("#2196F3"))
 
-        return col
+        root.addView(nrCell.rootCell)
+        root.addView(lteCell.rootCell)
+
+        compactHolder = CompactViewHolder(
+            mainCard = mainCard,
+            statusView = statusView,
+            nrCell = nrCell,
+            lteCell = lteCell
+        )
+
+        return root
     }
 
-    private fun createMetricRow(title: String, rsrp: Double?, rsrq: Double?, snr: Double?, is5g: Boolean): View {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(2f), dpToPx(2f), dpToPx(2f), dpToPx(2f))
-        }
-
-        val header = TextView(this).apply {
-            text = title
-            textSize = 9f
-            setTextColor(if (is5g) Color.parseColor("#00E5FF") else Color.parseColor("#64B5F6"))
-            typeface = Typeface.DEFAULT_BOLD
-        }
-        row.addView(header)
-
-        val metricsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        val accentColor = if (is5g) Color.parseColor("#00ADB5") else Color.parseColor("#1976D2")
-        val c1 = createProgressBarCell("RSRP", rsrp, "dBm", -140.0, -50.0, accentColor).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val c2 = createProgressBarCell("RSRQ", rsrq, "dB", -25.0, -3.0, accentColor).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val c3 = createProgressBarCell(if (is5g) "SNR" else "SINR", snr, "dB", -10.0, 30.0, accentColor).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        metricsRow.addView(c1)
-        metricsRow.addView(c2)
-        metricsRow.addView(c3)
-        row.addView(metricsRow)
-
-        return row
-    }
-
-    private fun createProgressBarCell(
+    private fun createMetricCellHolder(
         label: String,
-        value: Double?,
         unit: String,
         minVal: Double,
         maxVal: Double,
         barColor: Int
-    ): View {
+    ): MetricCellHolder {
         val cell = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -522,31 +645,15 @@ class OverlayService : Service() {
             clipToOutline = true
         }
 
-        val normalized = if (value != null && !value.isNaN()) {
-            ((value - minVal) / (maxVal - minVal)).coerceIn(0.0, 1.0).toFloat()
-        } else {
-            0.0f
-        }
-
         val barView = View(this).apply {
-            layoutParams = FrameLayout.LayoutParams(0, FrameLayout.LayoutParams.MATCH_PARENT).apply {
-                width = 0 // will update on measure
-            }
+            layoutParams = FrameLayout.LayoutParams(0, FrameLayout.LayoutParams.MATCH_PARENT)
             setBackgroundColor(barColor)
             alpha = 0.35f
         }
         cell.addView(barView)
 
-        // Text Overlay
-        val textValue = if (value != null && !value.isNaN()) {
-            val formatted = String.format("%.1f", value)
-            "$label: $formatted $unit"
-        } else {
-            "$label: -- $unit"
-        }
-
         val labelView = TextView(this).apply {
-            text = textValue
+            text = "$label: -- $unit"
             textSize = 8.5f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER_VERTICAL or Gravity.START
@@ -554,26 +661,16 @@ class OverlayService : Service() {
         }
         cell.addView(labelView)
 
-        cell.post {
-            val totalWidth = cell.width
-            val barW = (totalWidth * normalized).toInt()
-            val lp = barView.layoutParams
-            lp.width = barW
-            barView.layoutParams = lp
-        }
-
-        return cell
-    }
-
-    private fun createCompactMetricCell(
-        prefix: String,
-        label: String,
-        value: Double?,
-        minVal: Double,
-        maxVal: Double,
-        barColor: Int
-    ): View {
-        return createProgressBarCell("$prefix $label", value, "dBm", minVal, maxVal, barColor)
+        return MetricCellHolder(
+            rootCell = cell,
+            barView = barView,
+            labelView = labelView,
+            label = label,
+            unit = unit,
+            minVal = minVal,
+            maxVal = maxVal,
+            defaultBarColor = barColor
+        )
     }
 
     private fun createResizeHandleView(): View {
@@ -603,6 +700,7 @@ class OverlayService : Service() {
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
                 // Toggle expand / fold
                 isExpanded = !isExpanded
+                currentModeViewType = null
                 buildOverlayView()
                 return true
             }
@@ -635,8 +733,10 @@ class OverlayService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (event.rawX - initialTouchX).toInt()
                     val dy = (event.rawY - initialTouchY).toInt()
+                    val overlayH = overlayContainer?.height ?: dpToPx(120f)
+                    val maxY = max(0, screenHeight - overlayH - dpToPx(10f))
                     params.x = initialX + dx
-                    params.y = initialY + dy
+                    params.y = (initialY + dy).coerceIn(0, maxY)
                     try {
                         windowManager?.updateViewLayout(overlayContainer, params)
                     } catch (_: Exception) {}
@@ -653,8 +753,6 @@ class OverlayService : Service() {
 
     private fun setupResizeHandleTouch(handleView: View, cardView: View) {
         handleView.setOnTouchListener { _, event ->
-            val params = overlayLayoutParams ?: return@setOnTouchListener false
-
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     isResizing = true
@@ -667,21 +765,24 @@ class OverlayService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     if (isResizing) {
                         val dx = (event.rawX - initialTouchX).toInt()
-                        val ratio = getAspectRatioValue()
                         val newWidth = max(dpToPx(160f), min(screenWidth - dpToPx(20f), initialWidth + dx))
-                        val newHeight = (newWidth / ratio).toInt()
 
                         val cardParams = cardView.layoutParams
                         cardParams.width = newWidth
                         cardParams.height = FrameLayout.LayoutParams.WRAP_CONTENT
                         cardView.layoutParams = cardParams
 
-                        overlayScale = (newWidth.toFloat() / dpToPx(280f)).coerceIn(0.7f, 1.8f)
+                        userCustomWidthPx = newWidth
+                        overlayScale = (newWidth.toFloat() / dpToPx(280f)).coerceIn(0.7f, 2.0f)
+
+                        // リアルタイムに各セルのバー幅を更新
+                        updateFloatingViewContent()
                     }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
                     isResizing = false
+                    userCustomWidthPx = cardView.width
                     true
                 }
                 else -> false
@@ -697,6 +798,10 @@ class OverlayService : Service() {
         } else {
             screenWidth - (overlayContainer?.width ?: 0) - dpToPx(8f) // Snap Right
         }
+
+        val overlayH = overlayContainer?.height ?: dpToPx(120f)
+        val maxY = max(0, screenHeight - overlayH - dpToPx(10f))
+        params.y = params.y.coerceIn(0, maxY)
 
         val animator = ValueAnimator.ofInt(currentX, targetX).apply {
             duration = 200
@@ -743,6 +848,9 @@ class OverlayService : Service() {
                 else -> Gravity.TOP or Gravity.CENTER_HORIZONTAL
             }
 
+            // スリムバーは最上部密着(y=0)、ドットはステータスバー真上(y=6dp)
+            val lampY = if (shape == "bar") 0 else dpToPx(6f)
+
             lampLayoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -753,7 +861,7 @@ class OverlayService : Service() {
                 PixelFormat.TRANSLUCENT
             ).apply {
                 gravity = gravityFlag
-                y = dpToPx(4f)
+                y = lampY
                 if (position == "topLeft") x = dpToPx(16f)
                 if (position == "topRight") x = dpToPx(16f)
             }
@@ -772,14 +880,14 @@ class OverlayService : Service() {
         val container = lampContainer ?: return
         container.removeAllViews()
 
-        // Lamp Shape: bar (50px x 4px) or dot (8px x 8px)
+        // Lamp Shape: bar (1pxスリムバー) or dot (7pxカメラ/マイクインジケータサイズ)
         val lampView = View(this).apply {
-            val w = if (shape == "dot") dpToPx(8f) else dpToPx(50f)
-            val h = if (shape == "dot") dpToPx(8f) else dpToPx(4f)
+            val w = if (shape == "dot") dpToPx(7f) else dpToPx(80f)
+            val h = if (shape == "dot") dpToPx(7f) else dpToPx(1f).coerceAtLeast(1)
             layoutParams = FrameLayout.LayoutParams(w, h)
             val drawable = GradientDrawable().apply {
                 setColor(color)
-                cornerRadius = if (shape == "dot") dpToPx(4f).toFloat() else dpToPx(2f).toFloat()
+                cornerRadius = if (shape == "dot") dpToPx(3.5f).toFloat() else 0f
             }
             background = drawable
             alpha = 0.0f

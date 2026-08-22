@@ -9,73 +9,86 @@ enum Fs050wConnectionMode {
 }
 
 class ConnectionModeHelper {
-    static String getIconBadgeText(Fs050wConnectionMode mode) {
+    static String getIconBadgeText(Fs050wConnectionMode mode, {String notation = "4g_5g"}) {
+        final isLteNr = notation == "lte_nr";
         switch (mode) {
             case Fs050wConnectionMode.lte:
-                return "4G";
+                return isLteNr ? "LTE" : "4G";
             case Fs050wConnectionMode.lteCa:
-                return "4G+";
+                return isLteNr ? "LTE+" : "4G+";
             case Fs050wConnectionMode.nsaReady:
-                return "4GN";
+                return isLteNr ? "eLTE" : "e4G";
             case Fs050wConnectionMode.nsaReadyCa:
-                return "4GN+";
+                return isLteNr ? "eLTE+" : "e4G+";
             case Fs050wConnectionMode.nr5g:
-                return "5G";
+                return isLteNr ? "NR" : "5G";
             case Fs050wConnectionMode.nr5gSub6:
-                return "5G+";
+                return isLteNr ? "NR+" : "5G+";
             case Fs050wConnectionMode.disconnected:
                 return "--";
         }
     }
 
-    static String getUiModeText(Fs050wConnectionMode mode, {bool isSa = false}) {
+    static String getUiModeText(Fs050wConnectionMode mode, {bool isSa = false, String notation = "4g_5g"}) {
+        final isLteNr = notation == "lte_nr";
         switch (mode) {
             case Fs050wConnectionMode.lte:
-                return "4G LTE";
+                return isLteNr ? "LTE" : "4G";
             case Fs050wConnectionMode.lteCa:
-                return "4G+ LTE";
+                return isLteNr ? "LTE+" : "4G+";
             case Fs050wConnectionMode.nsaReady:
-                return "4G Ready";
+                return isLteNr ? "eLTE" : "e4G";
             case Fs050wConnectionMode.nsaReadyCa:
-                return "4G+ Ready";
+                return isLteNr ? "eLTE+" : "e4G+";
             case Fs050wConnectionMode.nr5g:
-                return isSa ? "5G NR SA" : "5G NR";
+                final label = isLteNr ? "NR" : "5G";
+                return isSa ? "$label SA" : label;
             case Fs050wConnectionMode.nr5gSub6:
-                return isSa ? "5G+ NR+ SA" : "5G+ NR+";
+                final label = isLteNr ? "NR+" : "5G+";
+                return isSa ? "$label SA" : label;
             case Fs050wConnectionMode.disconnected:
                 return "未接続";
         }
     }
 
-    static String get4gCardTitle(Fs050wConnectionMode mode) {
+    static String get4gCardTitle(Fs050wConnectionMode mode, {String notation = "4g_5g"}) {
+        final isLteNr = notation == "lte_nr";
         switch (mode) {
             case Fs050wConnectionMode.lte:
-                return "4G LTE";
+                return isLteNr ? "LTE" : "4G";
             case Fs050wConnectionMode.lteCa:
-                return "4G+ LTE";
+                return isLteNr ? "LTE+" : "4G+";
             case Fs050wConnectionMode.nsaReady:
-                return "4G Ready";
             case Fs050wConnectionMode.nsaReadyCa:
-                return "4G+ Ready";
             case Fs050wConnectionMode.nr5g:
             case Fs050wConnectionMode.nr5gSub6:
-                return "4G Anchor Cell";
+                return isLteNr ? "LTE Anchor Cell" : "4G Anchor Cell";
             case Fs050wConnectionMode.disconnected:
-                return "4G LTE (未接続)";
+                return isLteNr ? "LTE (未接続)" : "4G (未接続)";
         }
     }
 
-    static String get5gCardTitle(Fs050wConnectionMode mode) {
+    static String get5gCardTitle(Fs050wConnectionMode mode, {String notation = "4g_5g"}) {
+        final isLteNr = notation == "lte_nr";
         switch (mode) {
             case Fs050wConnectionMode.nr5gSub6:
-                return "5G+ NR+ (sub6)";
+                return isLteNr ? "NR+ (sub6)" : "5G+ (sub6)";
             case Fs050wConnectionMode.nr5g:
-                return "5G NR";
+                return isLteNr ? "NR" : "5G";
             case Fs050wConnectionMode.nsaReady:
             case Fs050wConnectionMode.nsaReadyCa:
-                return "5G NR (待機中)";
+                return isLteNr ? "NR (待機中)" : "5G (待機中)";
             default:
-                return "5G NR";
+                return isLteNr ? "NR" : "5G";
+        }
+    }
+
+    static String getGenerationName(bool is5g, {String notation = "4g_5g"}) {
+        final isLteNr = notation == "lte_nr";
+        if (is5g) {
+            return isLteNr ? "NR" : "5G";
+        } else {
+            return isLteNr ? "LTE" : "4G";
         }
     }
 }

@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/signal_data.dart';
 import '../models/app_settings.dart';
+import '../models/connection_state.dart';
 import '../utils/crypto_utils.dart';
 import 'app_logger.dart';
+import 'overlay_service.dart';
 
 enum ConnectionStatus {
     disconnected,
@@ -204,14 +206,21 @@ class ApiService extends ChangeNotifier {
                 final signal = SignalData.fromApiResponse(
                     params,
                     previousData: _currentSignal,
+                    adjust5gSnr: _settings.adjust5gSnr,
                 );
 
                 if (signal.handoverDescription != null) {
                     AppLogger.info("Handover detected: ${signal.handoverDescription}");
+                    OverlayService.triggerLamp("handover", _settings);
+                } else if (_currentSignal?.connectionMode != Fs050wConnectionMode.nr5gSub6 && signal.connectionMode == Fs050wConnectionMode.nr5gSub6) {
+                    OverlayService.triggerLamp("5g", _settings);
                 }
 
                 _currentSignal = signal;
                 _signalHistory.add(signal);
+
+                // Update overlay with current signal
+                OverlayService.updateOverlayData(signal, _settings);
 
                 // Keep maximum 600 history points
                 if (_signalHistory.length > 600) {
@@ -233,9 +242,11 @@ class ApiService extends ChangeNotifier {
                         final signal = SignalData.fromApiResponse(
                             retryParams,
                             previousData: _currentSignal,
+                            adjust5gSnr: _settings.adjust5gSnr,
                         );
                         _currentSignal = signal;
                         _signalHistory.add(signal);
+                        OverlayService.updateOverlayData(signal, _settings);
                         _status = _isLoggedIn ? ConnectionStatus.authenticated : ConnectionStatus.unauthenticatedMode;
                         _errorMessage = null;
                         AppLogger.info("Token refresh & retry succeeded");
@@ -390,6 +401,7 @@ class ApiService extends ChangeNotifier {
         _sessionCookie = null;
         _status = ConnectionStatus.connecting; // Mark as connecting/reconnecting rather than full disconnect
         _errorMessage = message ?? "ルーターからのデータ取得に失敗しました (自動再試行中)";
+        OverlayService.updateOverlayData(null, _settings, isConnecting: true);
         notifyListeners();
     }
 }

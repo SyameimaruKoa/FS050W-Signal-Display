@@ -63,6 +63,7 @@ class SignalData {
         bool hasCa = false,
         List<String> caBands = const [],
         SignalData? previousData,
+        bool adjust5gSnr = true,
     }) {
         final Map<String, dynamic> rawMap = (json['data'] is Map<String, dynamic>)
             ? (json['data'] as Map<String, dynamic>)
@@ -112,7 +113,9 @@ class SignalData {
         final rawEndcSnr = _parseInt(rawMap['mnet_endc_snr']);
         double? nrSnr;
         if (rawEndcSnr != null && rawEndcSnr > 0) {
-            nrSnr = ((rawEndcSnr - 1.0) / 2.0) - 23.0;
+            nrSnr = adjust5gSnr
+                ? (((rawEndcSnr - 1.0) / 2.0) - 23.0)
+                : rawEndcSnr.toDouble();
         } else if (rawEndcSnr == null) {
             nrSnr = previousData?.nrSnr;
         }

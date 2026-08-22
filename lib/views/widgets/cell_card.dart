@@ -62,11 +62,19 @@ class CellCard extends StatelessWidget {
         );
     }
 
-    static Widget build5gNrCard(BuildContext context, SignalData? signal) {
+    static Widget build5gNrCard(
+        BuildContext context,
+        SignalData? signal, {
+        String notation = "4g_5g",
+        bool smoothGaugeColor = false,
+    }) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final isLteNr = notation == "lte_nr";
+        final genLabel = ConnectionModeHelper.getGenerationName(true, notation: notation);
+
         if (signal == null) {
             return CellCard(
-                title: "【最上段：5G NR Secondary Cell】",
+                title: "【$genLabel Secondary Cell】",
                 icon: Icons.cell_tower,
                 accentColor: const Color(0xFF00E5FF),
                 children: [
@@ -85,7 +93,7 @@ class CellCard extends StatelessWidget {
 
         if (isStandby) {
             return CellCard(
-                title: "5G NR Secondary Cell (待機中)",
+                title: "${ConnectionModeHelper.get5gCardTitle(mode, notation: notation)}",
                 icon: Icons.cell_tower,
                 accentColor: Colors.blueGrey,
                 children: [
@@ -101,7 +109,7 @@ class CellCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                     child: Text(
-                                        "5G NSA 待機中 (ENDC 未確立 / 4G Ready)",
+                                        "$genLabel NSA 待機中 (ENDC 未確立 / ${ConnectionModeHelper.get4gCardTitle(mode, notation: notation)})",
                                         style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13),
                                     ),
                                 ),
@@ -112,17 +120,21 @@ class CellCard extends StatelessWidget {
             );
         }
 
-        final nrBandName = FrequencyCalculator.getNrBandName(signal.nrBand);
+        final nrBandName = FrequencyCalculator.getNrBandName(signal.nrBand, operatorName: signal.operatorName);
         final isSub6 = FrequencyCalculator.isSub6Band(signal.nrBand);
-        final nrTitle = "● ${ConnectionModeHelper.get5gCardTitle(mode)}";
+        final nrTitle = "● ${ConnectionModeHelper.get5gCardTitle(mode, notation: notation)}";
 
         final rsrpLevel = ColorGauge.rateRsrp(signal.nrRsrp);
         final rsrqLevel = ColorGauge.rateRsrq(signal.nrRsrq);
         final snrLevel = ColorGauge.rateSinr(signal.nrSnr);
 
+        final tagText = isSub6
+            ? "sub6"
+            : (FrequencyCalculator.isRefarmed5gBand(signal.nrBand) ? "転用" : "通常");
+
         return CellCard(
             title: nrTitle,
-            icon: Icons.five_g,
+            icon: Icons.cell_tower,
             accentColor: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
             headerTrailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -131,7 +143,7 @@ class CellCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                    isSub6 ? "sub6 高速5G" : "転用 / 通常5G",
+                    tagText,
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -162,18 +174,24 @@ class CellCard extends StatelessWidget {
                                     ),
                                 ],
                             ),
-                            Row(
-                                children: [
-                                    Text("Band: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
-                                    Text(
-                                        nrBandName,
-                                        style: GoogleFonts.notoSansMono(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.white : Colors.black87,
+                            Flexible(
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Text("Band: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
+                                        Flexible(
+                                            child: Text(
+                                                nrBandName,
+                                                style: GoogleFonts.notoSansMono(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isDark ? Colors.white : Colors.black87,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                            ),
                                         ),
-                                    ),
-                                ],
+                                    ],
+                                ),
                             ),
                         ],
                     ),
@@ -184,28 +202,44 @@ class CellCard extends StatelessWidget {
                     value: signal.nrRsrp,
                     unit: "dBm",
                     level: rsrpLevel,
+                    smoothGaugeColor: smoothGaugeColor,
+                    minVal: -140.0,
+                    maxVal: -50.0,
                 ),
                 MetricGauge(
                     label: "RSRQ",
                     value: signal.nrRsrq,
                     unit: "dB",
                     level: rsrqLevel,
+                    smoothGaugeColor: smoothGaugeColor,
+                    minVal: -25.0,
+                    maxVal: -3.0,
                 ),
                 MetricGauge(
                     label: "SNR (補正済)",
                     value: signal.nrSnr,
                     unit: "dB",
                     level: snrLevel,
+                    smoothGaugeColor: smoothGaugeColor,
+                    minVal: -10.0,
+                    maxVal: 30.0,
                 ),
             ],
         );
     }
 
-    static Widget build4gLteCard(BuildContext context, SignalData? signal) {
+    static Widget build4gLteCard(
+        BuildContext context,
+        SignalData? signal, {
+        String notation = "4g_5g",
+        bool smoothGaugeColor = false,
+    }) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final genLabel = ConnectionModeHelper.getGenerationName(false, notation: notation);
+
         if (signal == null) {
             return CellCard(
-                title: "● 4G LTE Anchor Cell",
+                title: "● $genLabel Anchor Cell",
                 icon: Icons.network_cell,
                 accentColor: const Color(0xFF2196F3),
                 children: [
@@ -215,12 +249,12 @@ class CellCard extends StatelessWidget {
         }
 
         if (signal.isSa) {
-            // 5G SAの場合は4Gアンカーカード非表示 (設計書準拠)
+            // 5G SAの場合は4Gアンカーカード非表示
             return const SizedBox.shrink();
         }
 
-        final bandName = FrequencyCalculator.getLteBandName(signal.lteBand);
-        final titleText = "● ${ConnectionModeHelper.get4gCardTitle(signal.connectionMode)}";
+        final bandName = FrequencyCalculator.getLteBandName(signal.lteBand, operatorName: signal.operatorName);
+        final titleText = "● ${ConnectionModeHelper.get4gCardTitle(signal.connectionMode, notation: notation)}";
 
         final rsrpLevel = ColorGauge.rateRsrp(signal.lteRsrp);
         final rsrqLevel = ColorGauge.rateRsrq(signal.lteRsrq);
@@ -228,7 +262,7 @@ class CellCard extends StatelessWidget {
 
         return CellCard(
             title: titleText,
-            icon: Icons.four_g_mobiledata,
+            icon: Icons.network_cell,
             accentColor: const Color(0xFF2196F3),
             headerTrailing: signal.hasCa
                 ? Container(
@@ -266,18 +300,24 @@ class CellCard extends StatelessWidget {
                                     ),
                                 ],
                             ),
-                            Row(
-                                children: [
-                                    Text("Band: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
-                                    Text(
-                                        bandName,
-                                        style: GoogleFonts.notoSansMono(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.white : Colors.black87,
+                            Flexible(
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Text("Band: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
+                                        Flexible(
+                                            child: Text(
+                                                bandName,
+                                                style: GoogleFonts.notoSansMono(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isDark ? Colors.white : Colors.black87,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                            ),
                                         ),
-                                    ),
-                                ],
+                                    ],
+                                ),
                             ),
                         ],
                     ),
@@ -288,18 +328,27 @@ class CellCard extends StatelessWidget {
                     value: signal.lteRsrp,
                     unit: "dBm",
                     level: rsrpLevel,
+                    smoothGaugeColor: smoothGaugeColor,
+                    minVal: -140.0,
+                    maxVal: -50.0,
                 ),
                 MetricGauge(
                     label: "RSRQ",
                     value: signal.lteRsrq,
                     unit: "dB",
                     level: rsrqLevel,
+                    smoothGaugeColor: smoothGaugeColor,
+                    minVal: -25.0,
+                    maxVal: -3.0,
                 ),
                 MetricGauge(
                     label: "SINR",
                     value: signal.lteSinr,
                     unit: "dB",
                     level: sinrLevel,
+                    smoothGaugeColor: smoothGaugeColor,
+                    minVal: -10.0,
+                    maxVal: 30.0,
                 ),
             ],
         );

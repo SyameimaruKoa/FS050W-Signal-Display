@@ -153,16 +153,54 @@ class MainActivity : FlutterActivity() {
 
         lifecycleMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LIFECYCLE_CHANNEL)
 
-        val filter = IntentFilter().apply {
+        val screenFilter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
         }
-        registerReceiver(screenReceiver, filter)
+        registerReceiver(screenReceiver, screenFilter)
+
+        val dialogFilter = IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+        @Suppress("DEPRECATION")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(systemDialogReceiver, dialogFilter, Context.RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(systemDialogReceiver, dialogFilter)
+        }
+    }
+
+    private var isHomeKeyPressed = false
+    private var isRecentAppsPressed = false
+
+    private val systemDialogReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_CLOSE_SYSTEM_DIALOGS) {
+                val reason = intent.getStringExtra("reason")
+                if (reason == "homekey") {
+                    isHomeKeyPressed = true
+                    isRecentAppsPressed = false
+                    if (autoPipEnabled && isPipSupported()) {
+                        enterPip(pipNumerator, pipDenominator)
+                    }
+                } else if (reason == "recentapps") {
+                    isRecentAppsPressed = true
+                    isHomeKeyPressed = false
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isHomeKeyPressed = false
+        isRecentAppsPressed = false
     }
 
     override fun onDestroy() {
         try {
             unregisterReceiver(screenReceiver)
+        } catch (_: Exception) {}
+        try {
+            unregisterReceiver(systemDialogReceiver)
         } catch (_: Exception) {}
         super.onDestroy()
     }
@@ -190,7 +228,7 @@ class MainActivity : FlutterActivity() {
             val clampedRational = sanitizeAspectRatio(pipNumerator, pipDenominator)
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(clampedRational)
-                .setAutoEnterEnabled(autoPipEnabled)
+                .setAutoEnterEnabled(false) // Disable OS automatic enter to prevent triggering on Overview/Recent Apps
                 .build()
             setPictureInPictureParams(params)
         }
@@ -208,9 +246,11 @@ class MainActivity : FlutterActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (autoPipEnabled && Build.VERSION.SDK_INT < Build.VERSION_CODES.S && isPipSupported()) {
+        if (autoPipEnabled && !isRecentAppsPressed && isPipSupported()) {
             enterPip(pipNumerator, pipDenominator)
         }
+        isRecentAppsPressed = false
+        isHomeKeyPressed = false
     }
 
     override fun onPictureInPictureModeChanged(

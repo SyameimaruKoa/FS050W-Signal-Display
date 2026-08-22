@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../utils/color_gauge.dart';
 
 class IntensityBarMetric extends StatelessWidget {
     final String label;
@@ -10,6 +11,7 @@ class IntensityBarMetric extends StatelessWidget {
     final Color barColor;
     final double height;
     final double fontSize;
+    final bool smoothGaugeColor;
 
     const IntensityBarMetric({
         super.key,
@@ -21,6 +23,7 @@ class IntensityBarMetric extends StatelessWidget {
         required this.barColor,
         this.height = 20.0,
         this.fontSize = 11.0,
+        this.smoothGaugeColor = false,
     });
 
     static double calculateNormalizedRatio(double? val, double min, double max) {
@@ -31,6 +34,9 @@ class IntensityBarMetric extends StatelessWidget {
     @override
     Widget build(BuildContext context) {
         final double ratio = calculateNormalizedRatio(value, minVal, maxVal);
+        final Color activeColor = smoothGaugeColor
+            ? (value != null && !value!.isNaN ? ColorGauge.getSmoothColor(ratio) : barColor)
+            : barColor;
         final String textValue = (value != null && !value!.isNaN)
             ? "${value!.toStringAsFixed(1)} $unit"
             : "-- $unit";
@@ -53,7 +59,7 @@ class IntensityBarMetric extends StatelessWidget {
                             widthFactor: ratio,
                             child: Container(
                                 decoration: BoxDecoration(
-                                    color: barColor.withOpacity(0.35),
+                                    color: activeColor.withOpacity(0.35),
                                 ),
                             ),
                         ),

@@ -37,6 +37,7 @@ class AppSettings {
     // 3. PiP (Picture-in-Picture) 設定
     bool autoPipOnHome;                 // ホーム画面に戻った時に自動PiP起動
     String pipAspectRatio;              // "16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21"
+    String pipGraphType;                // "rsrp", "snr", "rsrq", "none" (拡大時グラフ種類)
 
     // 4. フローティングオーバーレイ設定
     bool overlayEnabled;                // オーバーレイ有効/無効
@@ -49,7 +50,12 @@ class AppSettings {
     String eventLampShape;              // "bar" (スリムバー), "dot" (丸型LED)
     String eventLampPosition;           // "topCenter", "topLeft", "topRight"
 
-    // 6. レガシー通知設定 (非推奨/互換性保持用)
+    // 6. 表示 & 表記設定
+    bool adjust5gSnr;                   // 5G SNR値の補正 (-23dB) を適用するか
+    String generationNotation;          // "4g_5g" (4G / 5G / e4G), "lte_nr" (LTE / NR / eLTE)
+    bool smoothGaugeColor;              // シームレスゲージカラー (グラデーション変化)
+
+    // 7. レガシー通知設定 (非推奨/互換性保持用)
     bool foregroundNotificationEnabled;
     NotificationDetailStyle notificationStyle;
 
@@ -70,6 +76,7 @@ class AppSettings {
         this.vibrateOnCriticalSignal = true,
         this.autoPipOnHome = true,
         this.pipAspectRatio = "16:9",
+        this.pipGraphType = "rsrp",
         this.overlayEnabled = false,
         this.overlayStyle = "card",
         this.overlayOpacity = 0.85,
@@ -77,6 +84,9 @@ class AppSettings {
         this.eventLampEnabled = true,
         this.eventLampShape = "bar",
         this.eventLampPosition = "topCenter",
+        this.adjust5gSnr = true,
+        this.generationNotation = "4g_5g",
+        this.smoothGaugeColor = false,
         this.foregroundNotificationEnabled = false,
         this.notificationStyle = NotificationDetailStyle.detailed,
     });
@@ -99,6 +109,7 @@ class AppSettings {
             'vibrateOnCriticalSignal': vibrateOnCriticalSignal,
             'autoPipOnHome': autoPipOnHome,
             'pipAspectRatio': pipAspectRatio,
+            'pipGraphType': pipGraphType,
             'overlayEnabled': overlayEnabled,
             'overlayStyle': overlayStyle,
             'overlayOpacity': overlayOpacity,
@@ -106,6 +117,9 @@ class AppSettings {
             'eventLampEnabled': eventLampEnabled,
             'eventLampShape': eventLampShape,
             'eventLampPosition': eventLampPosition,
+            'adjust5gSnr': adjust5gSnr,
+            'generationNotation': generationNotation,
+            'smoothGaugeColor': smoothGaugeColor,
             'foregroundNotificationEnabled': foregroundNotificationEnabled,
             'notificationStyle': notificationStyle.index,
         };
@@ -129,6 +143,7 @@ class AppSettings {
             vibrateOnCriticalSignal: json['vibrateOnCriticalSignal'] ?? true,
             autoPipOnHome: json['autoPipOnHome'] ?? true,
             pipAspectRatio: json['pipAspectRatio'] ?? "16:9",
+            pipGraphType: json['pipGraphType'] ?? "rsrp",
             overlayEnabled: json['overlayEnabled'] ?? false,
             overlayStyle: json['overlayStyle'] ?? "card",
             overlayOpacity: (json['overlayOpacity'] as num?)?.toDouble() ?? 0.85,
@@ -136,6 +151,9 @@ class AppSettings {
             eventLampEnabled: json['eventLampEnabled'] ?? true,
             eventLampShape: json['eventLampShape'] ?? "bar",
             eventLampPosition: json['eventLampPosition'] ?? "topCenter",
+            adjust5gSnr: json['adjust5gSnr'] ?? true,
+            generationNotation: json['generationNotation'] ?? "4g_5g",
+            smoothGaugeColor: json['smoothGaugeColor'] ?? false,
             foregroundNotificationEnabled: json['foregroundNotificationEnabled'] ?? false,
             notificationStyle: NotificationDetailStyle.values[json['notificationStyle'] ?? 0],
         );

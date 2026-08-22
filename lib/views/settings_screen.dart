@@ -192,6 +192,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 },
                             ),
                         ),
+                        ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("PiP 拡大時グラフ種類"),
+                            subtitle: const Text("PiP拡大時に表示する電波履歴グラフ"),
+                            trailing: DropdownButton<String>(
+                                value: _settings.pipGraphType,
+                                items: const [
+                                    DropdownMenuItem(value: "rsrp", child: Text("RSRP 履歴")),
+                                    DropdownMenuItem(value: "snr", child: Text("SNR / SINR 履歴")),
+                                    DropdownMenuItem(value: "rsrq", child: Text("RSRQ 履歴")),
+                                    DropdownMenuItem(value: "none", child: Text("非表示")),
+                                ],
+                                onChanged: (val) {
+                                    if (val != null) {
+                                        setState(() => _settings.pipGraphType = val);
+                                        _save();
+                                    }
+                                },
+                            ),
+                        ),
                     ]),
 
                     const SizedBox(height: 16),
@@ -356,31 +376,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // 4. 【UI・テーマ & ログ】
-                    _buildSectionHeader("4. UI・テーマ & ログ", Icons.palette),
+                    // 4. 【UI・テーマ & 表示設定】
+                    _buildSectionHeader("4. UI・テーマ & 表示設定", Icons.palette),
                     _buildCard([
                         ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text("ナビゲーション形式"),
-                            trailing: DropdownButton<AppNavigationStyle>(
-                                value: _settings.navigationStyle,
+                            title: const Text("通信規格の表記方式"),
+                            subtitle: const Text("アプリ全体およびPiP・オーバーレイの名称を統一"),
+                            trailing: DropdownButton<String>(
+                                value: _settings.generationNotation,
                                 items: const [
                                     DropdownMenuItem(
-                                        value: AppNavigationStyle.bottomNav,
-                                        child: Text("ボトムナビ (初期値)"),
+                                        value: "4g_5g",
+                                        child: Text("4G / 5G / e4G"),
                                     ),
                                     DropdownMenuItem(
-                                        value: AppNavigationStyle.cardButtons,
-                                        child: Text("ボタン画面遷移"),
+                                        value: "lte_nr",
+                                        child: Text("LTE / NR / eLTE"),
                                     ),
                                 ],
                                 onChanged: (val) {
                                     if (val != null) {
-                                        setState(() => _settings.navigationStyle = val);
+                                        setState(() => _settings.generationNotation = val);
                                         _save();
                                     }
                                 },
                             ),
+                        ),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("5G SNR 値の補正 (-23dB)"),
+                            subtitle: const Text("FS050Wファームウェアのオフセットを自動補正"),
+                            value: _settings.adjust5gSnr,
+                            onChanged: (val) {
+                                setState(() => _settings.adjust5gSnr = val);
+                                _save();
+                            },
+                        ),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("シームレスゲージカラー"),
+                            subtitle: const Text("電波バーの色をグラデーションで滑らかに変化"),
+                            value: _settings.smoothGaugeColor,
+                            onChanged: (val) {
+                                setState(() => _settings.smoothGaugeColor = val);
+                                _save();
+                            },
                         ),
                         SwitchListTile(
                             contentPadding: EdgeInsets.zero,

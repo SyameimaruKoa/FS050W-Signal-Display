@@ -52,14 +52,17 @@ class OverlayService {
 
         try {
             final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
-            final modeBadge = ConnectionModeHelper.getIconBadgeText(mode);
-            final modeText = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false);
+            final notation = settings.generationNotation;
+            final modeBadge = ConnectionModeHelper.getIconBadgeText(mode, notation: notation);
+            final modeText = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false, notation: notation);
 
             final Map<String, dynamic> dataMap = {
                 'isConnecting': isConnecting,
                 'operatorName': signal?.operatorName ?? '--',
                 'connectionModeBadge': modeBadge,
                 'connectionModeText': modeText,
+                'generationNotation': notation,
+                'smoothGaugeColor': settings.smoothGaugeColor,
                 'rsrp': signal?.lteRsrp ?? signal?.nrRsrp ?? -140.0,
                 'lteBand': signal?.lteBand != null ? 'B${signal!.lteBand}' : '--',
                 'ltePci': signal?.ltePci != null ? '${signal!.ltePci}' : '--',

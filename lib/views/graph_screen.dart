@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../models/signal_data.dart';
+import '../models/connection_state.dart';
 
 class GraphScreen extends StatefulWidget {
     const GraphScreen({super.key});
@@ -27,6 +28,8 @@ class _GraphScreenState extends State<GraphScreen> {
     Widget build(BuildContext context) {
         final apiService = context.watch<ApiService>();
         final history = apiService.signalHistory;
+        final settings = apiService.settings;
+        final notation = settings.generationNotation;
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         final now = DateTime.now();
@@ -60,50 +63,69 @@ class _GraphScreenState extends State<GraphScreen> {
                                     style: TextStyle(color: isDark ? Colors.white54 : Colors.black45),
                                 ),
                             )
-                            : ListView(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                children: [
-                                    _buildTierChart(
-                                        title: "1. RSRP (電波受信強度)",
-                                        unit: "dBm",
-                                        minY: -140,
-                                        maxY: -50,
-                                        data: chartData,
-                                        cutoffTime: cutoffTime,
-                                        totalSpanSeconds: _selectedSpanMinutes * 60.0,
-                                        getY4g: (d) => d.lteRsrp,
-                                        getY5g: (d) => d.nrRsrp,
-                                        isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 14),
-                                    _buildTierChart(
-                                        title: "2. RSRQ (受信信号品質)",
-                                        unit: "dB",
-                                        minY: -25,
-                                        maxY: -3,
-                                        data: chartData,
-                                        cutoffTime: cutoffTime,
-                                        totalSpanSeconds: _selectedSpanMinutes * 60.0,
-                                        getY4g: (d) => d.lteRsrq,
-                                        getY5g: (d) => d.nrRsrq,
-                                        isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 14),
-                                    _buildTierChart(
-                                        title: "3. SINR / SNR (信号対雑音比)",
-                                        unit: "dB",
-                                        minY: -15,
-                                        maxY: 35,
-                                        hasZeroLine: true,
-                                        data: chartData,
-                                        cutoffTime: cutoffTime,
-                                        totalSpanSeconds: _selectedSpanMinutes * 60.0,
-                                        getY4g: (d) => d.lteSinr,
-                                        getY5g: (d) => d.nrSnr,
-                                        isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 16),
-                                ],
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                    final availHeight = constraints.maxHeight;
+                                    // 3カード分の隙間とパディングを考慮 (padding 16 + gaps 16 = 32)
+                                    final idealCardHeight = (availHeight - 36) / 3.0;
+                                    final bool canFitWithoutScroll = idealCardHeight >= 140.0;
+                                    final cardHeight = canFitWithoutScroll ? idealCardHeight : 150.0;
+                                    final physics = canFitWithoutScroll
+                                        ? const NeverScrollableScrollPhysics()
+                                        : const AlwaysScrollableScrollPhysics();
+
+                                    return ListView(
+                                        physics: physics,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        children: [
+                                            _buildTierChart(
+                                                title: "1. RSRP (電波受信強度)",
+                                                unit: "dBm",
+                                                minY: -140,
+                                                maxY: -50,
+                                                cardHeight: cardHeight,
+                                                data: chartData,
+                                                cutoffTime: cutoffTime,
+                                                totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                getY4g: (d) => d.lteRsrp,
+                                                getY5g: (d) => d.nrRsrp,
+                                                isDark: isDark,
+                                                notation: notation,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            _buildTierChart(
+                                                title: "2. RSRQ (受信信号品質)",
+                                                unit: "dB",
+                                                minY: -25,
+                                                maxY: -3,
+                                                cardHeight: cardHeight,
+                                                data: chartData,
+                                                cutoffTime: cutoffTime,
+                                                totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                getY4g: (d) => d.lteRsrq,
+                                                getY5g: (d) => d.nrRsrq,
+                                                isDark: isDark,
+                                                notation: notation,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            _buildTierChart(
+                                                title: "3. SINR / SNR (信号対雑音比)",
+                                                unit: "dB",
+                                                minY: -15,
+                                                maxY: 35,
+                                                cardHeight: cardHeight,
+                                                hasZeroLine: true,
+                                                data: chartData,
+                                                cutoffTime: cutoffTime,
+                                                totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                getY4g: (d) => d.lteSinr,
+                                                getY5g: (d) => d.nrSnr,
+                                                isDark: isDark,
+                                                notation: notation,
+                                            ),
+                                        ],
+                                    );
+                                },
                             ),
                     ),
                 ],
@@ -113,7 +135,7 @@ class _GraphScreenState extends State<GraphScreen> {
 
     Widget _buildSpanSelector(bool isDark) {
         return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
             child: Row(
                 children: [
@@ -139,38 +161,32 @@ class _GraphScreenState extends State<GraphScreen> {
                                     : Colors.white;
                                 final activeBorder = isDark ? const Color(0xFF00E5FF) : const Color(0xFF00ADB5);
                                 final inactiveBorder = isDark ? Colors.white12 : Colors.black12;
-                                final activeText = isDark ? const Color(0xFF00E5FF) : const Color(0xFF007A78);
-                                final inactiveText = isDark ? Colors.white70 : Colors.black87;
 
-                                return Expanded(
-                                    child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                                        child: InkWell(
+                                return InkWell(
+                                    onTap: () {
+                                        setState(() {
+                                            _selectedSpanMinutes = span;
+                                        });
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                        decoration: BoxDecoration(
+                                            color: isSelected ? activeBg : inactiveBg,
                                             borderRadius: BorderRadius.circular(6),
-                                            onTap: () {
-                                                setState(() {
-                                                    _selectedSpanMinutes = span;
-                                                });
-                                            },
-                                            child: Container(
-                                                padding: const EdgeInsets.symmetric(vertical: 7),
-                                                alignment: Alignment.center,
-                                                decoration: BoxDecoration(
-                                                    color: isSelected ? activeBg : inactiveBg,
-                                                    borderRadius: BorderRadius.circular(6),
-                                                    border: Border.all(
-                                                        color: isSelected ? activeBorder : inactiveBorder,
-                                                        width: 1.2,
-                                                    ),
-                                                ),
-                                                child: Text(
-                                                    "${span}分",
-                                                    style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                        color: isSelected ? activeText : inactiveText,
-                                                    ),
-                                                ),
+                                            border: Border.all(
+                                                color: isSelected ? activeBorder : inactiveBorder,
+                                                width: isSelected ? 1.5 : 1.0,
+                                            ),
+                                        ),
+                                        child: Text(
+                                            "$span分",
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                color: isSelected
+                                                    ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF007A78))
+                                                    : (isDark ? Colors.white70 : Colors.black87),
                                             ),
                                         ),
                                     ),
@@ -188,35 +204,56 @@ class _GraphScreenState extends State<GraphScreen> {
         required String unit,
         required double minY,
         required double maxY,
+        required double cardHeight,
         required List<SignalData> data,
         required DateTime cutoffTime,
         required double totalSpanSeconds,
         required double? Function(SignalData) getY4g,
         required double? Function(SignalData) getY5g,
         required bool isDark,
+        required String notation,
         bool hasZeroLine = false,
     }) {
         if (data.isEmpty) return const SizedBox.shrink();
 
-        final List<FlSpot> spots4g = [];
-        final List<FlSpot> spots5g = [];
+        final label4g = ConnectionModeHelper.getGenerationName(false, notation: notation);
+        final label5g = ConnectionModeHelper.getGenerationName(true, notation: notation);
+
+        // 圏外やスリープ空白で線が繋がらないようセグメント（List<List<FlSpot>>）に分割
+        final List<List<FlSpot>> segments4g = [];
+        final List<List<FlSpot>> segments5g = [];
+        List<FlSpot> currentSeg4g = [];
+        List<FlSpot> currentSeg5g = [];
+
         final List<VerticalLine> handoverLines = [];
 
         for (int i = 0; i < data.length; i++) {
             final sample = data[i];
             final x = sample.timestamp.difference(cutoffTime).inMilliseconds / 1000.0;
 
+            final isTimeGap = i > 0 && sample.timestamp.difference(data[i - 1].timestamp).inSeconds > 4;
+
             final y4g = getY4g(sample);
-            if (y4g != null) {
-                spots4g.add(FlSpot(x, y4g));
+            if (isTimeGap || y4g == null || y4g.isNaN || y4g <= -200) {
+                if (currentSeg4g.isNotEmpty) {
+                    segments4g.add(currentSeg4g);
+                    currentSeg4g = [];
+                }
+            } else {
+                currentSeg4g.add(FlSpot(x, y4g));
             }
 
             final y5g = getY5g(sample);
-            if (y5g != null) {
-                spots5g.add(FlSpot(x, y5g));
+            if (isTimeGap || y5g == null || y5g.isNaN || y5g <= -200) {
+                if (currentSeg5g.isNotEmpty) {
+                    segments5g.add(currentSeg5g);
+                    currentSeg5g = [];
+                }
+            } else {
+                currentSeg5g.add(FlSpot(x, y5g));
             }
 
-            // Handover marker: vertical dashed line only (no PCI label text)
+            // Handover marker: vertical dashed line only
             if (sample.handoverDescription != null) {
                 handoverLines.add(
                     VerticalLine(
@@ -229,19 +266,52 @@ class _GraphScreenState extends State<GraphScreen> {
             }
         }
 
+        if (currentSeg4g.isNotEmpty) segments4g.add(currentSeg4g);
+        if (currentSeg5g.isNotEmpty) segments5g.add(currentSeg5g);
+
         final double maxX = max(totalSpanSeconds, 10.0);
+
+        // 各セグメントを LineChartBarData に変換
+        final List<LineChartBarData> lineBarsData = [];
+        for (final seg in segments4g) {
+            lineBarsData.add(
+                LineChartBarData(
+                    spots: seg,
+                    isCurved: false,
+                    color: const Color(0xFF2196F3),
+                    barWidth: 2,
+                    dotData: const FlDotData(show: false),
+                ),
+            );
+        }
+        for (final seg in segments5g) {
+            lineBarsData.add(
+                LineChartBarData(
+                    spots: seg,
+                    isCurved: false,
+                    color: const Color(0xFF00ADB5),
+                    barWidth: 2,
+                    dotData: const FlDotData(show: false),
+                ),
+            );
+        }
+
+        // チャート本体の高さはカード高さからヘッダー・パディング分を引いた値
+        final chartHeight = max(60.0, cardHeight - 48.0);
 
         return Card(
             elevation: isDark ? 2 : 1,
+            margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
             ),
             color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                         Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -249,23 +319,23 @@ class _GraphScreenState extends State<GraphScreen> {
                                 Text(
                                     title,
                                     style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 12.5,
                                         fontWeight: FontWeight.bold,
                                         color: isDark ? Colors.white : Colors.black87,
                                     ),
                                 ),
                                 Row(
                                     children: [
-                                        _buildLegendDot(const Color(0xFF2196F3), "4G", isDark),
-                                        const SizedBox(width: 10),
-                                        _buildLegendDot(const Color(0xFF00ADB5), "5G", isDark),
+                                        _buildLegendDot(const Color(0xFF2196F3), label4g, isDark),
+                                        const SizedBox(width: 8),
+                                        _buildLegendDot(const Color(0xFF00ADB5), label5g, isDark),
                                     ],
                                 ),
                             ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 4),
                         SizedBox(
-                            height: 150,
+                            height: chartHeight,
                             child: LineChart(
                                 LineChartData(
                                     minY: minY,
@@ -288,9 +358,9 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 final timeStr = "${sampleTime.hour.toString().padLeft(2, '0')}:${sampleTime.minute.toString().padLeft(2, '0')}:${sampleTime.second.toString().padLeft(2, '0')}";
 
                                                 return touchedSpots.map((barSpot) {
-                                                    final is5g = barSpot.barIndex == 1;
+                                                    final is5g = barSpot.bar.color == const Color(0xFF00ADB5);
                                                     return LineTooltipItem(
-                                                        "[$timeStr]\n${is5g ? '5G' : '4G'}: ${barSpot.y.toStringAsFixed(1)} $unit",
+                                                        "[$timeStr]\n${is5g ? label5g : label4g}: ${barSpot.y.toStringAsFixed(1)} $unit",
                                                         TextStyle(
                                                             color: is5g ? const Color(0xFF00E5FF) : const Color(0xFF2196F3),
                                                             fontWeight: FontWeight.bold,
@@ -331,15 +401,15 @@ class _GraphScreenState extends State<GraphScreen> {
                                         leftTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                                 showTitles: true,
-                                                reservedSize: 44,
+                                                reservedSize: 38,
                                                 getTitlesWidget: (value, meta) {
                                                     return Container(
                                                         alignment: Alignment.centerRight,
-                                                        padding: const EdgeInsets.only(right: 4),
+                                                        padding: const EdgeInsets.only(right: 2),
                                                         child: Text(
                                                             "${value.toInt()}",
                                                             style: GoogleFonts.notoSansMono(
-                                                                fontSize: 10,
+                                                                fontSize: 9,
                                                                 color: isDark ? Colors.white54 : Colors.black54,
                                                             ),
                                                         ),
@@ -347,12 +417,12 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 },
                                             ),
                                         ),
-                                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false, reservedSize: 6)),
+                                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false, reservedSize: 4)),
                                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                         bottomTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                                 showTitles: true,
-                                                reservedSize: 22,
+                                                reservedSize: 18,
                                                 interval: (maxX / 4).clamp(1.0, 300.0),
                                                 getTitlesWidget: (value, meta) {
                                                     final diffSec = (maxX - value).round();
@@ -360,7 +430,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                         return Text(
                                                             "現在",
                                                             style: GoogleFonts.notoSansJp(
-                                                                fontSize: 10,
+                                                                fontSize: 9,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: isDark ? Colors.white70 : Colors.black87,
                                                             ),
@@ -379,7 +449,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                                     return Text(
                                                         label,
                                                         style: GoogleFonts.notoSansMono(
-                                                            fontSize: 10,
+                                                            fontSize: 9,
                                                             color: isDark ? Colors.white54 : Colors.black54,
                                                         ),
                                                     );
@@ -394,24 +464,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                             width: 0.8,
                                         ),
                                     ),
-                                    lineBarsData: [
-                                        // 4G Line (Blue)
-                                        LineChartBarData(
-                                            spots: spots4g,
-                                            isCurved: false,
-                                            color: const Color(0xFF2196F3),
-                                            barWidth: 2,
-                                            dotData: const FlDotData(show: false),
-                                        ),
-                                        // 5G Line (Cyan)
-                                        LineChartBarData(
-                                            spots: spots5g,
-                                            isCurved: false,
-                                            color: const Color(0xFF00ADB5),
-                                            barWidth: 2,
-                                            dotData: const FlDotData(show: false),
-                                        ),
-                                    ],
+                                    lineBarsData: lineBarsData,
                                 ),
                                 duration: Duration.zero,
                             ),
@@ -426,15 +479,15 @@ class _GraphScreenState extends State<GraphScreen> {
         return Row(
             children: [
                 Container(
-                    width: 10,
-                    height: 10,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 4),
                 Text(
                     label,
                     style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: isDark ? Colors.white70 : Colors.black87,
                         fontWeight: FontWeight.bold,
                     ),

@@ -78,10 +78,18 @@ class DashboardScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 24),
                     children: [
                         _buildConnectionBanner(context, apiService, signal),
-                        CellCard.build5gNrCard(context, signal),
-                        CellCard.build4gLteCard(context, signal),
-                        const SizedBox(height: 8),
-                        _buildNavigationActionButtons(context),
+                        CellCard.build5gNrCard(
+                            context,
+                            signal,
+                            notation: apiService.settings.generationNotation,
+                            smoothGaugeColor: apiService.settings.smoothGaugeColor,
+                        ),
+                        CellCard.build4gLteCard(
+                            context,
+                            signal,
+                            notation: apiService.settings.generationNotation,
+                            smoothGaugeColor: apiService.settings.smoothGaugeColor,
+                        ),
                     ],
                 ),
             ),
@@ -109,8 +117,14 @@ class DashboardScreen extends StatelessWidget {
             : null;
 
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
-        final modeBadge = isConnecting ? "接続中..." : ConnectionModeHelper.getIconBadgeText(mode);
-        final uiMode = ConnectionModeHelper.getUiModeText(mode, isSa: signal?.isSa ?? false);
+        final modeBadge = isConnecting
+            ? "接続中..."
+            : ConnectionModeHelper.getIconBadgeText(mode, notation: apiService.settings.generationNotation);
+        final uiMode = ConnectionModeHelper.getUiModeText(
+            mode,
+            isSa: signal?.isSa ?? false,
+            notation: apiService.settings.generationNotation,
+        );
 
         return Container(
             margin: const EdgeInsets.all(12),
@@ -213,54 +227,6 @@ class DashboardScreen extends StatelessWidget {
                             style: const TextStyle(fontSize: 12, color: Colors.orangeAccent),
                         ),
                     ],
-                ],
-            ),
-        );
-    }
-
-    Widget _buildNavigationActionButtons(BuildContext context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-                children: [
-                    Expanded(
-                        child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade100,
-                                elevation: isDark ? 1 : 0,
-                            ),
-                            icon: Icon(Icons.show_chart, color: isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
-                            label: Text(
-                                "同期グラフへ",
-                                style: TextStyle(
-                                    color: isDark ? Colors.white : Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                ),
-                            ),
-                            onPressed: onNavigateToGraph,
-                        ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade100,
-                                elevation: isDark ? 1 : 0,
-                            ),
-                            icon: const Icon(Icons.settings, color: Colors.orangeAccent),
-                            label: Text(
-                                "設定へ",
-                                style: TextStyle(
-                                    color: isDark ? Colors.white : Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                ),
-                            ),
-                            onPressed: onNavigateToSettings,
-                        ),
-                    ),
                 ],
             ),
         );

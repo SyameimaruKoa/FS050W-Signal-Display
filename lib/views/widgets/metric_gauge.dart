@@ -8,6 +8,9 @@ class MetricGauge extends StatelessWidget {
     final String unit;
     final SignalRatingLevel level;
     final String? annotation;
+    final bool smoothGaugeColor;
+    final double? minVal;
+    final double? maxVal;
 
     const MetricGauge({
         super.key,
@@ -16,12 +19,19 @@ class MetricGauge extends StatelessWidget {
         required this.unit,
         required this.level,
         this.annotation,
+        this.smoothGaugeColor = false,
+        this.minVal,
+        this.maxVal,
     });
 
     @override
     Widget build(BuildContext context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final color = ColorGauge.getColor(level);
+        Color color = ColorGauge.getColor(level);
+        if (smoothGaugeColor && value != null && minVal != null && maxVal != null) {
+            final ratio = ((value! - minVal!) / (maxVal! - minVal!)).clamp(0.0, 1.0);
+            color = ColorGauge.getSmoothColor(ratio);
+        }
         final progress = ColorGauge.getProgress(level);
         final levelText = ColorGauge.getLabel(level);
 
