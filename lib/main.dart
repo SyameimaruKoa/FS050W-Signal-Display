@@ -113,7 +113,10 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
             title: 'FS050W Signal Monitor',
             debugShowCheckedModeBanner: false,
             theme: _buildThemeData(settings.appTheme, context),
-            home: const PiPDetectorShell(),
+            builder: (context, child) {
+                return PiPDetectorShell(child: child!);
+            },
+            home: const MainNavigationShell(),
         );
     }
 
@@ -178,7 +181,8 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
 }
 
 class PiPDetectorShell extends StatefulWidget {
-    const PiPDetectorShell({super.key});
+    final Widget child;
+    const PiPDetectorShell({super.key, required this.child});
 
     @override
     State<PiPDetectorShell> createState() => _PiPDetectorShellState();
@@ -212,7 +216,7 @@ class _PiPDetectorShellState extends State<PiPDetectorShell> {
         if (_isPipMode) {
             return const PipScreen();
         }
-        return const MainNavigationShell();
+        return widget.child;
     }
 }
 

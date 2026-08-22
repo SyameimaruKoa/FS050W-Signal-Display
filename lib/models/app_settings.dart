@@ -38,6 +38,7 @@ class AppSettings {
     bool autoPipOnHome;                 // ホーム画面に戻った時に自動PiP起動
     String pipAspectRatio;              // "16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21"
     String pipGraphType;                // "rsrp", "snr", "rsrq", "none" (拡大時グラフ種類)
+    double pipGraphScaleThreshold;      // PiPグラフ表示のサイズ倍率閾値 (0.5 ~ 1.5)
 
     // 4. フローティングオーバーレイ設定
     bool overlayEnabled;                // オーバーレイ有効/無効
@@ -78,6 +79,7 @@ class AppSettings {
         this.autoPipOnHome = true,
         this.pipAspectRatio = "16:9",
         this.pipGraphType = "rsrp",
+        this.pipGraphScaleThreshold = 1.0,
         this.overlayEnabled = false,
         this.overlayStyle = "card",
         this.overlayOpacity = 0.85,
@@ -112,6 +114,7 @@ class AppSettings {
             'autoPipOnHome': autoPipOnHome,
             'pipAspectRatio': pipAspectRatio,
             'pipGraphType': pipGraphType,
+            'pipGraphScaleThreshold': pipGraphScaleThreshold,
             'overlayEnabled': overlayEnabled,
             'overlayStyle': overlayStyle,
             'overlayOpacity': overlayOpacity,
@@ -147,6 +150,7 @@ class AppSettings {
             autoPipOnHome: json['autoPipOnHome'] ?? true,
             pipAspectRatio: json['pipAspectRatio'] ?? "16:9",
             pipGraphType: json['pipGraphType'] ?? "rsrp",
+            pipGraphScaleThreshold: (json['pipGraphScaleThreshold'] as num?)?.toDouble() ?? 1.0,
             overlayEnabled: json['overlayEnabled'] ?? false,
             overlayStyle: json['overlayStyle'] ?? "card",
             overlayOpacity: (json['overlayOpacity'] as num?)?.toDouble() ?? 0.85,

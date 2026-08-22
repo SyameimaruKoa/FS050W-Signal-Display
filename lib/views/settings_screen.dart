@@ -212,6 +212,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 },
                             ),
                         ),
+                        ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("PiP グラフ表示のサイズ条件"),
+                            subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    const Text("PiP枠が一定サイズ以上の時にグラフを表示します。"),
+                                    Slider(
+                                        value: _settings.pipGraphScaleThreshold,
+                                        min: 0.5,
+                                        max: 1.5,
+                                        divisions: 10,
+                                        label: "しきい値: ${_settings.pipGraphScaleThreshold.toStringAsFixed(1)}倍",
+                                        onChanged: (val) {
+                                            setState(() => _settings.pipGraphScaleThreshold = val);
+                                        },
+                                        onChangeEnd: (val) => _save(),
+                                    ),
+                                    Text("現在: ${_settings.pipGraphScaleThreshold.toStringAsFixed(1)}倍 (小さいほど表示されやすい)", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                ],
+                            ),
+                        ),
                     ]),
 
                     const SizedBox(height: 16),

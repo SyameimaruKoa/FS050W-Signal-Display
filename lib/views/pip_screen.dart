@@ -29,14 +29,16 @@ class PipScreen extends StatelessWidget {
                     final bool isPortrait = aspectRatioStr.contains("9:16") || aspectRatioStr.contains("3:4") || aspectRatioStr.contains("9:21");
                     final bool isSquare = aspectRatioStr == '1:1';
 
+                    final double thresholdMultiplier = settings.pipGraphCompactMode ? 0.75 : 1.0;
+
                     // 拡大判定: スペースに十分な余裕がある場合のみ履歴グラフを表示
                     final showGraph = settings.pipGraphType != 'none' &&
                         history.length >= 2 &&
                         (isSquare
-                            ? (width >= 220 && height >= 220)
+                            ? (width >= (220 * thresholdMultiplier) && height >= (220 * thresholdMultiplier))
                             : isPortrait
-                                ? (height >= 260 && width >= 140)
-                                : (height >= 170 && width >= 280));
+                                ? (height >= (260 * thresholdMultiplier) && width >= (140 * thresholdMultiplier))
+                                : (height >= (170 * thresholdMultiplier) && width >= (280 * thresholdMultiplier)));
 
                     return Container(
                         color: Colors.black,
