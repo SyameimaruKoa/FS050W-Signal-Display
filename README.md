@@ -2,7 +2,7 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue.svg)](https://flutter.dev)
 [![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-green.svg)](https://www.android.com)
-[![Version](https://img.shields.io/badge/Version-0.1.0-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Monitor)
+[![Version](https://img.shields.io/badge/Version-1.0.1-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Monitor)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 富士ソフト製 5G/4G モバイルルーター **「+F FS050W」** の電波状態・セル情報・通信品質をリアルタイムに取得・可視化・常駐監視する Android アプリケーションです。
@@ -63,7 +63,7 @@
 
 ## 🛠 動作環境
 
-**バージョン:** v1.0.0 (Release)  
+**バージョン:** v1.0.1 (Release)  
 **ターゲットOS:** Android 8.0 以上 (API 26+)  
 **対応アーキテクチャ:** arm64-v8a, armeabi-v7a, x86_64
   - Android 14 / 15 / 16 (Samsung One UI, Google Pixel, AOSP) 動作確認済み
@@ -119,6 +119,10 @@ flutter build apk --release --split-per-abi
 ---
 
 ## 📝 更新履歴
+
+### v1.0.1 (2026-08-22)
+- **HUD画面表示中のPiP移行不具合を修正**: HUD全画面表示中にホーム操作や小窓化を行った際、HUD画面が小窓内に維持されて文字被り・レイアウト崩壊が発生する問題を解消。どの画面からPiP化しても専用のPiP表示がオーバーレイされるよう改善。
+- **PiPグラフ表示のサイズしきい値設定を追加**: 設定画面にスライダー（0.5倍〜1.5倍）を追加し、PiP枠の大きさに応じたグラフ描画条件を自由に調整可能に変更。
 
 ### v1.0.0 (2026-08-22)
 - **正式版リリース（v1.0.0）**: 実機・エミュレーターでの徹底的な動作デバッグをクリアし、安定版としてリリース。
