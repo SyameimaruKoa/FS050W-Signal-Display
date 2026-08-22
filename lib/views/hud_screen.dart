@@ -98,13 +98,13 @@ class _HudScreenState extends State<HudScreen> {
 
                                 // Main signal gauges
                                 Expanded(
-                                    child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: Row(
-                                            children: [
-                                                // 5G Gauges
-                                                Expanded(
-                                                    child: _buildHudPanel(
+                                    child: Center(
+                                        child: LayoutBuilder(
+                                            builder: (context, constraints) {
+                                                final isPortrait = constraints.maxHeight > constraints.maxWidth;
+                                                final children = [
+                                                    // 5G Gauges
+                                                    _buildHudPanel(
                                                         context,
                                                         title: ConnectionModeHelper.getGenerationName(true, notation: notation),
                                                         bandStr: signal?.nrBand != null ? "n${signal!.nrBand}" : "--",
@@ -113,12 +113,11 @@ class _HudScreenState extends State<HudScreen> {
                                                         rsrq: signal?.nrRsrq,
                                                         sinr: signal?.nrSnr,
                                                         accentColor: const Color(0xFF00ADB5),
+                                                        width: isPortrait ? constraints.maxWidth * 0.85 : (constraints.maxWidth - 48) / 2,
                                                     ),
-                                                ),
-                                                const SizedBox(width: 16),
-                                                // 4G Gauges
-                                                Expanded(
-                                                    child: _buildHudPanel(
+                                                    SizedBox(height: isPortrait ? 12 : 0, width: isPortrait ? 0 : 16),
+                                                    // 4G Gauges
+                                                    _buildHudPanel(
                                                         context,
                                                         title: ConnectionModeHelper.getGenerationName(false, notation: notation),
                                                         bandStr: signal?.lteBand != null ? "B${signal!.lteBand}" : "--",
@@ -127,9 +126,27 @@ class _HudScreenState extends State<HudScreen> {
                                                         rsrq: signal?.lteRsrq,
                                                         sinr: signal?.lteSinr,
                                                         accentColor: const Color(0xFF2196F3),
+                                                        width: isPortrait ? constraints.maxWidth * 0.85 : (constraints.maxWidth - 48) / 2,
                                                     ),
-                                                ),
-                                            ],
+                                                ];
+
+                                                return SingleChildScrollView(
+                                                    child: Padding(
+                                                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                                        child: isPortrait
+                                                            ? Column(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                children: children,
+                                                            )
+                                                            : Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                children: children,
+                                                            ),
+                                                    ),
+                                                );
+                                            },
                                         ),
                                     ),
                                 ),
@@ -150,15 +167,18 @@ class _HudScreenState extends State<HudScreen> {
         required double? rsrq,
         required double? sinr,
         required Color accentColor,
+        required double width,
     }) {
         return Container(
-            padding: const EdgeInsets.all(16),
+            width: width,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: accentColor.withOpacity(0.4), width: 1.5),
+                color: Colors.white.withOpacity(0.02),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: accentColor.withOpacity(0.25), width: 1.0),
             ),
             child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                     Row(
@@ -167,7 +187,7 @@ class _HudScreenState extends State<HudScreen> {
                             Text(
                                 "$title ($bandStr)",
                                 style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: accentColor,
                                 ),
@@ -176,22 +196,20 @@ class _HudScreenState extends State<HudScreen> {
                                 "PCI: $pciStr",
                                 style: const TextStyle(
                                     fontFamily: 'monospace',
-                                    fontSize: 14,
-                                    color: Colors.white70,
+                                    fontSize: 12,
+                                    color: Colors.white60,
                                 ),
                             ),
                         ],
                     ),
-                    const Divider(color: Colors.white12, height: 24),
-                    Expanded(
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                                _buildHudMetric("RSRP", rsrp, "dBm", ColorGauge.getColor(ColorGauge.rateRsrp(rsrp))),
-                                _buildHudMetric("RSRQ", rsrq, "dB", ColorGauge.getColor(ColorGauge.rateRsrq(rsrq))),
-                                _buildHudMetric("SINR", sinr, "dB", ColorGauge.getColor(ColorGauge.rateSinr(sinr))),
-                            ],
-                        ),
+                    const SizedBox(height: 8),
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                            _buildHudMetric("RSRP", rsrp, "dBm", ColorGauge.getColor(ColorGauge.rateRsrp(rsrp))),
+                            _buildHudMetric("RSRQ", rsrq, "dB", ColorGauge.getColor(ColorGauge.rateRsrq(rsrq))),
+                            _buildHudMetric("SINR", sinr, "dB", ColorGauge.getColor(ColorGauge.rateSinr(sinr))),
+                        ],
                     ),
                 ],
             ),
@@ -201,25 +219,26 @@ class _HudScreenState extends State<HudScreen> {
     Widget _buildHudMetric(String label, double? val, String unit, Color color) {
         final valStr = val != null ? val.toStringAsFixed(1) : "--";
         return Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
                 Text(
                     label,
-                    style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 10, color: Colors.white54, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2),
                 Text(
                     valStr,
                     style: TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 22,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: color,
                     ),
                 ),
                 Text(
                     unit,
-                    style: const TextStyle(fontSize: 10, color: Colors.white38),
+                    style: const TextStyle(fontSize: 9, color: Colors.white38),
                 ),
             ],
         );

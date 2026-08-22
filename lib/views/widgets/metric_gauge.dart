@@ -33,7 +33,7 @@ class MetricGauge extends StatelessWidget {
 
         if (value != null && minVal != null && maxVal != null) {
             final rawRatio = ((value! - minVal!) / (maxVal! - minVal!)).clamp(0.0, 1.0);
-            progress = ColorGauge.applyCurve(rawRatio, smoothGaugeCurve);
+            progress = rawRatio;
             if (smoothGaugeColor) {
                 color = ColorGauge.getSmoothColor(rawRatio, curve: smoothGaugeCurve);
             }

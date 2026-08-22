@@ -2,10 +2,18 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue.svg)](https://flutter.dev)
 [![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-green.svg)](https://www.android.com)
-[![Version](https://img.shields.io/badge/Version-0.0.2-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Monitor)
+[![Version](https://img.shields.io/badge/Version-0.1.0-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Monitor)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 富士ソフト製 5G/4G モバイルルーター **「+F FS050W」** の電波状態・セル情報・通信品質をリアルタイムに取得・可視化・常駐監視する Android アプリケーションです。
+
+---
+
+## 📸 スクリーンショット
+
+| リアルタイムダッシュボード | 同期タイムシリーズグラフ | HUD常時表示モード (OLED省電力) | 各種設定 & 自動保存 |
+| :---: | :---: | :---: | :---: |
+| ![Dashboard](assets/screenshots/dashboard.png) | ![Sync Graph](assets/screenshots/sync_graph.png) | ![HUD Mode](assets/screenshots/hud_mode.png) | ![Settings](assets/screenshots/settings.png) |
 
 ---
 
@@ -98,6 +106,11 @@ flutter build apk --release
 ---
 
 ## 📝 リリースノート (Changelog)
+
+### v0.1.0 (2026-08-22)
+- **HUD（常時表示モード）のレイアウト改善**: 文字の重なりを防ぐため、レイアウトを最適化し、消費電力を抑えたミニマルなデザインに変更。
+- **強度バーの表示ロジック修正**: メーターの伸縮率を純粋な電波強度の実数に比例するように変更（色の変化はグラデーション曲線に追従）。
+- Android Studioエミュレータによる動作テストおよびバグ修正を実施。
 
 ### v0.0.2 (2026-08-21)
 - **エミュレーター対応**: Android Studio 標準エミュレーター（Pixel / Android 37+）での動作検証および対応。

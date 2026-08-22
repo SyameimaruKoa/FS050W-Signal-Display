@@ -73,55 +73,80 @@ class SignalData {
         final isSa = sysmode == 'nr5g';
         final operatorName = (rawMap['mnet_operator_name'] ?? previousData?.operatorName ?? '--').toString();
 
-        // 4G LTE Parsing
+        // 4G LTE & 5G NR Parsing
         final rawLteRsrp = _parseInt(rawMap['mnet_rsrp']);
-        double? lteRsrp;
-        if (rawLteRsrp != null) {
-            lteRsrp = isSa ? (rawLteRsrp - 157.0) : (rawLteRsrp - 141.0);
-        } else {
-            lteRsrp = previousData?.lteRsrp;
-        }
-
         final rawLteRssi = _parseInt(rawMap['mnet_rssi']);
-        final double? lteRssi = rawLteRssi != null ? (rawLteRssi - 111.0) : previousData?.lteRssi;
-
         final rawLteRsrq = _parseInt(rawMap['mnet_rsrq']);
-        final double? lteRsrq = rawLteRsrq != null ? ((rawLteRsrq - 40.0) / 2.0) : previousData?.lteRsrq;
+        final double? lteSinrVal = _parseDouble(rawMap['mnet_sinr']);
+        final int? lteBandVal = _parseBand(rawMap['mnet_wnw_band']);
+        final int? ltePciVal = _parseInt(rawMap['mnet_wnw_pci']);
 
-        final double? lteSinr = _parseDouble(rawMap['mnet_sinr']) ?? previousData?.lteSinr;
-
-        final int? lteBand = _parseBand(rawMap['mnet_wnw_band']) ?? previousData?.lteBand;
-        final int? ltePci = _parseInt(rawMap['mnet_wnw_pci']) ?? previousData?.ltePci;
-
-        // 5G NR Parsing
         final rawEndcRsrp = _parseInt(rawMap['mnet_endc_rsrp']);
-        double? nrRsrp;
-        if (rawEndcRsrp != null && rawEndcRsrp > 0) {
-            nrRsrp = rawEndcRsrp - 157.0;
-        } else if (rawEndcRsrp == null) {
-            nrRsrp = previousData?.nrRsrp;
-        }
-
         final rawEndcRsrq = _parseInt(rawMap['mnet_endc_rsrq']);
-        double? nrRsrq;
-        if (rawEndcRsrq != null && rawEndcRsrq > 0) {
-            nrRsrq = ((rawEndcRsrq - 1.0) / 2.0) - 43.0;
-        } else if (rawEndcRsrq == null) {
-            nrRsrq = previousData?.nrRsrq;
-        }
-
         final rawEndcSnr = _parseInt(rawMap['mnet_endc_snr']);
-        double? nrSnr;
-        if (rawEndcSnr != null && rawEndcSnr > 0) {
-            nrSnr = adjust5gSnr
-                ? (((rawEndcSnr - 1.0) / 2.0) - 23.0)
-                : rawEndcSnr.toDouble();
-        } else if (rawEndcSnr == null) {
-            nrSnr = previousData?.nrSnr;
-        }
+        final int? endcBandVal = _parseBand(rawMap['mnet_wnw_psband']);
+        final int? endcPciVal = _parseInt(rawMap['mnet_wnw_pspci']);
 
-        final int? nrBand = _parseBand(rawMap['mnet_wnw_psband']) ?? previousData?.nrBand;
-        final int? nrPci = _parseInt(rawMap['mnet_wnw_pspci']) ?? previousData?.nrPci;
+        double? lteRsrp;
+        double? lteRssi;
+        double? lteRsrq;
+        double? lteSinr;
+        int? lteBand;
+        int? ltePci;
+
+        double? nrRsrp;
+        double? nrRsrq;
+        double? nrSnr;
+        int? nrBand;
+        int? nrPci;
+
+        if (isSa) {
+            // 5G SA: Primary cell metrics are 5G
+            nrRsrp = rawLteRsrp != null
+                ? (rawLteRsrp - 157.0)
+                : (rawEndcRsrp != null && rawEndcRsrp > 0 ? rawEndcRsrp - 157.0 : previousData?.nrRsrp);
+            nrRsrq = rawLteRsrq != null
+                ? (((rawLteRsrq - 1.0) / 2.0) - 43.0)
+                : (rawEndcRsrq != null && rawEndcRsrq > 0 ? (((rawEndcRsrq - 1.0) / 2.0) - 43.0) : previousData?.nrRsrq);
+            nrSnr = lteSinrVal ??
+                (rawEndcSnr != null && rawEndcSnr > 0
+                    ? (adjust5gSnr ? (((rawEndcSnr - 1.0) / 2.0) - 23.0) : rawEndcSnr.toDouble())
+                    : previousData?.nrSnr);
+            nrBand = lteBandVal ?? endcBandVal ?? previousData?.nrBand;
+            nrPci = ltePciVal ?? endcPciVal ?? previousData?.nrPci;
+        } else {
+            // 4G LTE Anchor / Primary
+            lteRsrp = rawLteRsrp != null ? (rawLteRsrp - 141.0) : previousData?.lteRsrp;
+            lteRssi = rawLteRssi != null ? (rawLteRssi - 111.0) : previousData?.lteRssi;
+            lteRsrq = rawLteRsrq != null ? ((rawLteRsrq - 40.0) / 2.0) : previousData?.lteRsrq;
+            lteSinr = lteSinrVal ?? previousData?.lteSinr;
+            lteBand = lteBandVal ?? previousData?.lteBand;
+            ltePci = ltePciVal ?? previousData?.ltePci;
+
+            // 5G NR ENDC Secondary
+            if (rawEndcRsrp != null && rawEndcRsrp > 0) {
+                nrRsrp = rawEndcRsrp - 157.0;
+            } else if (rawEndcRsrp == null) {
+                nrRsrp = previousData?.nrRsrp;
+            }
+
+            if (rawEndcRsrq != null && rawEndcRsrq > 0) {
+                nrRsrq = ((rawEndcRsrq - 1.0) / 2.0) - 43.0;
+            } else if (rawEndcRsrq == null) {
+                nrRsrq = previousData?.nrRsrq;
+            }
+
+            if (rawEndcSnr != null && rawEndcSnr > 0) {
+                nrSnr = adjust5gSnr
+                    ? (((rawEndcSnr - 1.0) / 2.0) - 23.0)
+                    : rawEndcSnr.toDouble();
+            } else if (rawEndcSnr == null) {
+                nrSnr = previousData?.nrSnr;
+            }
+
+            nrBand = endcBandVal ?? previousData?.nrBand;
+            nrPci = endcPciVal ?? previousData?.nrPci;
+        }
 
         // Battery
         final int? batteryPercent = _parseInt(rawMap['battery_percent']) ?? previousData?.batteryPercent;
@@ -148,9 +173,19 @@ class SignalData {
 
         // Check Handover (PCI change)
         String? handover;
-        if (previousData != null && ltePci != null && previousData.ltePci != null && ltePci != previousData.ltePci) {
-            final bandStr = lteBand != null ? "B$lteBand" : "";
-            handover = "PCI ${previousData.ltePci} → $ltePci ($bandStr)";
+        if (isSa) {
+            if (previousData != null && nrPci != null && previousData.nrPci != null && nrPci != previousData.nrPci) {
+                final bandStr = nrBand != null ? "n$nrBand" : "";
+                handover = "5G PCI ${previousData.nrPci} → $nrPci ($bandStr)";
+            }
+        } else {
+            if (previousData != null && ltePci != null && previousData.ltePci != null && ltePci != previousData.ltePci) {
+                final bandStr = lteBand != null ? "B$lteBand" : "";
+                handover = "4G PCI ${previousData.ltePci} → $ltePci ($bandStr)";
+            } else if (previousData != null && nrPci != null && previousData.nrPci != null && nrPci != previousData.nrPci) {
+                final bandStr = nrBand != null ? "n$nrBand" : "";
+                handover = "5G PCI ${previousData.nrPci} → $nrPci ($bandStr)";
+            }
         }
 
         return SignalData(
