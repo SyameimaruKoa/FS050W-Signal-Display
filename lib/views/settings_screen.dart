@@ -345,7 +345,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         controller: _ipController,
                                         decoration: const InputDecoration(
                                             labelText: "ルーター IP アドレス",
-                                            hintText: "192.168.155.1",
+                                            hintText: "192.168.100.1",
                                             prefixIcon: Icon(Icons.dns),
                                         ),
                                         keyboardType: TextInputType.url,

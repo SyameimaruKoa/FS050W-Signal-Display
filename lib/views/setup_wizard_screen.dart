@@ -15,7 +15,7 @@ class SetupWizardScreen extends StatefulWidget {
 }
 
 class _SetupWizardScreenState extends State<SetupWizardScreen> {
-    final TextEditingController _ipController = TextEditingController(text: "192.168.155.1");
+    final TextEditingController _ipController = TextEditingController(text: "192.168.100.1");
     final TextEditingController _passwordController = TextEditingController();
 
     bool _isScanning = false;
@@ -55,7 +55,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
             }
 
             final apiService = context.read<ApiService>();
-            final targetIp = _detectedGateway ?? "192.168.155.1";
+            final targetIp = _detectedGateway ?? "192.168.100.1";
             final canConnect = await apiService.testConnection(targetIp, "");
 
             setState(() {
@@ -209,7 +209,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                                             controller: _ipController,
                                                             decoration: const InputDecoration(
                                                                 labelText: "ルーター IP アドレス",
-                                                                hintText: "192.168.155.1",
+                                                                hintText: "192.168.100.1",
                                                                 prefixIcon: Icon(Icons.wifi),
                                                             ),
                                                             keyboardType: TextInputType.url,
