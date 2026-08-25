@@ -24,3 +24,4 @@ plugins {
 }
 
 include(":app")
+rootProject.name = "fs050w_signal_display"
