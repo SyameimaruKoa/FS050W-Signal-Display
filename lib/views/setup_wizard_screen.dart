@@ -122,7 +122,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                                "+F FS050W 電波監視アプリ",
+                                "+F FS050W Signal Display",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],

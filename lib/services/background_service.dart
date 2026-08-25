@@ -8,8 +8,8 @@ class BackgroundService {
         FlutterForegroundTask.init(
             androidNotificationOptions: AndroidNotificationOptions(
                 channelId: 'fs050w_empty_channel',
-                channelName: 'FS050W',
-                channelDescription: 'FS050W Background Service',
+                channelName: 'FS050W Signal Display',
+                channelDescription: 'FS050W Signal Display Background Service',
                 channelImportance: NotificationChannelImportance.NONE,
                 priority: NotificationPriority.LOW,
                 playSound: false,
