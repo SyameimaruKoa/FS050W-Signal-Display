@@ -60,7 +60,7 @@ class AppLogger {
 
     static String exportText() {
         final sb = StringBuffer();
-        sb.writeln("=== FS050W Signal Monitor Diagnostic Log ===");
+        sb.writeln("=== FS050W Signal Display Diagnostic Log ===");
         sb.writeln("Export Time: ${DateTime.now().toIso8601String()}");
         sb.writeln("Total Entries: ${_logs.length}");
         sb.writeln("============================================\n");

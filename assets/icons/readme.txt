@@ -1,1 +1,1 @@
-# Assets icons directory for FS050W Monitor App
+# Assets icons directory for FS050W Signal Display App
