@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.syameimarukoa.fs050w_monitor"
+    namespace = "com.syameimarukoa.fs050w_signal_display"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.syameimarukoa.fs050w_monitor"
+        applicationId = "com.syameimarukoa.fs050w_signal_display"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

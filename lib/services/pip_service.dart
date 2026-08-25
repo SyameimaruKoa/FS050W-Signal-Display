@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class PipService {
-    static const MethodChannel _channel = MethodChannel('com.syameimarukoa.fs050w_monitor/pip');
+    static const MethodChannel _channel = MethodChannel('com.syameimarukoa.fs050w_signal_display/pip');
 
     static final ValueNotifier<bool> isPipModeNotifier = ValueNotifier<bool>(false);
 

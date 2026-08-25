@@ -5,7 +5,7 @@ import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 
 class OverlayService {
-    static const MethodChannel _channel = MethodChannel('com.syameimarukoa.fs050w_monitor/overlay');
+    static const MethodChannel _channel = MethodChannel('com.syameimarukoa.fs050w_signal_display/overlay');
 
     static Future<bool> checkPermission() async {
         try {
@@ -92,6 +92,14 @@ class OverlayService {
                 'type': type,
                 'shape': settings.eventLampShape,
                 'position': settings.eventLampPosition,
+            });
+        } catch (_) {}
+    }
+
+    static Future<void> triggerVibration(String type) async {
+        try {
+            await _channel.invokeMethod('vibrate', {
+                'type': type,
             });
         } catch (_) {}
     }

@@ -1,4 +1,4 @@
-package com.syameimarukoa.fs050w_monitor
+﻿package com.syameimarukoa.fs050w_signal_display
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -15,6 +15,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.os.VibrationEffect
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.*
@@ -67,16 +70,18 @@ class OverlayService : Service() {
     private var screenHeight = 2400
 
     companion object {
-        const val ACTION_START_OVERLAY = "com.syameimarukoa.fs050w_monitor.START_OVERLAY"
-        const val ACTION_STOP_OVERLAY = "com.syameimarukoa.fs050w_monitor.STOP_OVERLAY"
-        const val ACTION_UPDATE_DATA = "com.syameimarukoa.fs050w_monitor.UPDATE_DATA"
-        const val ACTION_TRIGGER_LAMP = "com.syameimarukoa.fs050w_monitor.TRIGGER_LAMP"
+        const val ACTION_START_OVERLAY = "com.syameimarukoa.fs050w_signal_display.START_OVERLAY"
+        const val ACTION_STOP_OVERLAY = "com.syameimarukoa.fs050w_signal_display.STOP_OVERLAY"
+        const val ACTION_UPDATE_DATA = "com.syameimarukoa.fs050w_signal_display.UPDATE_DATA"
+        const val ACTION_TRIGGER_LAMP = "com.syameimarukoa.fs050w_signal_display.TRIGGER_LAMP"
+        const val ACTION_TRIGGER_VIBRATION = "com.syameimarukoa.fs050w_signal_display.TRIGGER_VIBRATION"
 
         const val EXTRA_JSON_DATA = "extra_json_data"
         const val EXTRA_LAMP_TYPE = "extra_lamp_type"
         const val EXTRA_LAMP_SHAPE = "extra_lamp_shape"
         const val EXTRA_LAMP_POSITION = "extra_lamp_position"
         const val EXTRA_LAMP_COLOR = "extra_lamp_color"
+        const val EXTRA_VIBRATION_TYPE = "extra_vibration_type"
 
         fun applyCurve(ratio: Double, curveType: String): Double {
             val r = ratio.coerceIn(0.0, 1.0)
@@ -107,7 +112,7 @@ class OverlayService : Service() {
     private fun startForegroundIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "fs050w_overlay_channel"
-            val channelName = "FS050W オーバーレイ & 常時監視"
+            val channelName = "FS050W Signal Display"
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (nm.getNotificationChannel(channelId) == null) {
                 val channel = NotificationChannel(
@@ -123,7 +128,7 @@ class OverlayService : Service() {
 
             val notification = NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("FS050W モニター")
+                .setContentTitle("FS050W Signal Display")
                 .setContentText("オーバーレイ & イベントLEDランプ待機中")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
@@ -166,6 +171,10 @@ class OverlayService : Service() {
                 val position = intent.getStringExtra(EXTRA_LAMP_POSITION) ?: "topCenter"
                 val colorHex = intent.getStringExtra(EXTRA_LAMP_COLOR)
                 triggerEventLamp(lampType, shape, position, colorHex)
+            }
+            ACTION_TRIGGER_VIBRATION -> {
+                val vibType = intent.getStringExtra(EXTRA_VIBRATION_TYPE) ?: "5g"
+                vibrateDevice(vibType)
             }
         }
 
@@ -869,7 +878,7 @@ class OverlayService : Service() {
     }
 
     // ----------------------------------------------------
-    // Event LED Lamp Overlay (Top of Screen)
+    // Event LED Lamp Overlay & Native Vibration
     // ----------------------------------------------------
     private fun triggerEventLamp(type: String, shape: String, position: String, customColor: String?) {
         val color = when {
@@ -881,6 +890,58 @@ class OverlayService : Service() {
         }
 
         showLampOverlay(color, shape, position, isBlinking = (type == "critical"))
+    }
+
+    private fun vibrateDevice(type: String) {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+
+            if (vibrator == null || !vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                when (type) {
+                    "5g" -> {
+                        // 5G Sub6: Double crisp vibration (70ms on, 60ms off, 70ms on)
+                        val timings = longArrayOf(0, 70, 60, 70)
+                        val amplitudes = intArrayOf(0, 255, 0, 255)
+                        val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                        vibrator.vibrate(effect)
+                    }
+                    "handover" -> {
+                        // Handover: Medium single vibration (80ms)
+                        val effect = VibrationEffect.createOneShot(80, 180)
+                        vibrator.vibrate(effect)
+                    }
+                    "critical" -> {
+                        // Critical warning: Strong alert double pulse (150ms on, 100ms off, 150ms on)
+                        val timings = longArrayOf(0, 150, 100, 150)
+                        val amplitudes = intArrayOf(0, 255, 0, 255)
+                        val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                        vibrator.vibrate(effect)
+                    }
+                    else -> {
+                        val effect = VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE)
+                        vibrator.vibrate(effect)
+                    }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                when (type) {
+                    "5g" -> vibrator.vibrate(longArrayOf(0, 70, 60, 70), -1)
+                    "handover" -> vibrator.vibrate(80)
+                    "critical" -> vibrator.vibrate(longArrayOf(0, 150, 100, 150), -1)
+                    else -> vibrator.vibrate(60)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun showLampOverlay(color: Int, shape: String, position: String, isBlinking: Boolean) {

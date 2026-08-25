@@ -1,4 +1,4 @@
-package com.syameimarukoa.fs050w_monitor
+package com.syameimarukoa.fs050w_signal_display
 
 import android.app.PictureInPictureParams
 import android.content.BroadcastReceiver
@@ -8,6 +8,9 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.os.VibrationEffect
 import android.provider.Settings
 import android.util.Rational
 import androidx.core.content.ContextCompat
@@ -17,9 +20,9 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
-    private val PIP_CHANNEL = "com.syameimarukoa.fs050w_monitor/pip"
-    private val OVERLAY_CHANNEL = "com.syameimarukoa.fs050w_monitor/overlay"
-    private val LIFECYCLE_CHANNEL = "com.syameimarukoa.fs050w_monitor/lifecycle"
+    private val PIP_CHANNEL = "com.syameimarukoa.fs050w_signal_display/pip"
+    private val OVERLAY_CHANNEL = "com.syameimarukoa.fs050w_signal_display/overlay"
+    private val LIFECYCLE_CHANNEL = "com.syameimarukoa.fs050w_signal_display/lifecycle"
 
     private var pipMethodChannel: MethodChannel? = null
     private var overlayMethodChannel: MethodChannel? = null
@@ -151,6 +154,11 @@ class MainActivity : FlutterActivity() {
                         safeStartService(intent)
                         result.success(true)
                     }
+                    "vibrate" -> {
+                        val type = call.argument<String>("type") ?: "5g"
+                        vibrateDevice(type)
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -279,6 +287,55 @@ class MainActivity : FlutterActivity() {
             } catch (e2: Exception) {
                 e2.printStackTrace()
             }
+        }
+    }
+
+    private fun vibrateDevice(type: String) {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+
+            if (vibrator == null || !vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                when (type) {
+                    "5g" -> {
+                        val timings = longArrayOf(0, 70, 60, 70)
+                        val amplitudes = intArrayOf(0, 255, 0, 255)
+                        val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                        vibrator.vibrate(effect)
+                    }
+                    "handover" -> {
+                        val effect = VibrationEffect.createOneShot(80, 180)
+                        vibrator.vibrate(effect)
+                    }
+                    "critical" -> {
+                        val timings = longArrayOf(0, 150, 100, 150)
+                        val amplitudes = intArrayOf(0, 255, 0, 255)
+                        val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                        vibrator.vibrate(effect)
+                    }
+                    else -> {
+                        val effect = VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE)
+                        vibrator.vibrate(effect)
+                    }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                when (type) {
+                    "5g" -> vibrator.vibrate(longArrayOf(0, 70, 60, 70), -1)
+                    "handover" -> vibrator.vibrate(80)
+                    "critical" -> vibrator.vibrate(longArrayOf(0, 150, 100, 150), -1)
+                    else -> vibrator.vibrate(60)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

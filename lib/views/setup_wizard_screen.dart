@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import '../services/api_service.dart';
@@ -97,6 +98,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
         settings.isSetupCompleted = true;
 
         await StorageService.saveSettings(settings);
+        TextInput.finishAutofillContext(shouldSave: true);
         apiService.updateSettings(settings);
         apiService.startPolling();
         widget.onComplete?.call();
@@ -200,32 +202,44 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                                 ),
                                             ),
                                             const SizedBox(height: 16),
-                                            TextField(
-                                                controller: _ipController,
-                                                decoration: const InputDecoration(
-                                                    labelText: "ルーター IP アドレス",
-                                                    hintText: "192.168.155.1",
-                                                    prefixIcon: Icon(Icons.wifi),
+                                            AutofillGroup(
+                                                child: Column(
+                                                    children: [
+                                                        TextField(
+                                                            controller: _ipController,
+                                                            decoration: const InputDecoration(
+                                                                labelText: "ルーター IP アドレス",
+                                                                hintText: "192.168.155.1",
+                                                                prefixIcon: Icon(Icons.wifi),
+                                                            ),
+                                                            keyboardType: TextInputType.url,
+                                                            autofillHints: const [AutofillHints.url, AutofillHints.username],
+                                                        ),
+                                                        const SizedBox(height: 12),
+                                                        TextField(
+                                                            controller: _passwordController,
+                                                            decoration: InputDecoration(
+                                                                labelText: "Web管理パスワード (初期: admin)",
+                                                                hintText: "未設定の場合は admin が使用されます",
+                                                                prefixIcon: const Icon(Icons.lock_outline),
+                                                                suffixIcon: IconButton(
+                                                                    icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                                                                    onPressed: () {
+                                                                        setState(() {
+                                                                            _isPasswordVisible = !_isPasswordVisible;
+                                                                        });
+                                                                    },
+                                                                ),
+                                                            ),
+                                                            obscureText: !_isPasswordVisible,
+                                                            keyboardType: TextInputType.visiblePassword,
+                                                            autofillHints: const [AutofillHints.password],
+                                                            onEditingComplete: () {
+                                                                TextInput.finishAutofillContext(shouldSave: true);
+                                                            },
+                                                        ),
+                                                    ],
                                                 ),
-                                                keyboardType: TextInputType.url,
-                                            ),
-                                            const SizedBox(height: 12),
-                                            TextField(
-                                                controller: _passwordController,
-                                                decoration: InputDecoration(
-                                                    labelText: "Web管理パスワード (初期: admin)",
-                                                    hintText: "未設定の場合は admin が使用されます",
-                                                    prefixIcon: const Icon(Icons.lock_outline),
-                                                    suffixIcon: IconButton(
-                                                        icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                                                        onPressed: () {
-                                                            setState(() {
-                                                                _isPasswordVisible = !_isPasswordVisible;
-                                                            });
-                                                        },
-                                                    ),
-                                                ),
-                                                obscureText: !_isPasswordVisible,
                                             ),
                                             const SizedBox(height: 16),
                                             ElevatedButton.icon(

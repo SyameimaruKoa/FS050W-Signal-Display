@@ -1,8 +1,8 @@
-# +F FS050W Signal Monitor (FS050W 電波監視アプリ)
+# +F FS050W Signal Display (FS050W 電波監視・エンジニアリング表示アプリ)
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue.svg)](https://flutter.dev)
 [![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-green.svg)](https://www.android.com)
-[![Version](https://img.shields.io/badge/Version-1.0.2-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Monitor)
+[![Version](https://img.shields.io/badge/Version-1.1.0-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Display)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 富士ソフト製 5G/4G モバイルルーター **「+F FS050W」** の電波状態・セル情報・通信品質をリアルタイムに取得・可視化・常駐監視する Android アプリケーションです。
@@ -76,8 +76,8 @@
 
 ### 1. リポジトリのクローン
 ```bash
-git clone https://github.com/SyameimaruKoa/FS050W-Signal-Monitor.git
-cd FS050W-Signal-Monitor
+git clone https://github.com/SyameimaruKoa/FS050W-Signal-Display.git
+cd FS050W-Signal-Display
 ```
 
 ### 2. 依存パッケージの取得

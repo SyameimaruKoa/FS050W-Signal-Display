@@ -8,6 +8,7 @@ import '../models/connection_state.dart';
 import '../utils/crypto_utils.dart';
 import 'app_logger.dart';
 import 'overlay_service.dart';
+import 'notification_service.dart';
 
 enum ConnectionStatus {
     disconnected,
@@ -34,6 +35,9 @@ class ApiService extends ChangeNotifier {
     Timer? _pollingTimer;
     bool _isPolling = false;
     bool _isScreenOn = true;
+    bool _isFetching = false;
+    int _consecutiveErrorCount = 0;
+    DateTime? _lastLoginAttempt;
 
     ApiService(this._settings);
 
@@ -51,10 +55,7 @@ class ApiService extends ChangeNotifier {
 
         _settings = newSettings;
         if (ipChanged || passChanged) {
-            _csrfToken = null;
-            _sessionCookie = null;
-            _prikey = null;
-            _isLoggedIn = false;
+            _resetSession();
             if (_isPolling) {
                 restartPolling();
             }
@@ -67,12 +68,10 @@ class ApiService extends ChangeNotifier {
     void setScreenState(bool isScreenOn) {
         _isScreenOn = isScreenOn;
         if (!isScreenOn) {
-            // Screen Off (Sleep): Pause polling completely to save battery
             AppLogger.info("Screen OFF detected: Pausing polling loop");
             _pollingTimer?.cancel();
             _pollingTimer = null;
         } else {
-            // Screen On: Resume polling immediately
             AppLogger.info("Screen ON detected: Resuming polling loop immediately");
             if (_isPolling) {
                 _pollOnce();
@@ -98,6 +97,7 @@ class ApiService extends ChangeNotifier {
 
     void restartPolling() {
         stopPolling();
+        _resetSession();
         startPolling();
     }
 
@@ -109,6 +109,14 @@ class ApiService extends ChangeNotifier {
                 _pollOnce();
             }
         });
+    }
+
+    void _resetSession() {
+        _csrfToken = null;
+        _sessionCookie = null;
+        _prikey = null;
+        _isLoggedIn = false;
+        _lastLoginAttempt = null;
     }
 
     void _updateHeadersFromResponse(http.Response response) {
@@ -156,107 +164,102 @@ class ApiService extends ChangeNotifier {
         return false;
     }
 
-    DateTime? _lastLoginAttempt;
-
     Future<void> _pollOnce() async {
+        if (_isFetching) return;
+        _isFetching = true;
+
         try {
+            final hasPassword = _settings.webPassword.isNotEmpty;
+
+            // 1. Check or establish session tokens
             if (_csrfToken == null || _sessionCookie == null) {
-                _status = ConnectionStatus.connecting;
-                notifyListeners();
+                if (_consecutiveErrorCount >= 2) {
+                    _status = ConnectionStatus.connecting;
+                    notifyListeners();
+                }
                 final bool initSuccess = await _fetchCsrfToken();
                 if (!initSuccess) {
                     _handleFetchFailure("ルーター (${_settings.routerIp}) に接続できません");
-                    AppLogger.warn("Initial CSRF token fetch failed for ${_settings.routerIp}");
                     return;
                 }
             }
 
-            // Attempt login if password configured and not recently throttled
-            final now = DateTime.now();
-            final canAttemptLogin = !_isLoggedIn &&
-                _settings.webPassword.isNotEmpty &&
-                (_lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 15);
-
-            if (canAttemptLogin) {
-                _lastLoginAttempt = now;
-                AppLogger.info("Attempting login to router (${_settings.routerIp})");
-                final bool loginSuccess = await _performLogin();
-                if (loginSuccess) {
-                    _isLoggedIn = true;
-                    _status = ConnectionStatus.authenticated;
-                    AppLogger.info("Login succeeded: authenticated mode active");
-                } else {
-                    if (_settings.autoPasswordless) {
-                        _isLoggedIn = false;
-                        _status = ConnectionStatus.unauthenticatedMode;
-                        AppLogger.warn("Login failed or locked: falling back to unauthenticated public mode");
+            // 2. Perform login if password is configured and not yet authenticated
+            if (hasPassword && !_isLoggedIn) {
+                final now = DateTime.now();
+                final canAttempt = _lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 3;
+                if (canAttempt) {
+                    _lastLoginAttempt = now;
+                    AppLogger.info("Attempting authentication with router (${_settings.routerIp})...");
+                    final bool loginSuccess = await _performLogin();
+                    if (loginSuccess) {
+                        _isLoggedIn = true;
+                        _status = ConnectionStatus.authenticated;
+                        AppLogger.info("Authentication succeeded: Full parameter mode active");
                     } else {
-                        _handleFetchFailure("ログイン認証に失敗しました (パスワードを確認してください)");
-                        AppLogger.error("Login authentication rejected by router");
-                        return;
+                        AppLogger.warn("Login failed: Password might be incorrect or session busy");
+                        if (_settings.autoPasswordless) {
+                            _isLoggedIn = false;
+                            _status = ConnectionStatus.unauthenticatedMode;
+                        } else {
+                            _handleFetchFailure("ログイン認証に失敗しました (パスワードを確認してください)");
+                            return;
+                        }
                     }
                 }
-            } else if (!_isLoggedIn) {
+            } else if (!hasPassword) {
+                _isLoggedIn = false;
                 _status = ConnectionStatus.unauthenticatedMode;
             }
 
-            final Map<String, dynamic>? params = await _fetchParams();
+            // 3. Fetch Parameters
+            Map<String, dynamic>? params = await _fetchParams();
+
+            // 4. Session recovery if authenticated fetch failed
+            if (params == null && hasPassword) {
+                AppLogger.warn("Authenticated fetch failed. Resetting session and retrying login once...");
+                _resetSession();
+                final reInit = await _fetchCsrfToken();
+                if (reInit) {
+                    final loginSuccess = await _performLogin();
+                    if (loginSuccess) {
+                        _isLoggedIn = true;
+                        params = await _fetchParams();
+                    }
+                }
+            }
+
+            // 5. Process successful response
             if (params != null) {
+                _consecutiveErrorCount = 0;
+                _errorMessage = null;
+
                 final signal = SignalData.fromApiResponse(
                     params,
                     previousData: _currentSignal,
                     adjust5gSnr: _settings.adjust5gSnr,
                 );
 
-                if (signal.handoverDescription != null) {
-                    AppLogger.info("Handover detected: ${signal.handoverDescription}");
-                    OverlayService.triggerLamp("handover", _settings);
-                } else if (_currentSignal?.connectionMode != Fs050wConnectionMode.nr5gSub6 && signal.connectionMode == Fs050wConnectionMode.nr5gSub6) {
-                    OverlayService.triggerLamp("5g", _settings);
-                }
+                NotificationService.handleSignalEvents(signal, _settings);
 
                 _currentSignal = signal;
                 _signalHistory.add(signal);
 
-                // Update overlay with current signal
                 OverlayService.updateOverlayData(signal, _settings);
 
-                // Keep maximum 600 history points
                 if (_signalHistory.length > 600) {
                     _signalHistory.removeRange(0, _signalHistory.length - 600);
                 }
 
                 _status = _isLoggedIn ? ConnectionStatus.authenticated : ConnectionStatus.unauthenticatedMode;
-                _errorMessage = null;
                 notifyListeners();
             } else {
-                // If fetching params failed, attempt quick CSRF recovery once
-                AppLogger.warn("Params fetch returned null, attempting token refresh");
-                _csrfToken = null;
-                _sessionCookie = null;
-                final bool reInit = await _fetchCsrfToken();
-                if (reInit) {
-                    final retryParams = await _fetchParams();
-                    if (retryParams != null) {
-                        final signal = SignalData.fromApiResponse(
-                            retryParams,
-                            previousData: _currentSignal,
-                            adjust5gSnr: _settings.adjust5gSnr,
-                        );
-                        _currentSignal = signal;
-                        _signalHistory.add(signal);
-                        OverlayService.updateOverlayData(signal, _settings);
-                        _status = _isLoggedIn ? ConnectionStatus.authenticated : ConnectionStatus.unauthenticatedMode;
-                        _errorMessage = null;
-                        AppLogger.info("Token refresh & retry succeeded");
-                        notifyListeners();
-                        return;
-                    }
-                }
                 _handleFetchFailure();
             }
         } catch (e) {
             _handleFetchFailure(e.toString());
+        } finally {
+            _isFetching = false;
         }
     }
 
@@ -266,8 +269,8 @@ class ApiService extends ChangeNotifier {
             final response = await _client.get(uri).timeout(const Duration(seconds: 4));
             if (response.statusCode == 200) {
                 _updateHeadersFromResponse(response);
-                AppLogger.debug("CSRF token fetched: ${_csrfToken != null}");
-                return _csrfToken != null;
+                AppLogger.debug("CSRF token fetched successfully: ${_csrfToken != null}");
+                return _csrfToken != null && _sessionCookie != null;
             }
         } catch (e) {
             AppLogger.warn("Failed to reach x_csrf_token: $e");
@@ -325,7 +328,9 @@ class ApiService extends ChangeNotifier {
                     return true;
                 }
             }
-        } catch (_) {}
+        } catch (e) {
+            AppLogger.warn("Exception during _performLogin: $e");
+        }
         return false;
     }
 
@@ -351,7 +356,7 @@ class ApiService extends ChangeNotifier {
     Future<Map<String, dynamic>?> _fetchParams() async {
         final keysPayload = jsonEncode({'keys': kValidParamKeys});
 
-        // Try authenticated endpoint first if logged in
+        // 1. Try authenticated endpoint if logged in
         if (_isLoggedIn) {
             final authUri = Uri.parse("http://${_settings.routerIp}/action/get_mgdb_params");
             final authHeaders = {
@@ -369,12 +374,17 @@ class ApiService extends ChangeNotifier {
                         return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
                     }
                 } else if (response.statusCode == 401 || response.statusCode == 403 || response.body.startsWith('<!DOCTYPE')) {
+                    AppLogger.warn("Authenticated session expired (status: ${response.statusCode})");
                     _isLoggedIn = false;
+                    return null;
                 }
-            } catch (_) {}
+            } catch (e) {
+                AppLogger.warn("Network error on /action/get_mgdb_params: $e");
+                return null;
+            }
         }
 
-        // Unauthenticated mode (/goform/get_mgdb_params)
+        // 2. Unauthenticated mode (/goform/get_mgdb_params)
         final uri = Uri.parse("http://${_settings.routerIp}/goform/get_mgdb_params");
         final headers = {
             'Content-Type': 'application/json',
@@ -385,22 +395,26 @@ class ApiService extends ChangeNotifier {
         try {
             final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 4));
             _updateHeadersFromResponse(response);
-            if (response.statusCode == 200) {
+            if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
                 final dynamic data = jsonDecode(response.body);
                 if (data is Map<String, dynamic> && data['retcode'] == 0) {
                     return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
                 }
             }
-        } catch (_) {}
+        } catch (e) {
+            AppLogger.warn("Network error on /goform/get_mgdb_params: $e");
+        }
         return null;
     }
 
     void _handleFetchFailure([String? message]) {
-        _csrfToken = null;
-        _sessionCookie = null;
-        _status = ConnectionStatus.connecting; // Mark as connecting/reconnecting rather than full disconnect
+        _consecutiveErrorCount++;
         _errorMessage = message ?? "ルーターからのデータ取得に失敗しました (自動再試行中)";
-        OverlayService.updateOverlayData(null, _settings, isConnecting: true);
-        notifyListeners();
+
+        if (_consecutiveErrorCount >= 3) {
+            _status = ConnectionStatus.connecting;
+            OverlayService.updateOverlayData(_currentSignal, _settings, isConnecting: true);
+            notifyListeners();
+        }
     }
 }

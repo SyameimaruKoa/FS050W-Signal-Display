@@ -133,7 +133,7 @@ class SignalData {
 
             if (rawEndcRsrq != null && rawEndcRsrq > 0) {
                 nrRsrq = ((rawEndcRsrq - 1.0) / 2.0) - 43.0;
-            } else if (rawEndcRsrq == null) {
+            } else if (rawEndcRsrq == null || (rawEndcRsrp != null && rawEndcRsrp > 0 && rawEndcRsrq == 0)) {
                 nrRsrq = previousData?.nrRsrq;
             }
 
@@ -141,12 +141,12 @@ class SignalData {
                 nrSnr = adjust5gSnr
                     ? (((rawEndcSnr - 1.0) / 2.0) - 23.0)
                     : rawEndcSnr.toDouble();
-            } else if (rawEndcSnr == null) {
+            } else if (rawEndcSnr == null || (rawEndcRsrp != null && rawEndcRsrp > 0 && rawEndcSnr == 0)) {
                 nrSnr = previousData?.nrSnr;
             }
 
             nrBand = endcBandVal ?? previousData?.nrBand;
-            nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? null : previousData?.nrPci);
+            nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? (rawEndcRsrp != null && rawEndcRsrp > 0 ? previousData?.nrPci : null) : previousData?.nrPci);
         }
 
         // Battery

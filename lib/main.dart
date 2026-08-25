@@ -57,7 +57,7 @@ class Fs050wApp extends StatefulWidget {
 }
 
 class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
-    static const MethodChannel _lifecycleChannel = MethodChannel('com.syameimarukoa.fs050w_monitor/lifecycle');
+    static const MethodChannel _lifecycleChannel = MethodChannel('com.syameimarukoa.fs050w_signal_display/lifecycle');
 
     @override
     void initState() {
@@ -110,7 +110,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
         }
 
         return MaterialApp(
-            title: 'FS050W Signal Monitor',
+            title: 'FS050W Signal Display',
             debugShowCheckedModeBanner: false,
             theme: _buildThemeData(settings.appTheme, context),
             builder: (context, child) {

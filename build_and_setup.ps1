@@ -1,10 +1,10 @@
 ﻿<#
 .SYNOPSIS
-    FS050W 電波監視アプリ 環境構築 & ビルド自動化スクリプト
+    FS050W Signal Display 環境構築 & ビルド自動化スクリプト
 
 .DESCRIPTION
-    富士ソフト製 5G モバイルルーター「+F FS050W」専用 Android 電波監視アプリの
-    開発環境チェック、Flutter SDK インストール、テスト実行、APK ビルド、端末インストールを行います。
+    富士ソフト製 5G モバイルルーター「+F FS050W」専用 Android 電波監視アプリ「FS050W Signal Display」の
+    開発環境チェック、Flutter SDK インストール、テスト実行、APK ビルド（通常/アーキテクチャ別）、端末インストールを行います。
 
 .PARAMETER CheckEnv
     インストール済みツールの状態（Java, Git, Flutter, Android SDK, ADB）を診断します。
@@ -14,6 +14,9 @@
 
 .PARAMETER BuildApk
     依存パッケージ取得、単体テスト実行後、リリース版 APK (app-release.apk) をビルドします。
+
+.PARAMETER BuildSplitApk
+    依存パッケージ取得、単体テスト実行後、アーキテクチャ別リリース版 APK (arm64-v8a, armeabi-v7a, x86_64) をビルドします。
 
 .PARAMETER InstallApk
     ビルド済み APK を USB/Wi-Fi で接続されている Android 端末へインストールします。
@@ -34,7 +37,11 @@
 
 .EXAMPLE
     .\build_and_setup.ps1 -BuildApk
-    単体テストを実行し、リリース用 APK をビルドします。
+    単体テストを実行し、ユニバーサルリリース用 APK をビルドします。
+
+.EXAMPLE
+    .\build_and_setup.ps1 -BuildSplitApk
+    単体テストを実行し、アーキテクチャ別（arm64-v8a等）リリース用 APK をビルドします。
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
@@ -47,6 +54,9 @@ param (
 
     [Parameter(ParameterSetName = 'Build')]
     [switch]$BuildApk,
+
+    [Parameter(ParameterSetName = 'BuildSplit')]
+    [switch]$BuildSplitApk,
 
     [Parameter(ParameterSetName = 'InstallApp')]
     [switch]$InstallApk,
@@ -194,15 +204,50 @@ if ($BuildApk) {
 }
 #endregion
 
+#region Build Split APK
+if ($BuildSplitApk) {
+    Write-InfoLog "アーキテクチャ別 (split-per-abi) リリース版 APK のビルドプロセスを開始します..."
+
+    Write-InfoLog "1. 依存パッケージ取得 (flutter pub get)..."
+    flutter pub get
+
+    Write-InfoLog "2. 単体テスト実行 (flutter test)..."
+    flutter test
+    if ($LASTEXITCODE -ne 0) {
+        Write-ErrorLog "単体テストに失敗したためビルドを中止します。"
+        exit $LASTEXITCODE
+    }
+
+    Write-InfoLog "3. アーキテクチャ別 APK ビルド (flutter build apk --split-per-abi --release)..."
+    flutter build apk --split-per-abi --release
+
+    if ($LASTEXITCODE -eq 0) {
+        $outputDir = "build\app\outputs\flutter-apk"
+        Write-SuccessLog "🎉 アーキテクチャ別 APK ビルドが正常に完了しました！"
+        Get-ChildItem -Path $outputDir -Filter "app-*-release.apk" | ForEach-Object {
+            Write-Host "  - $($_.Name) ($([math]::Round($_.Length / 1MB, 2)) MB)" -ForegroundColor Green
+        }
+    } else {
+        Write-ErrorLog "アーキテクチャ別 APK ビルド中にエラーが発生しました。"
+    }
+    exit $LASTEXITCODE
+}
+#endregion
+
 #region Install APK
 if ($InstallApk) {
     $apkPath = "build\app\outputs\flutter-apk\app-release.apk"
     if (-not (Test-Path $apkPath)) {
-        Write-ErrorLog "ビルド済み APK が見つかりません。先に '-BuildApk' を実行してください。"
-        exit 1
+        $splitApk = Get-ChildItem -Path "build\app\outputs\flutter-apk" -Filter "app-arm64-v8a-release.apk" -ErrorAction SilentlyContinue
+        if ($splitApk) {
+            $apkPath = $splitApk.FullName
+        } else {
+            Write-ErrorLog "ビルド済み APK が見つかりません。先に '-BuildApk' または '-BuildSplitApk' を実行してください。"
+            exit 1
+        }
     }
 
-    Write-InfoLog "接続中 Android 端末へ APK をインストール中..."
+    Write-InfoLog "接続中 Android 端末へ APK をインストール中 ($apkPath)..."
     adb install -r $apkPath
     if ($LASTEXITCODE -eq 0) {
         Write-SuccessLog "インストールが完了しました！"

@@ -28,7 +28,7 @@ class DashboardScreen extends StatelessWidget {
         return Scaffold(
             appBar: AppBar(
                 title: const Text(
-                    "📶 FS050W Monitor",
+                    "📶 FS050W Signal Display",
                     style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 actions: [

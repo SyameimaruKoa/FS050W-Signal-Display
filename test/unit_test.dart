@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:fs050w_monitor/utils/calc_frequency.dart';
-import 'package:fs050w_monitor/utils/crypto_utils.dart';
-import 'package:fs050w_monitor/utils/color_gauge.dart';
-import 'package:fs050w_monitor/models/signal_data.dart';
-import 'package:fs050w_monitor/models/connection_state.dart';
-import 'package:fs050w_monitor/models/app_settings.dart';
-import 'package:fs050w_monitor/services/pip_service.dart';
-import 'package:fs050w_monitor/views/widgets/intensity_bar_metric.dart';
+import 'package:fs050w_signal_display/utils/calc_frequency.dart';
+import 'package:fs050w_signal_display/utils/crypto_utils.dart';
+import 'package:fs050w_signal_display/utils/color_gauge.dart';
+import 'package:fs050w_signal_display/models/signal_data.dart';
+import 'package:fs050w_signal_display/models/connection_state.dart';
+import 'package:fs050w_signal_display/models/app_settings.dart';
+import 'package:fs050w_signal_display/services/pip_service.dart';
+import 'package:fs050w_signal_display/views/widgets/intensity_bar_metric.dart';
 
 void main() {
     group('3GPP & Rakuten Specific Band Naming and Badge Tests', () {

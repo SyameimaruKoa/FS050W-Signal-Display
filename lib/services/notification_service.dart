@@ -64,28 +64,37 @@ class NotificationService {
 
     static Future<void> trigger5gSub6Event(AppSettings settings) async {
         if (settings.vibrateOn5gSub6) {
+            OverlayService.triggerVibration("5g");
             HapticFeedback.heavyImpact();
             Future.delayed(const Duration(milliseconds: 150), () {
                 HapticFeedback.heavyImpact();
             });
         }
-        OverlayService.triggerLamp("5g", settings);
+        if (settings.eventLampEnabled) {
+            OverlayService.triggerLamp("5g", settings);
+        }
     }
 
     static Future<void> triggerHandoverEvent(AppSettings settings) async {
         if (settings.vibrateOnHandover) {
+            OverlayService.triggerVibration("handover");
             HapticFeedback.mediumImpact();
         }
-        OverlayService.triggerLamp("handover", settings);
+        if (settings.eventLampEnabled) {
+            OverlayService.triggerLamp("handover", settings);
+        }
     }
 
     static Future<void> triggerCriticalSignalEvent(AppSettings settings) async {
         if (settings.vibrateOnCriticalSignal) {
+            OverlayService.triggerVibration("critical");
             HapticFeedback.vibrate();
             Future.delayed(const Duration(milliseconds: 150), () {
                 HapticFeedback.vibrate();
             });
         }
-        OverlayService.triggerLamp("critical", settings);
+        if (settings.eventLampEnabled) {
+            OverlayService.triggerLamp("critical", settings);
+        }
     }
 }

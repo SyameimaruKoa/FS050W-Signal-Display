@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/app_settings.dart';
 import '../services/api_service.dart';
@@ -43,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final apiService = context.read<ApiService>();
         apiService.updateSettings(_settings);
         await StorageService.saveSettings(_settings);
+        TextInput.finishAutofillContext(shouldSave: true);
 
         if (mounted) {
             PipService.setAutoEnterPip(_settings.autoPipOnHome, _settings.pipAspectRatio);
@@ -336,34 +338,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // 3. 【通信 & ルーター接続】
                     _buildSectionHeader("3. 通信 & ルーター接続", Icons.router),
                     _buildCard([
-                        TextField(
-                            controller: _ipController,
-                            decoration: const InputDecoration(
-                                labelText: "ルーター IP アドレス",
-                                hintText: "192.168.155.1",
-                                prefixIcon: Icon(Icons.dns),
+                        AutofillGroup(
+                            child: Column(
+                                children: [
+                                    TextField(
+                                        controller: _ipController,
+                                        decoration: const InputDecoration(
+                                            labelText: "ルーター IP アドレス",
+                                            hintText: "192.168.155.1",
+                                            prefixIcon: Icon(Icons.dns),
+                                        ),
+                                        keyboardType: TextInputType.url,
+                                        autofillHints: const [AutofillHints.url, AutofillHints.username],
+                                        onChanged: (v) => _save(),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                        controller: _passController,
+                                        decoration: InputDecoration(
+                                            labelText: "Web管理パスワード",
+                                            hintText: "設定したWebパスワード",
+                                            prefixIcon: const Icon(Icons.lock),
+                                            suffixIcon: IconButton(
+                                                icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                                                onPressed: () {
+                                                    setState(() {
+                                                        _isPasswordVisible = !_isPasswordVisible;
+                                                    });
+                                                },
+                                            ),
+                                        ),
+                                        obscureText: !_isPasswordVisible,
+                                        keyboardType: TextInputType.visiblePassword,
+                                        autofillHints: const [AutofillHints.password],
+                                        onChanged: (v) => _save(),
+                                        onEditingComplete: () {
+                                            _save();
+                                            TextInput.finishAutofillContext(shouldSave: true);
+                                        },
+                                    ),
+                                ],
                             ),
-                            keyboardType: TextInputType.url,
-                            onChanged: (v) => _save(),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                            controller: _passController,
-                            decoration: InputDecoration(
-                                labelText: "Web管理パスワード",
-                                hintText: "設定したWebパスワード",
-                                prefixIcon: const Icon(Icons.lock),
-                                suffixIcon: IconButton(
-                                    icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                                    onPressed: () {
-                                        setState(() {
-                                            _isPasswordVisible = !_isPasswordVisible;
-                                        });
-                                    },
-                                ),
-                            ),
-                            obscureText: !_isPasswordVisible,
-                            onChanged: (v) => _save(),
                         ),
                         SwitchListTile(
                             contentPadding: EdgeInsets.zero,
