@@ -452,7 +452,7 @@ class PipScreen extends StatelessWidget {
                         fontSize: fontSize,
                     ),
                 ),
-                const SizedBox(width: 3.0),
+                const SizedBox(width: 2.5),
                 Expanded(
                     child: _buildMiniRefBox(
                         label: label2,
@@ -476,8 +476,8 @@ class PipScreen extends StatelessWidget {
         final hasVal = value != null && !value.isNaN && value > -200;
         final color = hasVal ? ColorGauge.getColor(level) : Colors.white38;
         final valStr = hasVal
-            ? "${value > 0 && (label == 'SNR' || label == 'SINR') ? '+' : ''}${value.toStringAsFixed(1)} $unit"
-            : "-- $unit";
+            ? "${value > 0 && (label == 'SNR' || label == 'SINR') ? '+' : ''}${value.toStringAsFixed(1)}"
+            : "--";
 
         final double minVal = label == 'RQ' ? ColorGauge.rsrqMin : ColorGauge.sinrMin;
         final double maxVal = label == 'RQ' ? ColorGauge.rsrqMax : ColorGauge.sinrMax;
@@ -495,7 +495,7 @@ class PipScreen extends StatelessWidget {
                                 widthFactor: ratio,
                                 child: Container(
                                     decoration: BoxDecoration(
-                                        color: color.withOpacity(0.22),
+                                        color: color.withOpacity(0.24),
                                     ),
                                 ),
                             ),
@@ -510,35 +510,35 @@ class PipScreen extends StatelessWidget {
                                 width: 0.5,
                             ),
                         ),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                                Text(
-                                    label,
-                                    style: TextStyle(
-                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
-                                        fontSize: fontSize - 0.5,
-                                        color: Colors.white54,
-                                        fontWeight: FontWeight.w600,
-                                    ),
-                                ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                    child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerRight,
-                                        child: Text(
-                                            valStr,
-                                            style: TextStyle(
-                                                fontFamily: 'monospace',
-                                                fontSize: fontSize,
-                                                color: color,
-                                                fontWeight: FontWeight.bold,
+                        child: Center(
+                            child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.center,
+                                child: Text.rich(
+                                    TextSpan(
+                                        children: [
+                                            TextSpan(
+                                                text: "$label ",
+                                                style: TextStyle(
+                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                                    fontSize: fontSize,
+                                                    color: Colors.white60,
+                                                    fontWeight: FontWeight.w600,
+                                                ),
                                             ),
-                                        ),
+                                            TextSpan(
+                                                text: valStr,
+                                                style: TextStyle(
+                                                    fontFamily: 'monospace',
+                                                    fontSize: fontSize + 0.5,
+                                                    color: color,
+                                                    fontWeight: FontWeight.bold,
+                                                ),
+                                            ),
+                                        ],
                                     ),
                                 ),
-                            ],
+                            ),
                         ),
                     ),
                 ],

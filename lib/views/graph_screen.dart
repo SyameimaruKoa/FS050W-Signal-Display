@@ -79,7 +79,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                         children: [
                                             _buildTierChart(
-                                                title: "1. RSRP (電波受信強度)",
+                                                title: "1. RSRP",
                                                 unit: "dBm",
                                                 minY: -130,
                                                 maxY: -70,
@@ -96,7 +96,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                             ),
                                             const SizedBox(height: 6),
                                             _buildTierChart(
-                                                title: "2. RSRQ (受信信号品質)",
+                                                title: "2. RSRQ",
                                                 unit: "dB",
                                                 minY: -24,
                                                 maxY: -8,
@@ -113,7 +113,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                             ),
                                             const SizedBox(height: 6),
                                             _buildTierChart(
-                                                title: "3. SINR / SNR (信号対雑音比)",
+                                                title: "3. SNR / SINR",
                                                 unit: "dB",
                                                 minY: -10,
                                                 maxY: 25,

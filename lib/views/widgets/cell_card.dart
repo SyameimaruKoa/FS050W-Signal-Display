@@ -202,7 +202,7 @@ class CellCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Main RSRP Primary Metric
                 MetricGauge(
-                    label: "RSRP (電波強度・主指標)",
+                    label: "RSRP",
                     value: signal.nrRsrp,
                     unit: "dBm",
                     level: rsrpLevel,
@@ -214,54 +214,28 @@ class CellCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Consolidated Reference Metrics (RSRQ / SNR)
                 if (hasDetailParams)
-                    Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.025),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05)),
-                        ),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
                             children: [
-                                Row(
-                                    children: [
-                                        Icon(Icons.info_outline, size: 12, color: isDark ? Colors.white38 : Colors.black38),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                            "参考品質指標 (推定目安)",
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: isDark ? Colors.white54 : Colors.black45,
-                                            ),
-                                        ),
-                                    ],
+                                Expanded(
+                                    child: _buildCompactRefMetric(
+                                        context,
+                                        label: "RSRQ",
+                                        value: signal.nrRsrq,
+                                        unit: "dB",
+                                        level: rsrqLevel,
+                                    ),
                                 ),
-                                const SizedBox(height: 6),
-                                Row(
-                                    children: [
-                                        Expanded(
-                                            child: _buildCompactRefMetric(
-                                                context,
-                                                label: "RSRQ",
-                                                value: signal.nrRsrq,
-                                                unit: "dB",
-                                                level: rsrqLevel,
-                                            ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                            child: _buildCompactRefMetric(
-                                                context,
-                                                label: "SNR",
-                                                value: signal.nrSnr,
-                                                unit: "dB",
-                                                level: snrLevel,
-                                            ),
-                                        ),
-                                    ],
+                                const SizedBox(width: 8),
+                                Expanded(
+                                    child: _buildCompactRefMetric(
+                                        context,
+                                        label: "SNR",
+                                        value: signal.nrSnr,
+                                        unit: "dB",
+                                        level: snrLevel,
+                                    ),
                                 ),
                             ],
                         ),
@@ -419,7 +393,7 @@ class CellCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Main RSRP Primary Metric
                 MetricGauge(
-                    label: "RSRP (電波強度・主指標)",
+                    label: "RSRP",
                     value: signal.lteRsrp,
                     unit: "dBm",
                     level: rsrpLevel,
@@ -431,54 +405,28 @@ class CellCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Consolidated Reference Metrics (RSRQ / SINR)
                 if (hasDetailParams)
-                    Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.025),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05)),
-                        ),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
                             children: [
-                                Row(
-                                    children: [
-                                        Icon(Icons.info_outline, size: 12, color: isDark ? Colors.white38 : Colors.black38),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                            "参考品質指標 (推定目安)",
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: isDark ? Colors.white54 : Colors.black45,
-                                            ),
-                                        ),
-                                    ],
+                                Expanded(
+                                    child: _buildCompactRefMetric(
+                                        context,
+                                        label: "RSRQ",
+                                        value: signal.lteRsrq,
+                                        unit: "dB",
+                                        level: rsrqLevel,
+                                    ),
                                 ),
-                                const SizedBox(height: 6),
-                                Row(
-                                    children: [
-                                        Expanded(
-                                            child: _buildCompactRefMetric(
-                                                context,
-                                                label: "RSRQ",
-                                                value: signal.lteRsrq,
-                                                unit: "dB",
-                                                level: rsrqLevel,
-                                            ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                            child: _buildCompactRefMetric(
-                                                context,
-                                                label: "SINR",
-                                                value: signal.lteSinr,
-                                                unit: "dB",
-                                                level: sinrLevel,
-                                            ),
-                                        ),
-                                    ],
+                                const SizedBox(width: 8),
+                                Expanded(
+                                    child: _buildCompactRefMetric(
+                                        context,
+                                        label: "SINR",
+                                        value: signal.lteSinr,
+                                        unit: "dB",
+                                        level: sinrLevel,
+                                    ),
                                 ),
                             ],
                         ),

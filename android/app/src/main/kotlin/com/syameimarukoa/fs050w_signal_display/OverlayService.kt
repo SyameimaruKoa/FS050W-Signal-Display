@@ -335,7 +335,7 @@ class OverlayService : Service() {
     ) {
         fun update(value1: Double?, value2: Double?, curveType: String = "easeOut") {
             val hasVal1 = value1 != null && !value1.isNaN() && value1 > -200
-            val v1Str = if (hasVal1) String.format("%.1f %s", value1, unit1) else "-- $unit1"
+            val v1Str = if (hasVal1) String.format("%.1f", value1) else "--"
             val color1 = if (label1 == "RQ") getRsrqColor(value1) else getSinrColor(value1)
 
             valView1.text = v1Str
@@ -355,9 +355,9 @@ class OverlayService : Service() {
 
             val hasVal2 = value2 != null && !value2.isNaN() && value2 > -200
             val v2Str = if (hasVal2) {
-                if (value2!! > 0) String.format("+%.1f %s", value2, unit2) else String.format("%.1f %s", value2, unit2)
+                if (value2!! > 0) String.format("+%.1f", value2) else String.format("%.1f", value2)
             } else {
-                "-- $unit2"
+                "--"
             }
             val color2 = if (label2 == "SNR" || label2 == "SINR") getSinrColor(value2) else getRsrqColor(value2)
 
@@ -907,8 +907,8 @@ class OverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
         }
         val valView1 = TextView(this).apply {
-            text = "-- $unit1"
-            textSize = 8.0f
+            text = "--"
+            textSize = 8.5f
             setTextColor(Color.parseColor("#757575"))
             typeface = Typeface.MONOSPACE
             gravity = Gravity.END
@@ -949,8 +949,8 @@ class OverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
         }
         val valView2 = TextView(this).apply {
-            text = "-- $unit2"
-            textSize = 8.0f
+            text = "--"
+            textSize = 8.5f
             setTextColor(Color.parseColor("#757575"))
             typeface = Typeface.MONOSPACE
             gravity = Gravity.END

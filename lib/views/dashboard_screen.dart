@@ -271,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         fit: BoxFit.scaleDown,
                                         alignment: Alignment.centerLeft,
                                         child: Text(
-                                            "4G / 5G 電波強度 (RSRP) 統合サマリー",
+                                            "電波強度 (RSRP)",
                                             style: TextStyle(
                                                 fontFamilyFallback: ['Noto Sans JP', 'sans-serif'],
                                                 fontWeight: FontWeight.bold,
@@ -580,7 +580,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 const SizedBox(width: 8),
                                                 Flexible(
                                                     child: Text(
-                                                        "詳細セル情報 (アンカー / セカンダリ)",
+                                                        "詳細セル情報",
                                                         style: TextStyle(
                                                             fontSize: 12.5,
                                                             fontWeight: FontWeight.w600,
