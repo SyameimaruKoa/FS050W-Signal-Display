@@ -18,6 +18,10 @@ import android.os.Looper
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.os.VibrationEffect
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.*
@@ -91,6 +95,42 @@ class OverlayService : Service() {
                 "easeInOut" -> if (r < 0.5) 2.0 * r * r else 1.0 - (-2.0 * r + 2.0) * (-2.0 * r + 2.0) / 2.0
                 "linear" -> r
                 else -> 1.0 - (1.0 - r) * (1.0 - r)
+            }
+        }
+
+        fun getRsrpColor(rsrp: Double?): Int {
+            if (rsrp == null || rsrp.isNaN() || rsrp <= -200) return Color.parseColor("#757575")
+            return when {
+                rsrp >= -80.0 -> Color.parseColor("#2196F3")
+                rsrp >= -90.0 -> Color.parseColor("#4CAF50")
+                rsrp >= -100.0 -> Color.parseColor("#8BC34A")
+                rsrp >= -110.0 -> Color.parseColor("#FF9800")
+                rsrp >= -120.0 -> Color.parseColor("#F44336")
+                else -> Color.parseColor("#9C27B0")
+            }
+        }
+
+        fun getRsrqColor(rsrq: Double?): Int {
+            if (rsrq == null || rsrq.isNaN() || rsrq <= -200) return Color.parseColor("#757575")
+            return when {
+                rsrq >= -10.0 -> Color.parseColor("#2196F3")
+                rsrq >= -15.0 -> Color.parseColor("#4CAF50")
+                rsrq >= -18.0 -> Color.parseColor("#8BC34A")
+                rsrq >= -20.0 -> Color.parseColor("#FF9800")
+                rsrq >= -22.0 -> Color.parseColor("#F44336")
+                else -> Color.parseColor("#9C27B0")
+            }
+        }
+
+        fun getSinrColor(sinr: Double?): Int {
+            if (sinr == null || sinr.isNaN() || sinr <= -200) return Color.parseColor("#757575")
+            return when {
+                sinr >= 20.0 -> Color.parseColor("#2196F3")
+                sinr >= 13.0 -> Color.parseColor("#4CAF50")
+                sinr >= 0.0 -> Color.parseColor("#8BC34A")
+                sinr >= -3.0 -> Color.parseColor("#FF9800")
+                sinr >= -6.0 -> Color.parseColor("#F44336")
+                else -> Color.parseColor("#9C27B0")
             }
         }
     }
@@ -276,26 +316,126 @@ class OverlayService : Service() {
 
     private class DualRefMetricsHolder(
         val rootCell: FrameLayout,
+        val barView1: View,
+        val barView2: View,
         val labelView: TextView,
         val label1: String,
         val unit1: String,
         val label2: String,
-        val unit2: String
+        val unit2: String,
+        val min1: Double = -22.0,
+        val max1: Double = -8.0,
+        val min2: Double = -6.0,
+        val max2: Double = 24.0
     ) {
-        fun update(value1: Double?, value2: Double?) {
-            val v1Str = if (value1 != null && !value1.isNaN() && value1 > -200) {
+        fun update(value1: Double?, value2: Double?, curveType: String = "easeOut") {
+            val hasVal1 = value1 != null && !value1.isNaN() && value1 > -200
+            val hasVal2 = value2 != null && !value2.isNaN() && value2 > -200
+
+            val v1Str = if (hasVal1) {
                 String.format("%.1f %s", value1, unit1)
             } else {
                 "-- $unit1"
             }
 
-            val v2Str = if (value2 != null && !value2.isNaN() && value2 > -200) {
-                if (value2 > 0) String.format("+%.1f %s", value2, unit2) else String.format("%.1f %s", value2, unit2)
+            val v2Str = if (hasVal2) {
+                if (value2!! > 0) String.format("+%.1f %s", value2, unit2) else String.format("%.1f %s", value2, unit2)
             } else {
                 "-- $unit2"
             }
 
-            labelView.text = "$label1: $v1Str  |  $label2: $v2Str"
+            val color1 = if (label1 == "RQ") getRsrqColor(value1) else getSinrColor(value1)
+            val color2 = if (label2 == "SNR" || label2 == "SINR") getSinrColor(value2) else getRsrqColor(value2)
+
+            val ssb = SpannableStringBuilder()
+            ssb.append("$label1: ")
+            val start1 = ssb.length
+            ssb.append(v1Str)
+            ssb.setSpan(
+                ForegroundColorSpan(color1),
+                start1,
+                ssb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            ssb.setSpan(
+                StyleSpan(Typeface.BOLD),
+                start1,
+                ssb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+
+            ssb.append("  |  $label2: ")
+            val start2 = ssb.length
+            ssb.append(v2Str)
+            ssb.setSpan(
+                ForegroundColorSpan(color2),
+                start2,
+                ssb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            ssb.setSpan(
+                StyleSpan(Typeface.BOLD),
+                start2,
+                ssb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+
+            labelView.text = ssb
+
+            val rawRatio1 = if (hasVal1) {
+                ((value1!! - min1) / (max1 - min1)).coerceIn(0.0, 1.0)
+            } else {
+                0.0
+            }
+            val norm1 = applyCurve(rawRatio1, curveType).toFloat()
+
+            val rawRatio2 = if (hasVal2) {
+                ((value2!! - min2) / (max2 - min2)).coerceIn(0.0, 1.0)
+            } else {
+                0.0
+            }
+            val norm2 = applyCurve(rawRatio2, curveType).toFloat()
+
+            val bgAlpha = 45
+            barView1.setBackgroundColor(Color.argb(bgAlpha, Color.red(color1), Color.green(color1), Color.blue(color1)))
+            barView2.setBackgroundColor(Color.argb(bgAlpha, Color.red(color2), Color.green(color2), Color.blue(color2)))
+
+            val totalWidth = rootCell.width
+            val halfWidth = totalWidth / 2
+            if (halfWidth > 0) {
+                val bw1 = (halfWidth * norm1).toInt()
+                val lp1 = barView1.layoutParams
+                if (lp1 != null && lp1.width != bw1) {
+                    lp1.width = bw1
+                    barView1.layoutParams = lp1
+                }
+
+                val bw2 = (halfWidth * norm2).toInt()
+                val lp2 = barView2.layoutParams
+                if (lp2 != null && lp2.width != bw2) {
+                    lp2.width = bw2
+                    barView2.layoutParams = lp2
+                }
+            } else {
+                rootCell.post {
+                    if (rootCell.isAttachedToWindow) {
+                        val hw = rootCell.width / 2
+                        val bw1 = (hw * norm1).toInt()
+                        val lp1 = barView1.layoutParams
+                        if (lp1 != null && lp1.width != bw1) {
+                            lp1.width = bw1
+                            barView1.layoutParams = lp1
+                        }
+
+                        val bw2 = (hw * norm2).toInt()
+                        val lp2 = barView2.layoutParams
+                        if (lp2 != null && lp2.width != bw2) {
+                            lp2.width = bw2
+                            barView2.layoutParams = lp2
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -519,7 +659,30 @@ class OverlayService : Service() {
             val rpStr = if (mainRsrp != null && !mainRsrp.isNaN() && mainRsrp > -150) "${mainRsrp.toInt()}" else "--"
             val snrStr = if (mainSnr != null && !mainSnr.isNaN()) String.format("%.0f", mainSnr) else "--"
 
-            holder.badgeText.text = " $badge RP:$rpStr SNR:$snrStr"
+            val rpColor = getRsrpColor(mainRsrp)
+            val snrColor = getSinrColor(mainSnr)
+
+            val ssb = SpannableStringBuilder()
+            ssb.append(" $badge ")
+            val rpStart = ssb.length
+            ssb.append("RP:$rpStr")
+            ssb.setSpan(
+                ForegroundColorSpan(rpColor),
+                rpStart,
+                ssb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            ssb.append(" ")
+            val snrStart = ssb.length
+            ssb.append("SNR:$snrStr")
+            ssb.setSpan(
+                ForegroundColorSpan(snrColor),
+                snrStart,
+                ssb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+
+            holder.badgeText.text = ssb
             holder.pillLayout.alpha = overlayOpacity
             return
         }
@@ -546,10 +709,10 @@ class OverlayService : Service() {
             holder.lteHeader.text = lteTitle
 
             holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.nrRefCell.update(nrRsrq, nrSnr)
+            holder.nrRefCell.update(nrRsrq, nrSnr, curveType = smoothGaugeCurve)
 
             holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.lteRefCell.update(lteRsrq, lteSinr)
+            holder.lteRefCell.update(lteRsrq, lteSinr, curveType = smoothGaugeCurve)
         } else {
             val holder = compactHolder ?: return
             holder.mainCard.alpha = overlayOpacity
@@ -646,7 +809,7 @@ class OverlayService : Service() {
         root.addView(nrHeader)
 
         val nrRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#00ADB5"))
-        val nrRefCell = createDualRefMetricsHolder("RQ", "dB", "SNR", "dB")
+        val nrRefCell = createDualRefMetricsHolder("RQ", "dB", "SNR", "dB", -22.0, -8.0, -6.0, 24.0)
 
         root.addView(nrRsrpCell.rootCell)
         root.addView(nrRefCell.rootCell)
@@ -662,7 +825,7 @@ class OverlayService : Service() {
         root.addView(lteHeader)
 
         val lteRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#2196F3"))
-        val lteRefCell = createDualRefMetricsHolder("RQ", "dB", "SINR", "dB")
+        val lteRefCell = createDualRefMetricsHolder("RQ", "dB", "SINR", "dB", -22.0, -8.0, -6.0, 24.0)
 
         root.addView(lteRsrpCell.rootCell)
         root.addView(lteRefCell.rootCell)
@@ -717,7 +880,11 @@ class OverlayService : Service() {
         label1: String,
         unit1: String,
         label2: String,
-        unit2: String
+        unit2: String,
+        min1: Double = -22.0,
+        max1: Double = -8.0,
+        min2: Double = -6.0,
+        max2: Double = 24.0
     ): DualRefMetricsHolder {
         val cell = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -734,6 +901,34 @@ class OverlayService : Service() {
             clipToOutline = true
         }
 
+        val barsLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val leftContainer = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+        }
+        val barView1 = View(this).apply {
+            layoutParams = FrameLayout.LayoutParams(0, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.START)
+        }
+        leftContainer.addView(barView1)
+
+        val rightContainer = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+        }
+        val barView2 = View(this).apply {
+            layoutParams = FrameLayout.LayoutParams(0, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.START)
+        }
+        rightContainer.addView(barView2)
+
+        barsLayout.addView(leftContainer)
+        barsLayout.addView(rightContainer)
+        cell.addView(barsLayout)
+
         val labelView = TextView(this).apply {
             text = "$label1: -- $unit1  |  $label2: -- $unit2"
             textSize = 8.0f
@@ -745,11 +940,17 @@ class OverlayService : Service() {
 
         return DualRefMetricsHolder(
             rootCell = cell,
+            barView1 = barView1,
+            barView2 = barView2,
             labelView = labelView,
             label1 = label1,
             unit1 = unit1,
             label2 = label2,
-            unit2 = unit2
+            unit2 = unit2,
+            min1 = min1,
+            max1 = max1,
+            min2 = min2,
+            max2 = max2
         )
     }
 
