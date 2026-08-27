@@ -524,52 +524,90 @@ class CellCard extends StatelessWidget {
             ? ColorGauge.getLabel(level)
             : "--";
 
-        return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.02),
-                borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        final double minVal = label.contains('RQ') ? ColorGauge.rsrqMin : ColorGauge.sinrMin;
+        final double maxVal = label.contains('RQ') ? ColorGauge.rsrqMax : ColorGauge.sinrMax;
+        final double ratio = (value != null && !value.isNaN && value > -200)
+            ? ((value - minVal) / (maxVal - minVal)).clamp(0.0, 1.0)
+            : 0.0;
+
+        return ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Stack(
+                fit: StackFit.passthrough,
                 children: [
-                    Text(
-                        label,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white60 : Colors.black54,
-                        ),
-                    ),
-                    Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                            Text(
-                                valText,
-                                style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white38 : Colors.black38),
-                                ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                    color: (value != null && !value.isNaN && value > -200) ? color.withOpacity(0.15) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(3),
-                                ),
-                                child: Text(
-                                    levelText,
-                                    style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white24 : Colors.black26),
+                    // Background intensity bar
+                    if (ratio > 0)
+                        Positioned.fill(
+                            child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: ratio,
+                                child: Container(
+                                    decoration: BoxDecoration(
+                                        color: color.withOpacity(isDark ? 0.18 : 0.14),
                                     ),
                                 ),
                             ),
-                        ],
+                        ),
+                    Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.015),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: (ratio > 0) ? color.withOpacity(0.25) : (isDark ? Colors.white10 : Colors.black12),
+                                width: 0.8,
+                            ),
+                        ),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                                Text(
+                                    label,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.white60 : Colors.black54,
+                                    ),
+                                ),
+                                const SizedBox(width: 2),
+                                Expanded(
+                                    child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerRight,
+                                        child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                                Text(
+                                                    valText,
+                                                    style: TextStyle(
+                                                        fontFamily: 'monospace',
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white38 : Colors.black38),
+                                                    ),
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                                    decoration: BoxDecoration(
+                                                        color: (value != null && !value.isNaN && value > -200) ? color.withOpacity(0.2) : Colors.transparent,
+                                                        borderRadius: BorderRadius.circular(3),
+                                                    ),
+                                                    child: Text(
+                                                        levelText,
+                                                        style: TextStyle(
+                                                            fontSize: 8.5,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white24 : Colors.black26),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
                     ),
                 ],
             ),

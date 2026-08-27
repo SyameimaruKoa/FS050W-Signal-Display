@@ -38,6 +38,8 @@ class ApiService extends ChangeNotifier {
     bool _isFetching = false;
     int _consecutiveErrorCount = 0;
     DateTime? _lastLoginAttempt;
+    DateTime? _lockoutUntil;
+    int _lockoutRemainSeconds = 0;
 
     ApiService(this._settings);
 
@@ -48,6 +50,8 @@ class ApiService extends ChangeNotifier {
     bool get isLoggedIn => _isLoggedIn;
     AppSettings get settings => _settings;
     bool get isConnecting => _status == ConnectionStatus.connecting;
+    bool get isLockedOut => _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
+    int get lockoutRemainSeconds => _lockoutUntil != null ? _lockoutUntil!.difference(DateTime.now()).inSeconds.clamp(0, 999) : 0;
 
     void updateSettings(AppSettings newSettings) {
         final bool ipChanged = _settings.routerIp != newSettings.routerIp;
@@ -56,6 +60,10 @@ class ApiService extends ChangeNotifier {
         _settings = newSettings;
         if (ipChanged || passChanged) {
             _resetSession();
+            _isLoggedIn = false;
+            _lastLoginAttempt = null;
+            _lockoutUntil = null;
+            _consecutiveErrorCount = 0;
             if (_isPolling) {
                 restartPolling();
             }
@@ -187,23 +195,32 @@ class ApiService extends ChangeNotifier {
             // 2. Perform login if password is configured and not yet authenticated
             if (hasPassword && !_isLoggedIn) {
                 final now = DateTime.now();
-                final canAttempt = _lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 3;
-                if (canAttempt) {
-                    _lastLoginAttempt = now;
-                    AppLogger.info("Attempting authentication with router (${_settings.routerIp})...");
-                    final bool loginSuccess = await _performLogin();
-                    if (loginSuccess) {
-                        _isLoggedIn = true;
-                        _status = ConnectionStatus.authenticated;
-                        AppLogger.info("Authentication succeeded: Full parameter mode active");
-                    } else {
-                        AppLogger.warn("Login failed: Password might be incorrect or session busy");
-                        if (_settings.autoPasswordless) {
-                            _isLoggedIn = false;
-                            _status = ConnectionStatus.unauthenticatedMode;
+                if (_lockoutUntil != null && now.isBefore(_lockoutUntil!)) {
+                    final remaining = _lockoutUntil!.difference(now).inSeconds;
+                    _isLoggedIn = false;
+                    _status = ConnectionStatus.unauthenticatedMode;
+                    _errorMessage = "ルーター一時ロック中 (残り ${remaining} 秒)";
+                } else {
+                    _lockoutUntil = null;
+                    final canAttempt = _lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 3;
+                    if (canAttempt) {
+                        _lastLoginAttempt = now;
+                        AppLogger.info("Attempting authentication with router (${_settings.routerIp})...");
+                        final bool loginSuccess = await _performLogin();
+                        if (loginSuccess) {
+                            _isLoggedIn = true;
+                            _status = ConnectionStatus.authenticated;
+                            _errorMessage = null;
+                            AppLogger.info("Authentication succeeded: Full parameter mode active");
                         } else {
-                            _handleFetchFailure("ログイン認証に失敗しました (パスワードを確認してください)");
-                            return;
+                            _resetSession();
+                            if (_settings.autoPasswordless) {
+                                _isLoggedIn = false;
+                                _status = ConnectionStatus.unauthenticatedMode;
+                            } else {
+                                _handleFetchFailure("ログイン認証に失敗しました (パスワードを確認してください)");
+                                return;
+                            }
                         }
                     }
                 }
@@ -324,8 +341,20 @@ class ApiService extends ChangeNotifier {
             if (loginResp.statusCode == 200) {
                 _updateHeadersFromResponse(loginResp);
                 final loginJson = jsonDecode(loginResp.body);
-                if (loginJson['retcode'] == 0) {
+                final retcode = loginJson['retcode'];
+                if (retcode == 0) {
+                    _lockoutUntil = null;
+                    _lockoutRemainSeconds = 0;
                     return true;
+                }
+                final remainSecs = int.tryParse(loginJson['remain_secs']?.toString() ?? '0') ?? 0;
+                final remainTimes = int.tryParse(loginJson['remain_times']?.toString() ?? '0') ?? 0;
+                if (remainSecs > 0) {
+                    _lockoutUntil = DateTime.now().add(Duration(seconds: remainSecs + 1));
+                    _lockoutRemainSeconds = remainSecs;
+                    AppLogger.warn("FS050W router temporary lockout active (${remainSecs}s remaining, $remainTimes attempts left)");
+                } else {
+                    AppLogger.warn("Login rejected by router (retcode: $retcode, remain_times: $remainTimes)");
                 }
             }
         } catch (e) {

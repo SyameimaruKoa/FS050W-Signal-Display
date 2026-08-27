@@ -11,7 +11,7 @@ import 'widgets/log_viewer_dialog.dart';
 import 'hud_screen.dart';
 import 'settings_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
     final VoidCallback? onNavigateToGraph;
     final VoidCallback? onNavigateToSettings;
 
@@ -20,6 +20,13 @@ class DashboardScreen extends StatelessWidget {
         this.onNavigateToGraph,
         this.onNavigateToSettings,
     });
+
+    @override
+    State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+    bool _isCellDetailsExpanded = false;
 
     @override
     Widget build(BuildContext context) {
@@ -63,7 +70,7 @@ class DashboardScreen extends StatelessWidget {
                     IconButton(
                         icon: Icon(Icons.settings, color: isDark ? Colors.white70 : Colors.black87),
                         tooltip: "設定",
-                        onPressed: onNavigateToSettings ?? () {
+                        onPressed: widget.onNavigateToSettings ?? () {
                             Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
                             );
@@ -80,20 +87,7 @@ class DashboardScreen extends StatelessWidget {
                     children: [
                         _buildConnectionBanner(context, apiService, signal),
                         _buildRsrpOverviewCard(context, apiService, signal),
-                        CellCard.build5gNrCard(
-                            context,
-                            signal,
-                            notation: apiService.settings.generationNotation,
-                            smoothGaugeColor: apiService.settings.smoothGaugeColor,
-                            smoothGaugeCurve: apiService.settings.smoothGaugeCurve,
-                        ),
-                        CellCard.build4gLteCard(
-                            context,
-                            signal,
-                            notation: apiService.settings.generationNotation,
-                            smoothGaugeColor: apiService.settings.smoothGaugeColor,
-                            smoothGaugeCurve: apiService.settings.smoothGaugeCurve,
-                        ),
+                        _buildCollapsibleDetailsSection(context, apiService, signal),
                     ],
                 ),
             ),
@@ -279,9 +273,9 @@ class DashboardScreen extends StatelessWidget {
                                         child: Text(
                                             "4G / 5G 電波強度 (RSRP) 統合サマリー",
                                             style: TextStyle(
-                                                fontSize: 15,
+                                                fontFamilyFallback: ['Noto Sans JP', 'sans-serif'],
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFF00E5FF),
+                                                fontSize: 15,
                                             ),
                                         ),
                                     ),
@@ -545,6 +539,101 @@ class DashboardScreen extends StatelessWidget {
                     ),
                 ],
             ),
+        );
+    }
+
+    Widget _buildCollapsibleDetailsSection(BuildContext context, ApiService apiService, SignalData? signal) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+                Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.035) : Colors.black.withOpacity(0.025),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                            width: 0.8,
+                        ),
+                    ),
+                    child: InkWell(
+                        onTap: () {
+                            setState(() {
+                                _isCellDetailsExpanded = !_isCellDetailsExpanded;
+                            });
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                    Expanded(
+                                        child: Row(
+                                            children: [
+                                                Icon(
+                                                    _isCellDetailsExpanded ? Icons.tune : Icons.tune_outlined,
+                                                    size: 18,
+                                                    color: const Color(0xFF00ADB5),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Flexible(
+                                                    child: Text(
+                                                        "詳細セル情報 (アンカー / セカンダリ)",
+                                                        style: TextStyle(
+                                                            fontSize: 12.5,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: isDark ? Colors.white70 : Colors.black87,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                            Text(
+                                                _isCellDetailsExpanded ? "閉じる" : "展開",
+                                                style: const TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF00ADB5),
+                                                ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Icon(
+                                                _isCellDetailsExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                size: 18,
+                                                color: const Color(0xFF00ADB5),
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+                if (_isCellDetailsExpanded) ...[
+                    CellCard.build5gNrCard(
+                        context,
+                        signal,
+                        notation: apiService.settings.generationNotation,
+                        smoothGaugeColor: apiService.settings.smoothGaugeColor,
+                        smoothGaugeCurve: apiService.settings.smoothGaugeCurve,
+                    ),
+                    CellCard.build4gLteCard(
+                        context,
+                        signal,
+                        notation: apiService.settings.generationNotation,
+                        smoothGaugeColor: apiService.settings.smoothGaugeColor,
+                        smoothGaugeCurve: apiService.settings.smoothGaugeCurve,
+                    ),
+                ],
+            ],
         );
     }
 }

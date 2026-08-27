@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -20,24 +21,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     late TextEditingController _ipController;
     late TextEditingController _passController;
     bool _isPasswordVisible = false;
+    Timer? _debounceSaveTimer;
 
     @override
     void initState() {
         super.initState();
         final apiService = context.read<ApiService>();
-        _settings = apiService.settings;
+        _settings = AppSettings.fromJson(apiService.settings.toJson());
         _ipController = TextEditingController(text: _settings.routerIp);
         _passController = TextEditingController(text: _settings.webPassword);
     }
 
+    void _onInputChanged() {
+        _debounceSaveTimer?.cancel();
+        _debounceSaveTimer = Timer(const Duration(milliseconds: 600), () {
+            _save();
+        });
+    }
+
     @override
     void dispose() {
+        _debounceSaveTimer?.cancel();
         _ipController.dispose();
         _passController.dispose();
         super.dispose();
     }
 
     Future<void> _save() async {
+        _debounceSaveTimer?.cancel();
         _settings.routerIp = _ipController.text.trim();
         _settings.webPassword = _passController.text;
 
@@ -106,17 +117,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Widget build(BuildContext context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return Scaffold(
-            appBar: AppBar(
-                title: const Text(
-                    "⚙ 設定",
-                    style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
+        return PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, result) {
+                _save();
+            },
+            child: Scaffold(
+                appBar: AppBar(
+                    title: const Text(
+                        "⚙ 設定",
+                        style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
                 ),
-            ),
-            body: ListView(
-                padding: const EdgeInsets.all(16.0),
-                children: [
-                    // 1. 【監視 & フローティング表示】
+                body: ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                        // 1. 【監視 & フローティング表示】
                     _buildSectionHeader("1. 監視 & フローティング表示", Icons.picture_in_picture_alt),
                     _buildCard([
                         SwitchListTile(
@@ -350,7 +366,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         ),
                                         keyboardType: TextInputType.url,
                                         autofillHints: const [AutofillHints.url, AutofillHints.username],
-                                        onChanged: (v) => _save(),
+                                        onChanged: (v) => _onInputChanged(),
+                                        onEditingComplete: () {
+                                            _save();
+                                            TextInput.finishAutofillContext(shouldSave: true);
+                                        },
                                     ),
                                     const SizedBox(height: 12),
                                     TextField(
@@ -371,7 +391,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         obscureText: !_isPasswordVisible,
                                         keyboardType: TextInputType.visiblePassword,
                                         autofillHints: const [AutofillHints.password],
-                                        onChanged: (v) => _save(),
+                                        onChanged: (v) => _onInputChanged(),
                                         onEditingComplete: () {
                                             _save();
                                             TextInput.finishAutofillContext(shouldSave: true);
@@ -584,7 +604,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 24),
                 ],
             ),
-        );
+        ),
+    );
     }
 
     Widget _buildSectionHeader(String title, IconData icon) {
