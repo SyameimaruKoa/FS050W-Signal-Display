@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../services/overlay_service.dart';
 
 class EventLampOverlay extends StatelessWidget {
     final Widget child;

@@ -147,7 +147,6 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                             levelBg = Colors.blueAccent.withOpacity(0.15);
                                             break;
                                         case LogLevel.info:
-                                        default:
                                             levelColor = Colors.greenAccent;
                                             levelBg = Colors.greenAccent.withOpacity(0.15);
                                             break;

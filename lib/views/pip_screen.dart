@@ -226,8 +226,8 @@ class PipScreen extends StatelessWidget {
         final isSub6 = signal?.connectionMode == Fs050wConnectionMode.nr5gSub6;
         final genName = ConnectionModeHelper.getGenerationName(true, notation: notation);
         final titlePrefix = isSub6 ? "$genName+" : genName;
-        final nrBandStr = signal?.nrBand != null ? "n${signal!.nrBand}" : "--";
-        final pciStr = signal?.nrPci != null ? "${signal!.nrPci}" : "--";
+        final nrBandStr = (signal?.nrBand != null && signal!.nrBand! > 0) ? "n${signal!.nrBand}" : "--";
+        final pciStr = (signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--";
 
         final fontSz = isSingleMode ? 10.5 : 8.5;
 
@@ -290,6 +290,7 @@ class PipScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 1.0),
                     Expanded(
+                        flex: 3,
                         child: IntensityBarMetric(
                             label: "RSRP",
                             value: signal?.nrRsrp,
@@ -298,37 +299,23 @@ class PipScreen extends StatelessWidget {
                             maxVal: ColorGauge.rsrpMax,
                             barColor: const Color(0xFF00ADB5),
                             height: null,
-                            fontSize: fontSz,
+                            fontSize: fontSz + 0.5,
                             smoothGaugeColor: smoothGaugeColor,
                             smoothGaugeCurve: smoothGaugeCurve,
                         ),
                     ),
+                    const SizedBox(height: 1.0),
                     Expanded(
-                        child: IntensityBarMetric(
-                            label: "RSRQ",
-                            value: signal?.nrRsrq,
-                            unit: "dB",
-                            minVal: ColorGauge.rsrqMin,
-                            maxVal: ColorGauge.rsrqMax,
-                            barColor: const Color(0xFF00ADB5),
-                            height: null,
+                        flex: 2,
+                        child: _buildRefMetricsRow(
+                            label1: "RQ",
+                            value1: signal?.nrRsrq,
+                            unit1: "dB",
+                            label2: "SNR",
+                            value2: signal?.nrSnr,
+                            unit2: "dB",
                             fontSize: fontSz,
-                            smoothGaugeColor: smoothGaugeColor,
-                            smoothGaugeCurve: smoothGaugeCurve,
-                        ),
-                    ),
-                    Expanded(
-                        child: IntensityBarMetric(
-                            label: "SNR",
-                            value: signal?.nrSnr,
-                            unit: "dB",
-                            minVal: ColorGauge.sinrMin,
-                            maxVal: ColorGauge.sinrMax,
-                            barColor: const Color(0xFF00ADB5),
-                            height: null,
-                            fontSize: fontSz,
-                            smoothGaugeColor: smoothGaugeColor,
-                            smoothGaugeCurve: smoothGaugeCurve,
+                            accentColor: const Color(0xFF00ADB5),
                         ),
                     ),
                 ],
@@ -344,8 +331,8 @@ class PipScreen extends StatelessWidget {
         bool isSingleMode = false,
     }) {
         final genName = ConnectionModeHelper.getGenerationName(false, notation: notation);
-        final lteBandStr = signal?.lteBand != null ? "B${signal!.lteBand}" : "--";
-        final pciStr = signal?.ltePci != null ? "${signal!.ltePci}" : "--";
+        final lteBandStr = (signal?.lteBand != null && signal!.lteBand! > 0) ? "B${signal!.lteBand}" : "--";
+        final pciStr = (signal?.ltePci != null && signal!.ltePci! > 0) ? "${signal!.ltePci}" : "--";
 
         final fontSz = isSingleMode ? 10.5 : 8.5;
 
@@ -408,6 +395,7 @@ class PipScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 1.0),
                     Expanded(
+                        flex: 3,
                         child: IntensityBarMetric(
                             label: "RSRP",
                             value: signal?.lteRsrp,
@@ -416,37 +404,127 @@ class PipScreen extends StatelessWidget {
                             maxVal: ColorGauge.rsrpMax,
                             barColor: const Color(0xFF2196F3),
                             height: null,
-                            fontSize: fontSz,
+                            fontSize: fontSz + 0.5,
                             smoothGaugeColor: smoothGaugeColor,
                             smoothGaugeCurve: smoothGaugeCurve,
                         ),
                     ),
+                    const SizedBox(height: 1.0),
                     Expanded(
-                        child: IntensityBarMetric(
-                            label: "RSRQ",
-                            value: signal?.lteRsrq,
-                            unit: "dB",
-                            minVal: ColorGauge.rsrqMin,
-                            maxVal: ColorGauge.rsrqMax,
-                            barColor: const Color(0xFF2196F3),
-                            height: null,
+                        flex: 2,
+                        child: _buildRefMetricsRow(
+                            label1: "RQ",
+                            value1: signal?.lteRsrq,
+                            unit1: "dB",
+                            label2: "SINR",
+                            value2: signal?.lteSinr,
+                            unit2: "dB",
                             fontSize: fontSz,
-                            smoothGaugeColor: smoothGaugeColor,
-                            smoothGaugeCurve: smoothGaugeCurve,
+                            accentColor: const Color(0xFF2196F3),
                         ),
                     ),
+                ],
+            ),
+        );
+    }
+
+    Widget _buildRefMetricsRow({
+        required String label1,
+        required double? value1,
+        required String unit1,
+        required String label2,
+        required double? value2,
+        required String unit2,
+        required double fontSize,
+        required Color accentColor,
+    }) {
+        final val1Str = (value1 != null && !value1.isNaN && value1 > -200)
+            ? "${value1.toStringAsFixed(1)} $unit1"
+            : "-- $unit1";
+        final val2Str = (value2 != null && !value2.isNaN && value2 > -200)
+            ? "${value2 > 0 ? '+' : ''}${value2.toStringAsFixed(1)} $unit2"
+            : "-- $unit2";
+
+        return Container(
+            margin: const EdgeInsets.symmetric(vertical: 0.5),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 0.5),
+            decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.035),
+                borderRadius: BorderRadius.circular(3.0),
+                border: Border.all(color: Colors.white.withOpacity(0.06), width: 0.5),
+            ),
+            child: Row(
+                children: [
                     Expanded(
-                        child: IntensityBarMetric(
-                            label: "SINR",
-                            value: signal?.lteSinr,
-                            unit: "dB",
-                            minVal: ColorGauge.sinrMin,
-                            maxVal: ColorGauge.sinrMax,
-                            barColor: const Color(0xFF2196F3),
-                            height: null,
-                            fontSize: fontSz,
-                            smoothGaugeColor: smoothGaugeColor,
-                            smoothGaugeCurve: smoothGaugeCurve,
+                        child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text.rich(
+                                    TextSpan(
+                                        children: [
+                                            TextSpan(
+                                                text: "$label1: ",
+                                                style: TextStyle(
+                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                                    fontSize: fontSize - 0.5,
+                                                    color: Colors.white54,
+                                                    fontWeight: FontWeight.w500,
+                                                ),
+                                            ),
+                                            TextSpan(
+                                                text: val1Str,
+                                                style: TextStyle(
+                                                    fontFamily: 'monospace',
+                                                    fontSize: fontSize,
+                                                    color: Colors.white70,
+                                                    fontWeight: FontWeight.bold,
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    Container(
+                        width: 1,
+                        height: 10,
+                        color: Colors.white12,
+                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    ),
+                    Expanded(
+                        child: Align(
+                            alignment: Alignment.centerRight,
+                            child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Text.rich(
+                                    TextSpan(
+                                        children: [
+                                            TextSpan(
+                                                text: "$label2: ",
+                                                style: TextStyle(
+                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                                    fontSize: fontSize - 0.5,
+                                                    color: Colors.white54,
+                                                    fontWeight: FontWeight.w500,
+                                                ),
+                                            ),
+                                            TextSpan(
+                                                text: val2Str,
+                                                style: TextStyle(
+                                                    fontFamily: 'monospace',
+                                                    fontSize: fontSize,
+                                                    color: Colors.white70,
+                                                    fontWeight: FontWeight.bold,
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ),
                         ),
                     ),
                 ],

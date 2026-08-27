@@ -115,6 +115,20 @@ class SignalData {
             nrBand = lteBandVal ?? endcBandVal ?? previousData?.nrBand;
             final resolvedNrPci = ltePciVal ?? endcPciVal;
             nrPci = (resolvedNrPci != null && resolvedNrPci > 0) ? resolvedNrPci : (resolvedNrPci == 0 ? null : previousData?.nrPci);
+        } else if (sysmode == 'lte') {
+            // 4G LTE Pure Mode (5G is disabled / out of service)
+            lteRsrp = rawLteRsrp != null ? (rawLteRsrp - 141.0) : previousData?.lteRsrp;
+            lteRssi = rawLteRssi != null ? (rawLteRssi - 111.0) : previousData?.lteRssi;
+            lteRsrq = rawLteRsrq != null ? ((rawLteRsrq - 40.0) / 2.0) : previousData?.lteRsrq;
+            lteSinr = lteSinrVal ?? previousData?.lteSinr;
+            lteBand = lteBandVal ?? previousData?.lteBand;
+            ltePci = (ltePciVal != null && ltePciVal > 0) ? ltePciVal : (ltePciVal == 0 ? null : previousData?.ltePci);
+
+            nrRsrp = null;
+            nrRsrq = null;
+            nrSnr = null;
+            nrBand = null;
+            nrPci = null;
         } else {
             // 4G LTE Anchor / Primary
             lteRsrp = rawLteRsrp != null ? (rawLteRsrp - 141.0) : previousData?.lteRsrp;
@@ -127,13 +141,17 @@ class SignalData {
             // 5G NR ENDC Secondary
             if (rawEndcRsrp != null && rawEndcRsrp > 0) {
                 nrRsrp = rawEndcRsrp - 157.0;
-            } else if (rawEndcRsrp == null) {
+            } else if (rawEndcRsrp == 0 || (rawMap.containsKey('mnet_endc_rsrp') && rawEndcRsrp == null)) {
+                nrRsrp = null;
+            } else {
                 nrRsrp = previousData?.nrRsrp;
             }
 
             if (rawEndcRsrq != null && rawEndcRsrq > 0) {
                 nrRsrq = ((rawEndcRsrq - 1.0) / 2.0) - 43.0;
-            } else if (rawEndcRsrq == null || (rawEndcRsrp != null && rawEndcRsrp > 0 && rawEndcRsrq == 0)) {
+            } else if (rawEndcRsrq == 0 || (rawMap.containsKey('mnet_endc_rsrq') && rawEndcRsrq == null)) {
+                nrRsrq = null;
+            } else {
                 nrRsrq = previousData?.nrRsrq;
             }
 
@@ -141,12 +159,14 @@ class SignalData {
                 nrSnr = adjust5gSnr
                     ? (((rawEndcSnr - 1.0) / 2.0) - 23.0)
                     : rawEndcSnr.toDouble();
-            } else if (rawEndcSnr == null || (rawEndcRsrp != null && rawEndcRsrp > 0 && rawEndcSnr == 0)) {
+            } else if (rawEndcSnr == 0 || (rawMap.containsKey('mnet_endc_snr') && rawEndcSnr == null)) {
+                nrSnr = null;
+            } else {
                 nrSnr = previousData?.nrSnr;
             }
 
-            nrBand = endcBandVal ?? previousData?.nrBand;
-            nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? (rawEndcRsrp != null && rawEndcRsrp > 0 ? previousData?.nrPci : null) : previousData?.nrPci);
+            nrBand = (endcBandVal != null && endcBandVal > 0) ? endcBandVal : (endcBandVal == 0 ? null : previousData?.nrBand);
+            nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? null : previousData?.nrPci);
         }
 
         // Battery
@@ -179,7 +199,7 @@ class SignalData {
                 nrPci != null && nrPci > 0 &&
                 previousData.nrPci != null && previousData.nrPci! > 0 &&
                 nrPci != previousData.nrPci) {
-                final bandStr = nrBand != null ? "n$nrBand" : "";
+                final bandStr = (nrBand != null && nrBand > 0) ? "n$nrBand" : "";
                 handover = "5G PCI ${previousData.nrPci} → $nrPci ($bandStr)";
             }
         } else {
@@ -187,13 +207,13 @@ class SignalData {
                 ltePci != null && ltePci > 0 &&
                 previousData.ltePci != null && previousData.ltePci! > 0 &&
                 ltePci != previousData.ltePci) {
-                final bandStr = lteBand != null ? "B$lteBand" : "";
+                final bandStr = (lteBand != null && lteBand > 0) ? "B$lteBand" : "";
                 handover = "4G PCI ${previousData.ltePci} → $ltePci ($bandStr)";
             } else if (previousData != null &&
                 nrPci != null && nrPci > 0 &&
                 previousData.nrPci != null && previousData.nrPci! > 0 &&
                 nrPci != previousData.nrPci) {
-                final bandStr = nrBand != null ? "n$nrBand" : "";
+                final bandStr = (nrBand != null && nrBand > 0) ? "n$nrBand" : "";
                 handover = "5G PCI ${previousData.nrPci} → $nrPci ($bandStr)";
             }
         }
@@ -245,6 +265,8 @@ class SignalData {
         final s = val.toString().trim();
         if (s.isEmpty || s == '--') return null;
         final clean = s.replaceAll(RegExp(r'[^\d]'), '');
-        return int.tryParse(clean);
+        final parsed = int.tryParse(clean);
+        if (parsed == null || parsed <= 0) return null;
+        return parsed;
     }
 }

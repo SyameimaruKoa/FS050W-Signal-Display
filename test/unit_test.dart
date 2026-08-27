@@ -7,7 +7,6 @@ import 'package:fs050w_signal_display/models/signal_data.dart';
 import 'package:fs050w_signal_display/models/connection_state.dart';
 import 'package:fs050w_signal_display/models/app_settings.dart';
 import 'package:fs050w_signal_display/services/pip_service.dart';
-import 'package:fs050w_signal_display/views/widgets/intensity_bar_metric.dart';
 
 void main() {
     group('3GPP & Rakuten Specific Band Naming and Badge Tests', () {
@@ -174,6 +173,22 @@ void main() {
             };
             final handover5gData = SignalData.fromApiResponse(handover5gJson, previousData: validData);
             expect(handover5gData.handoverDescription, equals("5G PCI 454 → 723 (n77)"));
+        });
+
+        test('5G out-of-service or band 0 parses as null and formats as --', () {
+            final outOfServiceJson = {
+                'mnet_sysmode': 'nsa',
+                'mnet_rsrp': '68',
+                'mnet_endc_rsrp': '0',
+                'mnet_wnw_psband': '0',
+                'mnet_wnw_pspci': '0',
+            };
+            final data = SignalData.fromApiResponse(outOfServiceJson);
+            expect(data.nrBand, isNull);
+            expect(data.nrPci, isNull);
+            expect(data.nrRsrp, isNull);
+            expect(FrequencyCalculator.getNrBandName(data.nrBand), equals("--"));
+            expect(FrequencyCalculator.getNrBandName(0), equals("--"));
         });
     });
 

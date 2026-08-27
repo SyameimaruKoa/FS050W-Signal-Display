@@ -1,10 +1,10 @@
 name: fs050w_signal_display
 description: "FS050W 5G/4G Signal Display and Engineering App"
-publish_to: 'none'
-version: 1.1.0+15
+publish_to: "none"
+version: 1.2.0+16
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:

@@ -66,7 +66,7 @@ class IntensityBarMetric extends StatelessWidget {
                         // Horizontal Intensity Progress Bar
                         FractionallySizedBox(
                             alignment: Alignment.centerLeft,
-                            widthFactor: rawRatio,
+                            widthFactor: ratio,
                             child: Container(
                                 decoration: BoxDecoration(
                                     color: activeColor.withOpacity(0.35),

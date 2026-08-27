@@ -107,8 +107,8 @@ class _HudScreenState extends State<HudScreen> {
                                                     _buildHudPanel(
                                                         context,
                                                         title: ConnectionModeHelper.getGenerationName(true, notation: notation),
-                                                        bandStr: signal?.nrBand != null ? "n${signal!.nrBand}" : "--",
-                                                        pciStr: signal?.nrPci != null ? "${signal!.nrPci}" : "--",
+                                                        bandStr: (signal?.nrBand != null && signal!.nrBand! > 0) ? "n${signal!.nrBand}" : "--",
+                                                        pciStr: (signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--",
                                                         rsrp: signal?.nrRsrp,
                                                         rsrq: signal?.nrRsrq,
                                                         sinr: signal?.nrSnr,
@@ -120,8 +120,8 @@ class _HudScreenState extends State<HudScreen> {
                                                     _buildHudPanel(
                                                         context,
                                                         title: ConnectionModeHelper.getGenerationName(false, notation: notation),
-                                                        bandStr: signal?.lteBand != null ? "B${signal!.lteBand}" : "--",
-                                                        pciStr: signal?.ltePci != null ? "${signal!.ltePci}" : "--",
+                                                        bandStr: (signal?.lteBand != null && signal!.lteBand! > 0) ? "B${signal!.lteBand}" : "--",
+                                                        pciStr: (signal?.ltePci != null && signal!.ltePci! > 0) ? "${signal!.ltePci}" : "--",
                                                         rsrp: signal?.lteRsrp,
                                                         rsrq: signal?.lteRsrq,
                                                         sinr: signal?.lteSinr,

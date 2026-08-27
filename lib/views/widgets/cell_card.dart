@@ -129,6 +129,7 @@ class CellCard extends StatelessWidget {
         final snrLevel = ColorGauge.rateSinr(signal.nrSnr);
 
         final tagText = FrequencyCalculator.getNrBadgeText(signal.nrBand, operatorName: signal.operatorName);
+        final hasDetailParams = signal.nrRsrq != null || signal.nrSnr != null || signal.nrPci != null;
 
         return CellCard(
             title: nrTitle,
@@ -165,7 +166,7 @@ class CellCard extends StatelessWidget {
                                 children: [
                                     Text("PCI: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
-                                        signal.nrPci != null ? "${signal.nrPci}" : "--",
+                                        (signal.nrPci != null && signal.nrPci! > 0) ? "${signal.nrPci}" : "--",
                                         style: TextStyle(
                                             fontFamily: 'monospace',
                                             fontSize: 13,
@@ -199,8 +200,9 @@ class CellCard extends StatelessWidget {
                     ),
                 ),
                 const SizedBox(height: 8),
+                // Main RSRP Primary Metric
                 MetricGauge(
-                    label: "RSRP",
+                    label: "RSRP (電波強度・主指標)",
                     value: signal.nrRsrp,
                     unit: "dBm",
                     level: rsrpLevel,
@@ -209,26 +211,82 @@ class CellCard extends StatelessWidget {
                     minVal: ColorGauge.rsrpMin,
                     maxVal: ColorGauge.rsrpMax,
                 ),
-                MetricGauge(
-                    label: "RSRQ",
-                    value: signal.nrRsrq,
-                    unit: "dB",
-                    level: rsrqLevel,
-                    smoothGaugeColor: smoothGaugeColor,
-                    smoothGaugeCurve: smoothGaugeCurve,
-                    minVal: ColorGauge.rsrqMin,
-                    maxVal: ColorGauge.rsrqMax,
-                ),
-                MetricGauge(
-                    label: "SNR (補正済)",
-                    value: signal.nrSnr,
-                    unit: "dB",
-                    level: snrLevel,
-                    smoothGaugeColor: smoothGaugeColor,
-                    smoothGaugeCurve: smoothGaugeCurve,
-                    minVal: ColorGauge.sinrMin,
-                    maxVal: ColorGauge.sinrMax,
-                ),
+                const SizedBox(height: 4),
+                // Consolidated Reference Metrics (RSRQ / SNR)
+                if (hasDetailParams)
+                    Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.025),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05)),
+                        ),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Row(
+                                    children: [
+                                        Icon(Icons.info_outline, size: 12, color: isDark ? Colors.white38 : Colors.black38),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                            "参考品質指標 (推定目安)",
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: isDark ? Colors.white54 : Colors.black45,
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                    children: [
+                                        Expanded(
+                                            child: _buildCompactRefMetric(
+                                                context,
+                                                label: "RSRQ",
+                                                value: signal.nrRsrq,
+                                                unit: "dB",
+                                                level: rsrqLevel,
+                                            ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                            child: _buildCompactRefMetric(
+                                                context,
+                                                label: "SNR",
+                                                value: signal.nrSnr,
+                                                unit: "dB",
+                                                level: snrLevel,
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    )
+                else
+                    Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                            borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                            children: [
+                                Icon(Icons.lock_outline, size: 13, color: isDark ? Colors.white38 : Colors.black38),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                    child: Text(
+                                        "ログインすると詳細パラメータ (PCI/Band/RQ/SNR) が表示されます",
+                                        style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black45),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
             ],
         );
     }
@@ -266,6 +324,7 @@ class CellCard extends StatelessWidget {
         final rsrpLevel = ColorGauge.rateRsrp(signal.lteRsrp);
         final rsrqLevel = ColorGauge.rateRsrq(signal.lteRsrq);
         final sinrLevel = ColorGauge.rateSinr(signal.lteSinr);
+        final hasDetailParams = signal.lteRsrq != null || signal.lteSinr != null || signal.ltePci != null;
 
         return CellCard(
             title: titleText,
@@ -324,7 +383,7 @@ class CellCard extends StatelessWidget {
                                 children: [
                                     Text("PCI: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
                                     Text(
-                                        signal.ltePci != null ? "${signal.ltePci}" : "--",
+                                        (signal.ltePci != null && signal.ltePci! > 0) ? "${signal.ltePci}" : "--",
                                         style: TextStyle(
                                             fontFamily: 'monospace',
                                             fontSize: 13,
@@ -358,8 +417,9 @@ class CellCard extends StatelessWidget {
                     ),
                 ),
                 const SizedBox(height: 8),
+                // Main RSRP Primary Metric
                 MetricGauge(
-                    label: "RSRP",
+                    label: "RSRP (電波強度・主指標)",
                     value: signal.lteRsrp,
                     unit: "dBm",
                     level: rsrpLevel,
@@ -368,27 +428,151 @@ class CellCard extends StatelessWidget {
                     minVal: ColorGauge.rsrpMin,
                     maxVal: ColorGauge.rsrpMax,
                 ),
-                MetricGauge(
-                    label: "RSRQ",
-                    value: signal.lteRsrq,
-                    unit: "dB",
-                    level: rsrqLevel,
-                    smoothGaugeColor: smoothGaugeColor,
-                    smoothGaugeCurve: smoothGaugeCurve,
-                    minVal: ColorGauge.rsrqMin,
-                    maxVal: ColorGauge.rsrqMax,
-                ),
-                MetricGauge(
-                    label: "SINR",
-                    value: signal.lteSinr,
-                    unit: "dB",
-                    level: sinrLevel,
-                    smoothGaugeColor: smoothGaugeColor,
-                    smoothGaugeCurve: smoothGaugeCurve,
-                    minVal: ColorGauge.sinrMin,
-                    maxVal: ColorGauge.sinrMax,
-                ),
+                const SizedBox(height: 4),
+                // Consolidated Reference Metrics (RSRQ / SINR)
+                if (hasDetailParams)
+                    Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.025),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05)),
+                        ),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Row(
+                                    children: [
+                                        Icon(Icons.info_outline, size: 12, color: isDark ? Colors.white38 : Colors.black38),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                            "参考品質指標 (推定目安)",
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: isDark ? Colors.white54 : Colors.black45,
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                    children: [
+                                        Expanded(
+                                            child: _buildCompactRefMetric(
+                                                context,
+                                                label: "RSRQ",
+                                                value: signal.lteRsrq,
+                                                unit: "dB",
+                                                level: rsrqLevel,
+                                            ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                            child: _buildCompactRefMetric(
+                                                context,
+                                                label: "SINR",
+                                                value: signal.lteSinr,
+                                                unit: "dB",
+                                                level: sinrLevel,
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    )
+                else
+                    Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                            borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                            children: [
+                                Icon(Icons.lock_outline, size: 13, color: isDark ? Colors.white38 : Colors.black38),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                    child: Text(
+                                        "ログインすると詳細パラメータ (PCI/Band/RQ/SINR) が表示されます",
+                                        style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black45),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
             ],
+        );
+    }
+
+    static Widget _buildCompactRefMetric(
+        BuildContext context, {
+        required String label,
+        required double? value,
+        required String unit,
+        required SignalRatingLevel level,
+    }) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final color = ColorGauge.getColor(level);
+        final valText = (value != null && !value.isNaN && value > -200)
+            ? "${value > 0 && unit == 'dB' && label.contains('S') ? '+' : ''}${value.toStringAsFixed(1)} $unit"
+            : "-- $unit";
+        final levelText = (value != null && !value.isNaN && value > -200)
+            ? ColorGauge.getLabel(level)
+            : "--";
+
+        return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.02),
+                borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                    Text(
+                        label,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                    ),
+                    Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                            Text(
+                                valText,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white38 : Colors.black38),
+                                ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                decoration: BoxDecoration(
+                                    color: (value != null && !value.isNaN && value > -200) ? color.withOpacity(0.15) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Text(
+                                    levelText,
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white24 : Colors.black26),
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ],
+            ),
         );
     }
 }

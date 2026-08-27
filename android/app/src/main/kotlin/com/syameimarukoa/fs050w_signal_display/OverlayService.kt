@@ -1,4 +1,4 @@
-﻿package com.syameimarukoa.fs050w_signal_display
+package com.syameimarukoa.fs050w_signal_display
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -274,6 +274,31 @@ class OverlayService : Service() {
         }
     }
 
+    private class DualRefMetricsHolder(
+        val rootCell: FrameLayout,
+        val labelView: TextView,
+        val label1: String,
+        val unit1: String,
+        val label2: String,
+        val unit2: String
+    ) {
+        fun update(value1: Double?, value2: Double?) {
+            val v1Str = if (value1 != null && !value1.isNaN() && value1 > -200) {
+                String.format("%.1f %s", value1, unit1)
+            } else {
+                "-- $unit1"
+            }
+
+            val v2Str = if (value2 != null && !value2.isNaN() && value2 > -200) {
+                if (value2 > 0) String.format("+%.1f %s", value2, unit2) else String.format("%.1f %s", value2, unit2)
+            } else {
+                "-- $unit2"
+            }
+
+            labelView.text = "$label1: $v1Str  |  $label2: $v2Str"
+        }
+    }
+
     private class PillViewHolder(
         val pillLayout: LinearLayout,
         val badgeText: TextView
@@ -285,12 +310,10 @@ class OverlayService : Service() {
         val opView: TextView,
         val nrHeader: TextView,
         val nrRsrpCell: MetricCellHolder,
-        val nrRsrqCell: MetricCellHolder,
-        val nrSnrCell: MetricCellHolder,
+        val nrRefCell: DualRefMetricsHolder,
         val lteHeader: TextView,
         val lteRsrpCell: MetricCellHolder,
-        val lteRsrqCell: MetricCellHolder,
-        val lteSinrCell: MetricCellHolder
+        val lteRefCell: DualRefMetricsHolder
     )
 
     private class CompactViewHolder(
@@ -472,14 +495,18 @@ class OverlayService : Service() {
         val isSub6 = modeBadge.contains("+")
         val badge = if (isSub6) "$nrLabel+" else if (modeBadge.contains("5G") || modeBadge.contains("NR")) nrLabel else if (modeBadge.contains("4G") || modeBadge.contains("LTE")) lteLabel else modeBadge
 
-        val nrBand = json?.optString("nrBand", "--") ?: "--"
-        val nrPci = json?.optString("nrPci", "--") ?: "--"
+        val rawNrBand = json?.optString("nrBand", "--") ?: "--"
+        val nrBand = if (rawNrBand == "0" || rawNrBand == "n0" || rawNrBand.isBlank()) "--" else rawNrBand
+        val rawNrPci = json?.optString("nrPci", "--") ?: "--"
+        val nrPci = if (rawNrPci == "0" || rawNrPci.isBlank()) "--" else rawNrPci
         val nrRsrp = json?.optDouble("nrRsrp", Double.NaN)
         val nrRsrq = json?.optDouble("nrRsrq", Double.NaN)
         val nrSnr = json?.optDouble("nrSnr", Double.NaN)
 
-        val lteBand = json?.optString("lteBand", "--") ?: "--"
-        val ltePci = json?.optString("ltePci", "--") ?: "--"
+        val rawLteBand = json?.optString("lteBand", "--") ?: "--"
+        val lteBand = if (rawLteBand == "0" || rawLteBand == "B0" || rawLteBand.isBlank()) "--" else rawLteBand
+        val rawLtePci = json?.optString("ltePci", "--") ?: "--"
+        val ltePci = if (rawLtePci == "0" || rawLtePci.isBlank()) "--" else rawLtePci
         val lteRsrp = json?.optDouble("lteRsrp", Double.NaN)
         val lteRsrq = json?.optDouble("lteRsrq", Double.NaN)
         val lteSinr = json?.optDouble("lteSinr", Double.NaN)
@@ -504,26 +531,36 @@ class OverlayService : Service() {
             holder.badgeView.setTextColor(if (isConnecting) Color.YELLOW else Color.parseColor("#00E5FF"))
             holder.opView.text = "  $opName"
 
-            val nrTitle = if (modeBadge.contains("+")) "$nrLabel+ ($nrBand/$nrPci)" else "$nrLabel ($nrBand/$nrPci)"
-            val lteTitle = "$lteLabel ($lteBand/$ltePci)"
+            val nrTitle = if (nrBand == "--" && nrPci == "--") {
+                if (modeBadge.contains("+")) "$nrLabel+ (--)" else "$nrLabel (--)"
+            } else {
+                if (modeBadge.contains("+")) "$nrLabel+ ($nrBand/$nrPci)" else "$nrLabel ($nrBand/$nrPci)"
+            }
+            val lteTitle = if (lteBand == "--" && ltePci == "--") {
+                "$lteLabel (--)"
+            } else {
+                "$lteLabel ($lteBand/$ltePci)"
+            }
 
             holder.nrHeader.text = nrTitle
             holder.lteHeader.text = lteTitle
 
             holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.nrRsrqCell.update(nrRsrq, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.nrSnrCell.update(nrSnr, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.nrRefCell.update(nrRsrq, nrSnr)
 
             holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.lteRsrqCell.update(lteRsrq, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.lteSinrCell.update(lteSinr, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.lteRefCell.update(lteRsrq, lteSinr)
         } else {
             val holder = compactHolder ?: return
             holder.mainCard.alpha = overlayOpacity
             holder.statusView.text = "[$modeBadge] $opName"
 
-            val nrTitle = if (modeBadge.contains("+")) "$nrLabel+ $nrBand" else "$nrLabel $nrBand"
-            val lteTitle = "$lteLabel $lteBand"
+            val nrTitle = if (modeBadge.contains("+")) {
+                if (nrBand == "--") "$nrLabel+ --" else "$nrLabel+ $nrBand"
+            } else {
+                if (nrBand == "--") "$nrLabel --" else "$nrLabel $nrBand"
+            }
+            val lteTitle = if (lteBand == "--") "$lteLabel --" else "$lteLabel $lteBand"
 
             holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
             holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
@@ -609,12 +646,10 @@ class OverlayService : Service() {
         root.addView(nrHeader)
 
         val nrRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#00ADB5"))
-        val nrRsrqCell = createMetricCellHolder("RSRQ", "dB", -22.0, -8.0, Color.parseColor("#00ADB5"))
-        val nrSnrCell = createMetricCellHolder("SNR", "dB", -6.0, 24.0, Color.parseColor("#00ADB5"))
+        val nrRefCell = createDualRefMetricsHolder("RQ", "dB", "SNR", "dB")
 
         root.addView(nrRsrpCell.rootCell)
-        root.addView(nrRsrqCell.rootCell)
-        root.addView(nrSnrCell.rootCell)
+        root.addView(nrRefCell.rootCell)
 
         // 4G Header & Metric Cells
         val lteHeader = TextView(this).apply {
@@ -627,12 +662,10 @@ class OverlayService : Service() {
         root.addView(lteHeader)
 
         val lteRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#2196F3"))
-        val lteRsrqCell = createMetricCellHolder("RSRQ", "dB", -22.0, -8.0, Color.parseColor("#2196F3"))
-        val lteSinrCell = createMetricCellHolder("SINR", "dB", -6.0, 24.0, Color.parseColor("#2196F3"))
+        val lteRefCell = createDualRefMetricsHolder("RQ", "dB", "SINR", "dB")
 
         root.addView(lteRsrpCell.rootCell)
-        root.addView(lteRsrqCell.rootCell)
-        root.addView(lteSinrCell.rootCell)
+        root.addView(lteRefCell.rootCell)
 
         cardHolder = CardViewHolder(
             mainCard = mainCard,
@@ -640,12 +673,10 @@ class OverlayService : Service() {
             opView = opView,
             nrHeader = nrHeader,
             nrRsrpCell = nrRsrpCell,
-            nrRsrqCell = nrRsrqCell,
-            nrSnrCell = nrSnrCell,
+            nrRefCell = nrRefCell,
             lteHeader = lteHeader,
             lteRsrpCell = lteRsrpCell,
-            lteRsrqCell = lteRsrqCell,
-            lteSinrCell = lteSinrCell
+            lteRefCell = lteRefCell
         )
 
         return root
@@ -680,6 +711,46 @@ class OverlayService : Service() {
         )
 
         return root
+    }
+
+    private fun createDualRefMetricsHolder(
+        label1: String,
+        unit1: String,
+        label2: String,
+        unit2: String
+    ): DualRefMetricsHolder {
+        val cell = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(14f)
+            ).apply {
+                setMargins(dpToPx(1f), dpToPx(1f), dpToPx(1f), dpToPx(1f))
+            }
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#12FFFFFF"))
+                cornerRadius = dpToPx(3f).toFloat()
+            }
+            background = bg
+            clipToOutline = true
+        }
+
+        val labelView = TextView(this).apply {
+            text = "$label1: -- $unit1  |  $label2: -- $unit2"
+            textSize = 8.0f
+            setTextColor(Color.parseColor("#CCCCCC"))
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            setPadding(dpToPx(4f), 0, 0, 0)
+        }
+        cell.addView(labelView)
+
+        return DualRefMetricsHolder(
+            rootCell = cell,
+            labelView = labelView,
+            label1 = label1,
+            unit1 = unit1,
+            label2 = label2,
+            unit2 = unit2
+        )
     }
 
     private fun createMetricCellHolder(
