@@ -315,119 +315,99 @@ class OverlayService : Service() {
     }
 
     private class DualRefMetricsHolder(
-        val rootCell: FrameLayout,
+        val rootLayout: LinearLayout,
+        val cell1: FrameLayout,
         val barView1: View,
-        val barView2: View,
-        val labelView: TextView,
+        val labelView1: TextView,
+        val valView1: TextView,
         val label1: String,
         val unit1: String,
+        val min1: Double,
+        val max1: Double,
+        val cell2: FrameLayout,
+        val barView2: View,
+        val labelView2: TextView,
+        val valView2: TextView,
         val label2: String,
         val unit2: String,
-        val min1: Double = -22.0,
-        val max1: Double = -8.0,
-        val min2: Double = -6.0,
-        val max2: Double = 24.0
+        val min2: Double,
+        val max2: Double
     ) {
         fun update(value1: Double?, value2: Double?, curveType: String = "easeOut") {
             val hasVal1 = value1 != null && !value1.isNaN() && value1 > -200
+            val v1Str = if (hasVal1) String.format("%.1f %s", value1, unit1) else "-- $unit1"
+            val color1 = if (label1 == "RQ") getRsrqColor(value1) else getSinrColor(value1)
+
+            valView1.text = v1Str
+            valView1.setTextColor(color1)
+
+            val rawRatio1 = if (hasVal1) ((value1!! - min1) / (max1 - min1)).coerceIn(0.0, 1.0) else 0.0
+            val norm1 = applyCurve(rawRatio1, curveType).toFloat()
+
+            val bgAlpha = 45
+            barView1.setBackgroundColor(Color.argb(bgAlpha, Color.red(color1), Color.green(color1), Color.blue(color1)))
+            val border1 = (cell1.background as? GradientDrawable)
+            border1?.setStroke(
+                1,
+                if (rawRatio1 > 0) Color.argb(90, Color.red(color1), Color.green(color1), Color.blue(color1))
+                else Color.parseColor("#1FFFFFFF")
+            )
+
             val hasVal2 = value2 != null && !value2.isNaN() && value2 > -200
-
-            val v1Str = if (hasVal1) {
-                String.format("%.1f %s", value1, unit1)
-            } else {
-                "-- $unit1"
-            }
-
             val v2Str = if (hasVal2) {
                 if (value2!! > 0) String.format("+%.1f %s", value2, unit2) else String.format("%.1f %s", value2, unit2)
             } else {
                 "-- $unit2"
             }
-
-            val color1 = if (label1 == "RQ") getRsrqColor(value1) else getSinrColor(value1)
             val color2 = if (label2 == "SNR" || label2 == "SINR") getSinrColor(value2) else getRsrqColor(value2)
 
-            val ssb = SpannableStringBuilder()
-            ssb.append("$label1: ")
-            val start1 = ssb.length
-            ssb.append(v1Str)
-            ssb.setSpan(
-                ForegroundColorSpan(color1),
-                start1,
-                ssb.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-            ssb.setSpan(
-                StyleSpan(Typeface.BOLD),
-                start1,
-                ssb.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+            valView2.text = v2Str
+            valView2.setTextColor(color2)
 
-            ssb.append("  |  $label2: ")
-            val start2 = ssb.length
-            ssb.append(v2Str)
-            ssb.setSpan(
-                ForegroundColorSpan(color2),
-                start2,
-                ssb.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-            ssb.setSpan(
-                StyleSpan(Typeface.BOLD),
-                start2,
-                ssb.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-
-            labelView.text = ssb
-
-            val rawRatio1 = if (hasVal1) {
-                ((value1!! - min1) / (max1 - min1)).coerceIn(0.0, 1.0)
-            } else {
-                0.0
-            }
-            val norm1 = applyCurve(rawRatio1, curveType).toFloat()
-
-            val rawRatio2 = if (hasVal2) {
-                ((value2!! - min2) / (max2 - min2)).coerceIn(0.0, 1.0)
-            } else {
-                0.0
-            }
+            val rawRatio2 = if (hasVal2) ((value2!! - min2) / (max2 - min2)).coerceIn(0.0, 1.0) else 0.0
             val norm2 = applyCurve(rawRatio2, curveType).toFloat()
 
-            val bgAlpha = 45
-            barView1.setBackgroundColor(Color.argb(bgAlpha, Color.red(color1), Color.green(color1), Color.blue(color1)))
             barView2.setBackgroundColor(Color.argb(bgAlpha, Color.red(color2), Color.green(color2), Color.blue(color2)))
+            val border2 = (cell2.background as? GradientDrawable)
+            border2?.setStroke(
+                1,
+                if (rawRatio2 > 0) Color.argb(90, Color.red(color2), Color.green(color2), Color.blue(color2))
+                else Color.parseColor("#1FFFFFFF")
+            )
 
-            val totalWidth = rootCell.width
-            val halfWidth = totalWidth / 2
-            if (halfWidth > 0) {
-                val bw1 = (halfWidth * norm1).toInt()
+            val w1 = cell1.width
+            if (w1 > 0) {
+                val bw1 = (w1 * norm1).toInt()
                 val lp1 = barView1.layoutParams
                 if (lp1 != null && lp1.width != bw1) {
                     lp1.width = bw1
                     barView1.layoutParams = lp1
                 }
+            } else {
+                cell1.post {
+                    if (cell1.isAttachedToWindow) {
+                        val bw1 = (cell1.width * norm1).toInt()
+                        val lp1 = barView1.layoutParams
+                        if (lp1 != null && lp1.width != bw1) {
+                            lp1.width = bw1
+                            barView1.layoutParams = lp1
+                        }
+                    }
+                }
+            }
 
-                val bw2 = (halfWidth * norm2).toInt()
+            val w2 = cell2.width
+            if (w2 > 0) {
+                val bw2 = (w2 * norm2).toInt()
                 val lp2 = barView2.layoutParams
                 if (lp2 != null && lp2.width != bw2) {
                     lp2.width = bw2
                     barView2.layoutParams = lp2
                 }
             } else {
-                rootCell.post {
-                    if (rootCell.isAttachedToWindow) {
-                        val hw = rootCell.width / 2
-                        val bw1 = (hw * norm1).toInt()
-                        val lp1 = barView1.layoutParams
-                        if (lp1 != null && lp1.width != bw1) {
-                            lp1.width = bw1
-                            barView1.layoutParams = lp1
-                        }
-
-                        val bw2 = (hw * norm2).toInt()
+                cell2.post {
+                    if (cell2.isAttachedToWindow) {
+                        val bw2 = (cell2.width * norm2).toInt()
                         val lp2 = barView2.layoutParams
                         if (lp2 != null && lp2.width != bw2) {
                             lp2.width = bw2
@@ -809,10 +789,10 @@ class OverlayService : Service() {
         root.addView(nrHeader)
 
         val nrRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#00ADB5"))
-        val nrRefCell = createDualRefMetricsHolder("RQ", "dB", "SNR", "dB", -22.0, -8.0, -6.0, 24.0)
+        val nrRefCell = createDualRefMetricsHolder("RQ", "dB", "SNR", "dB", -22.0, -3.0, -6.0, 24.0)
 
         root.addView(nrRsrpCell.rootCell)
-        root.addView(nrRefCell.rootCell)
+        root.addView(nrRefCell.rootLayout)
 
         // 4G Header & Metric Cells
         val lteHeader = TextView(this).apply {
@@ -825,10 +805,10 @@ class OverlayService : Service() {
         root.addView(lteHeader)
 
         val lteRsrpCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#2196F3"))
-        val lteRefCell = createDualRefMetricsHolder("RQ", "dB", "SINR", "dB", -22.0, -8.0, -6.0, 24.0)
+        val lteRefCell = createDualRefMetricsHolder("RQ", "dB", "SINR", "dB", -22.0, -3.0, -6.0, 24.0)
 
         root.addView(lteRsrpCell.rootCell)
-        root.addView(lteRefCell.rootCell)
+        root.addView(lteRefCell.rootLayout)
 
         cardHolder = CardViewHolder(
             mainCard = mainCard,
@@ -882,73 +862,123 @@ class OverlayService : Service() {
         label2: String,
         unit2: String,
         min1: Double = -22.0,
-        max1: Double = -8.0,
+        max1: Double = -3.0,
         min2: Double = -6.0,
         max2: Double = 24.0
     ): DualRefMetricsHolder {
-        val cell = FrameLayout(this).apply {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(14f)
+                dpToPx(15f)
             ).apply {
-                setMargins(dpToPx(1f), dpToPx(1f), dpToPx(1f), dpToPx(1f))
+                setMargins(0, dpToPx(1f), 0, dpToPx(1f))
+            }
+        }
+
+        // Sub-card 1 (RQ)
+        val cell1 = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                setMargins(dpToPx(1f), 0, dpToPx(1.5f), 0)
             }
             val bg = GradientDrawable().apply {
-                setColor(Color.parseColor("#12FFFFFF"))
+                setColor(Color.parseColor("#0AFFFFFF"))
                 cornerRadius = dpToPx(3f).toFloat()
+                setStroke(dpToPx(0.5f), Color.parseColor("#1FFFFFFF"))
             }
             background = bg
             clipToOutline = true
         }
-
-        val barsLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        val leftContainer = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-        }
         val barView1 = View(this).apply {
             layoutParams = FrameLayout.LayoutParams(0, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.START)
         }
-        leftContainer.addView(barView1)
+        cell1.addView(barView1)
 
-        val rightContainer = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+        val content1 = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            setPadding(dpToPx(3.5f), 0, dpToPx(3.5f), 0)
+        }
+        val labelView1 = TextView(this).apply {
+            text = label1
+            textSize = 7.5f
+            setTextColor(Color.parseColor("#88FFFFFF"))
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val valView1 = TextView(this).apply {
+            text = "-- $unit1"
+            textSize = 8.0f
+            setTextColor(Color.parseColor("#757575"))
+            typeface = Typeface.MONOSPACE
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        content1.addView(labelView1)
+        content1.addView(valView1)
+        cell1.addView(content1)
+
+        // Sub-card 2 (SNR / SINR)
+        val cell2 = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                setMargins(dpToPx(1.5f), 0, dpToPx(1f), 0)
+            }
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#0AFFFFFF"))
+                cornerRadius = dpToPx(3f).toFloat()
+                setStroke(dpToPx(0.5f), Color.parseColor("#1FFFFFFF"))
+            }
+            background = bg
+            clipToOutline = true
         }
         val barView2 = View(this).apply {
             layoutParams = FrameLayout.LayoutParams(0, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.START)
         }
-        rightContainer.addView(barView2)
+        cell2.addView(barView2)
 
-        barsLayout.addView(leftContainer)
-        barsLayout.addView(rightContainer)
-        cell.addView(barsLayout)
-
-        val labelView = TextView(this).apply {
-            text = "$label1: -- $unit1  |  $label2: -- $unit2"
-            textSize = 8.0f
-            setTextColor(Color.parseColor("#CCCCCC"))
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            setPadding(dpToPx(4f), 0, 0, 0)
+        val content2 = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            setPadding(dpToPx(3.5f), 0, dpToPx(3.5f), 0)
         }
-        cell.addView(labelView)
+        val labelView2 = TextView(this).apply {
+            text = label2
+            textSize = 7.5f
+            setTextColor(Color.parseColor("#88FFFFFF"))
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val valView2 = TextView(this).apply {
+            text = "-- $unit2"
+            textSize = 8.0f
+            setTextColor(Color.parseColor("#757575"))
+            typeface = Typeface.MONOSPACE
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        content2.addView(labelView2)
+        content2.addView(valView2)
+        cell2.addView(content2)
+
+        root.addView(cell1)
+        root.addView(cell2)
 
         return DualRefMetricsHolder(
-            rootCell = cell,
+            rootLayout = root,
+            cell1 = cell1,
             barView1 = barView1,
-            barView2 = barView2,
-            labelView = labelView,
+            labelView1 = labelView1,
+            valView1 = valView1,
             label1 = label1,
             unit1 = unit1,
-            label2 = label2,
-            unit2 = unit2,
             min1 = min1,
             max1 = max1,
+            cell2 = cell2,
+            barView2 = barView2,
+            labelView2 = labelView2,
+            valView2 = valView2,
+            label2 = label2,
+            unit2 = unit2,
             min2 = min2,
             max2 = max2
         )

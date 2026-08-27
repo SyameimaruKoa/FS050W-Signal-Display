@@ -38,7 +38,7 @@ class ColorGauge {
     static const double rsrpMin = -120.0;
     static const double rsrpMax = -70.0;
     static const double rsrqMin = -22.0;
-    static const double rsrqMax = -8.0;
+    static const double rsrqMax = -3.0;
     static const double sinrMin = -6.0;
     static const double sinrMax = 24.0;
 

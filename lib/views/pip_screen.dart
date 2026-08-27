@@ -438,134 +438,102 @@ class PipScreen extends StatelessWidget {
         required double fontSize,
         required Color accentColor,
     }) {
-        final hasVal1 = value1 != null && !value1.isNaN && value1 > -200;
-        final hasVal2 = value2 != null && !value2.isNaN && value2 > -200;
-
-        final val1Str = hasVal1 ? "${value1.toStringAsFixed(1)} $unit1" : "-- $unit1";
-        final val2Str = hasVal2 ? "${value2 > 0 ? '+' : ''}${value2.toStringAsFixed(1)} $unit2" : "-- $unit2";
-
         final level1 = label1 == "RQ" ? ColorGauge.rateRsrq(value1) : ColorGauge.rateSinr(value1);
         final level2 = (label2 == "SNR" || label2 == "SINR") ? ColorGauge.rateSinr(value2) : ColorGauge.rateRsrq(value2);
 
-        final color1 = hasVal1 ? ColorGauge.getColor(level1) : Colors.white38;
-        final color2 = hasVal2 ? ColorGauge.getColor(level2) : Colors.white38;
+        return Row(
+            children: [
+                Expanded(
+                    child: _buildMiniRefBox(
+                        label: label1,
+                        value: value1,
+                        unit: unit1,
+                        level: level1,
+                        fontSize: fontSize,
+                    ),
+                ),
+                const SizedBox(width: 3.0),
+                Expanded(
+                    child: _buildMiniRefBox(
+                        label: label2,
+                        value: value2,
+                        unit: unit2,
+                        level: level2,
+                        fontSize: fontSize,
+                    ),
+                ),
+            ],
+        );
+    }
 
-        final min1 = label1 == "RQ" ? ColorGauge.rsrqMin : ColorGauge.sinrMin;
-        final max1 = label1 == "RQ" ? ColorGauge.rsrqMax : ColorGauge.sinrMax;
-        final ratio1 = hasVal1 ? ((value1 - min1) / (max1 - min1)).clamp(0.0, 1.0) : 0.0;
+    Widget _buildMiniRefBox({
+        required String label,
+        required double? value,
+        required String unit,
+        required SignalRatingLevel level,
+        required double fontSize,
+    }) {
+        final hasVal = value != null && !value.isNaN && value > -200;
+        final color = hasVal ? ColorGauge.getColor(level) : Colors.white38;
+        final valStr = hasVal
+            ? "${value > 0 && (label == 'SNR' || label == 'SINR') ? '+' : ''}${value.toStringAsFixed(1)} $unit"
+            : "-- $unit";
 
-        final min2 = (label2 == "SNR" || label2 == "SINR") ? ColorGauge.sinrMin : ColorGauge.rsrqMin;
-        final max2 = (label2 == "SNR" || label2 == "SINR") ? ColorGauge.sinrMax : ColorGauge.rsrqMax;
-        final ratio2 = hasVal2 ? ((value2 - min2) / (max2 - min2)).clamp(0.0, 1.0) : 0.0;
+        final double minVal = label == 'RQ' ? ColorGauge.rsrqMin : ColorGauge.sinrMin;
+        final double maxVal = label == 'RQ' ? ColorGauge.rsrqMax : ColorGauge.sinrMax;
+        final double ratio = hasVal ? ((value! - minVal) / (maxVal - minVal)).clamp(0.0, 1.0) : 0.0;
 
-        return Container(
-            margin: const EdgeInsets.symmetric(vertical: 0.5),
-            decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.035),
-                borderRadius: BorderRadius.circular(3.0),
-                border: Border.all(color: Colors.white.withOpacity(0.06), width: 0.5),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Row(
+        return ClipRRect(
+            borderRadius: BorderRadius.circular(3.0),
+            child: Stack(
+                fit: StackFit.passthrough,
                 children: [
-                    Expanded(
-                        child: Stack(
-                            children: [
-                                if (ratio1 > 0)
-                                    Positioned.fill(
-                                        child: FractionallySizedBox(
-                                            alignment: Alignment.centerLeft,
-                                            widthFactor: ratio1,
-                                            child: Container(
-                                                color: color1.withOpacity(0.22),
-                                            ),
-                                        ),
-                                    ),
-                                Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
-                                    child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment: Alignment.centerLeft,
-                                            child: Text.rich(
-                                                TextSpan(
-                                                    children: [
-                                                        TextSpan(
-                                                            text: "$label1: ",
-                                                            style: TextStyle(
-                                                                fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
-                                                                fontSize: fontSize - 0.5,
-                                                                color: Colors.white54,
-                                                                fontWeight: FontWeight.w500,
-                                                            ),
-                                                        ),
-                                                        TextSpan(
-                                                            text: val1Str,
-                                                            style: TextStyle(
-                                                                fontFamily: 'monospace',
-                                                                fontSize: fontSize,
-                                                                color: color1,
-                                                                fontWeight: FontWeight.bold,
-                                                            ),
-                                                        ),
-                                                    ],
-                                                ),
-                                            ),
-                                        ),
+                    if (ratio > 0)
+                        Positioned.fill(
+                            child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: ratio,
+                                child: Container(
+                                    decoration: BoxDecoration(
+                                        color: color.withOpacity(0.22),
                                     ),
                                 ),
-                            ],
+                            ),
                         ),
-                    ),
                     Container(
-                        width: 1,
-                        height: 10,
-                        color: Colors.white12,
-                    ),
-                    Expanded(
-                        child: Stack(
+                        padding: const EdgeInsets.symmetric(horizontal: 3.5, vertical: 1.0),
+                        decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.035),
+                            borderRadius: BorderRadius.circular(3.0),
+                            border: Border.all(
+                                color: (ratio > 0) ? color.withOpacity(0.35) : Colors.white.withOpacity(0.08),
+                                width: 0.5,
+                            ),
+                        ),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                                if (ratio2 > 0)
-                                    Positioned.fill(
-                                        child: FractionallySizedBox(
-                                            alignment: Alignment.centerLeft,
-                                            widthFactor: ratio2,
-                                            child: Container(
-                                                color: color2.withOpacity(0.22),
-                                            ),
-                                        ),
+                                Text(
+                                    label,
+                                    style: TextStyle(
+                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                        fontSize: fontSize - 0.5,
+                                        color: Colors.white54,
+                                        fontWeight: FontWeight.w600,
                                     ),
-                                Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
-                                    child: Align(
+                                ),
+                                const SizedBox(width: 2),
+                                Expanded(
+                                    child: FittedBox(
+                                        fit: BoxFit.scaleDown,
                                         alignment: Alignment.centerRight,
-                                        child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment: Alignment.centerRight,
-                                            child: Text.rich(
-                                                TextSpan(
-                                                    children: [
-                                                        TextSpan(
-                                                            text: "$label2: ",
-                                                            style: TextStyle(
-                                                                fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
-                                                                fontSize: fontSize - 0.5,
-                                                                color: Colors.white54,
-                                                                fontWeight: FontWeight.w500,
-                                                            ),
-                                                        ),
-                                                        TextSpan(
-                                                            text: val2Str,
-                                                            style: TextStyle(
-                                                                fontFamily: 'monospace',
-                                                                fontSize: fontSize,
-                                                                color: color2,
-                                                                fontWeight: FontWeight.bold,
-                                                            ),
-                                                        ),
-                                                    ],
-                                                ),
+                                        child: Text(
+                                            valStr,
+                                            style: TextStyle(
+                                                fontFamily: 'monospace',
+                                                fontSize: fontSize,
+                                                color: color,
+                                                fontWeight: FontWeight.bold,
                                             ),
                                         ),
                                     ),
