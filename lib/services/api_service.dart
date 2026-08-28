@@ -40,6 +40,7 @@ class ApiService extends ChangeNotifier {
     DateTime? _lastLoginAttempt;
     DateTime? _lockoutUntil;
     int _lockoutRemainSeconds = 0;
+    int _consecutiveLoginFailures = 0;
 
     ApiService(this._settings);
 
@@ -179,7 +180,15 @@ class ApiService extends ChangeNotifier {
         try {
             final hasPassword = _settings.webPassword.isNotEmpty;
 
-            // 1. Check or establish session tokens
+            // 1. Validate router IP is configured
+            if (_settings.routerIp.isEmpty) {
+                _status = ConnectionStatus.disconnected;
+                _errorMessage = "ルーターIPが未設定です (設定画面で入力してください)";
+                notifyListeners();
+                return;
+            }
+
+            // 2. Check or establish session tokens
             if (_csrfToken == null || _sessionCookie == null) {
                 if (_consecutiveErrorCount >= 2) {
                     _status = ConnectionStatus.connecting;
@@ -192,7 +201,8 @@ class ApiService extends ChangeNotifier {
                 }
             }
 
-            // 2. Perform login if password is configured and not yet authenticated
+            // 3. Perform login if password is configured and not yet authenticated
+            //    When password is empty, NEVER attempt login (explicit unauthenticated mode)
             if (hasPassword && !_isLoggedIn) {
                 final now = DateTime.now();
                 if (_lockoutUntil != null && now.isBefore(_lockoutUntil!)) {
@@ -201,8 +211,18 @@ class ApiService extends ChangeNotifier {
                     _status = ConnectionStatus.unauthenticatedMode;
                     _errorMessage = "ルーター一時ロック中 (残り ${remaining} 秒)";
                 } else {
-                    _lockoutUntil = null;
-                    final canAttempt = _lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 3;
+                    if (_lockoutUntil != null) {
+                        // Lockout just expired - get fresh CSRF before retrying
+                        _lockoutUntil = null;
+                        _csrfToken = null;
+                        _sessionCookie = null;
+                        final reinit = await _fetchCsrfToken();
+                        if (!reinit) {
+                            _handleFetchFailure("ルーター (${_settings.routerIp}) に接続できません");
+                            return;
+                        }
+                    }
+                    final canAttempt = _lastLoginAttempt == null || now.difference(_lastLoginAttempt!).inSeconds >= 5;
                     if (canAttempt) {
                         _lastLoginAttempt = now;
                         AppLogger.info("Attempting authentication with router (${_settings.routerIp})...");
@@ -211,16 +231,18 @@ class ApiService extends ChangeNotifier {
                             _isLoggedIn = true;
                             _status = ConnectionStatus.authenticated;
                             _errorMessage = null;
+                            _consecutiveLoginFailures = 0;
                             AppLogger.info("Authentication succeeded: Full parameter mode active");
                         } else {
-                            _resetSession();
-                            if (_settings.autoPasswordless) {
-                                _isLoggedIn = false;
-                                _status = ConnectionStatus.unauthenticatedMode;
-                            } else {
-                                _handleFetchFailure("ログイン認証に失敗しました (パスワードを確認してください)");
-                                return;
+                            // Do NOT call _resetSession() here - preserve CSRF token
+                            // so unauthenticated fetch can still work
+                            _isLoggedIn = false;
+                            _consecutiveLoginFailures++;
+                            _status = ConnectionStatus.unauthenticatedMode;
+                            if (_consecutiveLoginFailures >= 3 && !isLockedOut) {
+                                _errorMessage = "ログイン認証に失敗しました (パスワードを確認してください)";
                             }
+                            AppLogger.warn("Login failed (attempt #$_consecutiveLoginFailures). Falling back to unauthenticated mode.");
                         }
                     }
                 }
@@ -229,11 +251,11 @@ class ApiService extends ChangeNotifier {
                 _status = ConnectionStatus.unauthenticatedMode;
             }
 
-            // 3. Fetch Parameters
+            // 4. Fetch Parameters
             Map<String, dynamic>? params = await _fetchParams();
 
-            // 4. Session recovery if authenticated fetch failed
-            if (params == null && hasPassword) {
+            // 5. Session recovery if authenticated fetch failed
+            if (params == null && _isLoggedIn) {
                 AppLogger.warn("Authenticated fetch failed. Resetting session and retrying login once...");
                 _resetSession();
                 final reInit = await _fetchCsrfToken();
@@ -242,14 +264,26 @@ class ApiService extends ChangeNotifier {
                     if (loginSuccess) {
                         _isLoggedIn = true;
                         params = await _fetchParams();
+                    } else {
+                        _isLoggedIn = false;
+                        // Try unauthenticated fallback
+                        params = await _fetchParams();
                     }
                 }
             }
 
-            // 5. Process successful response
+            // 6. If still no params and we have CSRF, try fresh unauthenticated fetch
+            if (params == null && _csrfToken != null) {
+                _isLoggedIn = false;
+                params = await _fetchParams();
+            }
+
+            // 7. Process successful response
             if (params != null) {
                 _consecutiveErrorCount = 0;
-                _errorMessage = null;
+                if (_isLoggedIn) {
+                    _errorMessage = null;
+                }
 
                 final signal = SignalData.fromApiResponse(
                     params,
@@ -262,7 +296,7 @@ class ApiService extends ChangeNotifier {
                 _currentSignal = signal;
                 _signalHistory.add(signal);
 
-                OverlayService.updateOverlayData(signal, _settings);
+                OverlayService.updateOverlayData(signal, _settings, isLoggedIn: _isLoggedIn);
 
                 if (_signalHistory.length > 600) {
                     _signalHistory.removeRange(0, _signalHistory.length - 600);

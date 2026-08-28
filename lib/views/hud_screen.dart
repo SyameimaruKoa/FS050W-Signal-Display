@@ -102,31 +102,34 @@ class _HudScreenState extends State<HudScreen> {
                                         child: LayoutBuilder(
                                             builder: (context, constraints) {
                                                 final isPortrait = constraints.maxHeight > constraints.maxWidth;
+                                                final isLoggedIn = apiService.isLoggedIn;
                                                 final children = [
                                                     // 5G Gauges
                                                     _buildHudPanel(
                                                         context,
                                                         title: ConnectionModeHelper.getGenerationName(true, notation: notation),
-                                                        bandStr: (signal?.nrBand != null && signal!.nrBand! > 0) ? "n${signal!.nrBand}" : "--",
-                                                        pciStr: (signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--",
+                                                        bandStr: (isLoggedIn && signal?.nrBand != null && signal!.nrBand! > 0) ? "n${signal!.nrBand}" : "--",
+                                                        pciStr: (isLoggedIn && signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--",
                                                         rsrp: signal?.nrRsrp,
-                                                        rsrq: signal?.nrRsrq,
-                                                        sinr: signal?.nrSnr,
+                                                        rsrq: isLoggedIn ? signal?.nrRsrq : null,
+                                                        sinr: isLoggedIn ? signal?.nrSnr : null,
                                                         accentColor: const Color(0xFF00ADB5),
                                                         width: isPortrait ? constraints.maxWidth * 0.85 : (constraints.maxWidth - 48) / 2,
+                                                        isLoggedIn: isLoggedIn,
                                                     ),
                                                     SizedBox(height: isPortrait ? 12 : 0, width: isPortrait ? 0 : 16),
                                                     // 4G Gauges
                                                     _buildHudPanel(
                                                         context,
                                                         title: ConnectionModeHelper.getGenerationName(false, notation: notation),
-                                                        bandStr: (signal?.lteBand != null && signal!.lteBand! > 0) ? "B${signal!.lteBand}" : "--",
-                                                        pciStr: (signal?.ltePci != null && signal!.ltePci! > 0) ? "${signal!.ltePci}" : "--",
+                                                        bandStr: (isLoggedIn && signal?.lteBand != null && signal!.lteBand! > 0) ? "B${signal!.lteBand}" : "--",
+                                                        pciStr: (isLoggedIn && signal?.ltePci != null && signal!.ltePci! > 0) ? "${signal!.ltePci}" : "--",
                                                         rsrp: signal?.lteRsrp,
-                                                        rsrq: signal?.lteRsrq,
-                                                        sinr: signal?.lteSinr,
+                                                        rsrq: isLoggedIn ? signal?.lteRsrq : null,
+                                                        sinr: isLoggedIn ? signal?.lteSinr : null,
                                                         accentColor: const Color(0xFF2196F3),
                                                         width: isPortrait ? constraints.maxWidth * 0.85 : (constraints.maxWidth - 48) / 2,
+                                                        isLoggedIn: isLoggedIn,
                                                     ),
                                                 ];
 
@@ -168,6 +171,7 @@ class _HudScreenState extends State<HudScreen> {
         required double? sinr,
         required Color accentColor,
         required double width,
+        bool isLoggedIn = false,
     }) {
         return Container(
             width: width,

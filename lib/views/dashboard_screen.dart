@@ -544,6 +544,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     Widget _buildCollapsibleDetailsSection(BuildContext context, ApiService apiService, SignalData? signal) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final isAuthenticated = apiService.status == ConnectionStatus.authenticated;
+
+        // 未ログイン時は詳細セル情報を非表示
+        if (!isAuthenticated) {
+            return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                            width: 0.8,
+                        ),
+                    ),
+                    child: Row(
+                        children: [
+                            Icon(Icons.lock_outline, size: 16, color: isDark ? Colors.white38 : Colors.black38),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(
+                                    "詳細セル情報はログイン時のみ表示されます",
+                                    style: TextStyle(
+                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                        fontSize: 12,
+                                        color: isDark ? Colors.white38 : Colors.black38,
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            );
+        }
+
         return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

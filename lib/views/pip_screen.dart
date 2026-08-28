@@ -60,6 +60,7 @@ class PipScreen extends StatelessWidget {
                                         history,
                                         width,
                                         height,
+                                        apiService.isLoggedIn,
                                     ),
                                 ),
                             ],
@@ -152,11 +153,12 @@ class PipScreen extends StatelessWidget {
         List<SignalData> history,
         double width,
         double height,
+        bool isLoggedIn,
     ) {
         final notation = apiService.settings.generationNotation;
         final smooth = apiService.settings.smoothGaugeColor;
         final curve = apiService.settings.smoothGaugeCurve;
-        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth, curve, height);
+        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth, curve, height, isLoggedIn, width);
 
         if (!showGraph) {
             return signalSection;
@@ -180,15 +182,18 @@ class PipScreen extends StatelessWidget {
         bool smoothGaugeColor,
         String smoothGaugeCurve,
         double totalHeight,
+        bool isLoggedIn,
+        double totalWidth,
     ) {
         final is5gActive = signal?.nrRsrp != null && signal!.nrRsrp! < 0;
+        final bool compactRefMetrics = (aspectRatioStr == '16:9' || aspectRatioStr == '4:3') && totalWidth < 320;
 
         switch (aspectRatioStr) {
             case '1:1':
                 if (is5gActive) {
-                    return _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true);
+                    return _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics);
                 } else {
-                    return _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true);
+                    return _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics);
                 }
             case '16:9':
             case '4:3':
@@ -196,9 +201,9 @@ class PipScreen extends StatelessWidget {
                 return Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
+                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                         const SizedBox(width: 3.0),
-                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
+                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                     ],
                 );
             case '9:16':
@@ -208,9 +213,9 @@ class PipScreen extends StatelessWidget {
                 return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
+                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                         const SizedBox(height: 2.0),
-                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve)),
+                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                     ],
                 );
         }
