@@ -227,12 +227,14 @@ class PipScreen extends StatelessWidget {
         bool smoothGaugeColor,
         String smoothGaugeCurve, {
         bool isSingleMode = false,
+        bool isLoggedIn = false,
+        bool compactRefMetrics = false,
     }) {
         final isSub6 = signal?.connectionMode == Fs050wConnectionMode.nr5gSub6;
         final genName = ConnectionModeHelper.getGenerationName(true, notation: notation);
         final titlePrefix = isSub6 ? "$genName+" : genName;
-        final nrBandStr = (signal?.nrBand != null && signal!.nrBand! > 0) ? "n${signal!.nrBand}" : "--";
-        final pciStr = (signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--";
+        final nrBandStr = isLoggedIn && (signal?.nrBand != null && signal!.nrBand! > 0) ? "n${signal!.nrBand}" : "--";
+        final pciStr = isLoggedIn && (signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--";
 
         final fontSz = isSingleMode ? 10.5 : 8.5;
 
@@ -260,7 +262,7 @@ class PipScreen extends StatelessWidget {
                                             fit: BoxFit.scaleDown,
                                             alignment: Alignment.centerLeft,
                                             child: Text(
-                                                "$titlePrefix ($nrBandStr)",
+                                                isLoggedIn ? "$titlePrefix ($nrBandStr)" : titlePrefix,
                                                 style: TextStyle(
                                                     fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: fontSz + 1.0,
@@ -271,25 +273,27 @@ class PipScreen extends StatelessWidget {
                                         ),
                                     ),
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                    flex: 2,
-                                    child: Align(
-                                        alignment: Alignment.centerRight,
-                                        child: FittedBox(
-                                            fit: BoxFit.scaleDown,
+                                if (isLoggedIn) ...[
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                        flex: 2,
+                                        child: Align(
                                             alignment: Alignment.centerRight,
-                                            child: Text(
-                                                "PCI: $pciStr",
-                                                style: TextStyle(
-                                                    fontFamily: 'monospace',
-                                                    fontSize: fontSz + 0.5,
-                                                    color: Colors.white70,
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerRight,
+                                                child: Text(
+                                                    "PCI: $pciStr",
+                                                    style: TextStyle(
+                                                        fontFamily: 'monospace',
+                                                        fontSize: fontSz + 0.5,
+                                                        color: Colors.white70,
+                                                    ),
                                                 ),
                                             ),
                                         ),
                                     ),
-                                ),
+                                ],
                             ],
                         ),
                     ),
@@ -309,20 +313,33 @@ class PipScreen extends StatelessWidget {
                             smoothGaugeCurve: smoothGaugeCurve,
                         ),
                     ),
-                    const SizedBox(height: 1.0),
-                    Expanded(
-                        flex: 2,
-                        child: _buildRefMetricsRow(
-                            label1: "RQ",
-                            value1: signal?.nrRsrq,
-                            unit1: "dB",
-                            label2: "SNR",
-                            value2: signal?.nrSnr,
-                            unit2: "dB",
-                            fontSize: fontSz,
-                            accentColor: const Color(0xFF00ADB5),
+                    if (isLoggedIn) ...[
+                        const SizedBox(height: 1.0),
+                        Expanded(
+                            flex: compactRefMetrics ? 3 : 2,
+                            child: compactRefMetrics
+                                ? _buildCompactRefMetrics(
+                                    label1: "RQ",
+                                    value1: signal?.nrRsrq,
+                                    unit1: "dB",
+                                    label2: "SNR",
+                                    value2: signal?.nrSnr,
+                                    unit2: "dB",
+                                    fontSize: fontSz,
+                                    accentColor: const Color(0xFF00ADB5),
+                                )
+                                : _buildRefMetricsRow(
+                                    label1: "RQ",
+                                    value1: signal?.nrRsrq,
+                                    unit1: "dB",
+                                    label2: "SNR",
+                                    value2: signal?.nrSnr,
+                                    unit2: "dB",
+                                    fontSize: fontSz,
+                                    accentColor: const Color(0xFF00ADB5),
+                                ),
                         ),
-                    ),
+                    ],
                 ],
             ),
         );
@@ -334,10 +351,12 @@ class PipScreen extends StatelessWidget {
         bool smoothGaugeColor,
         String smoothGaugeCurve, {
         bool isSingleMode = false,
+        bool isLoggedIn = false,
+        bool compactRefMetrics = false,
     }) {
         final genName = ConnectionModeHelper.getGenerationName(false, notation: notation);
-        final lteBandStr = (signal?.lteBand != null && signal!.lteBand! > 0) ? "B${signal!.lteBand}" : "--";
-        final pciStr = (signal?.ltePci != null && signal!.ltePci! > 0) ? "${signal!.ltePci}" : "--";
+        final lteBandStr = isLoggedIn && (signal?.lteBand != null && signal!.lteBand! > 0) ? "B${signal!.lteBand}" : "--";
+        final pciStr = isLoggedIn && (signal?.ltePci != null && signal!.ltePci! > 0) ? "${signal!.ltePci}" : "--";
 
         final fontSz = isSingleMode ? 10.5 : 8.5;
 
@@ -365,7 +384,7 @@ class PipScreen extends StatelessWidget {
                                             fit: BoxFit.scaleDown,
                                             alignment: Alignment.centerLeft,
                                             child: Text(
-                                                "$genName ($lteBandStr)",
+                                                isLoggedIn ? "$genName ($lteBandStr)" : genName,
                                                 style: TextStyle(
                                                     fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: fontSz + 1.0,
@@ -376,25 +395,27 @@ class PipScreen extends StatelessWidget {
                                         ),
                                     ),
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                    flex: 2,
-                                    child: Align(
-                                        alignment: Alignment.centerRight,
-                                        child: FittedBox(
-                                            fit: BoxFit.scaleDown,
+                                if (isLoggedIn) ...[
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                        flex: 2,
+                                        child: Align(
                                             alignment: Alignment.centerRight,
-                                            child: Text(
-                                                "PCI: $pciStr",
-                                                style: TextStyle(
-                                                    fontFamily: 'monospace',
-                                                    fontSize: fontSz + 0.5,
-                                                    color: Colors.white70,
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerRight,
+                                                child: Text(
+                                                    "PCI: $pciStr",
+                                                    style: TextStyle(
+                                                        fontFamily: 'monospace',
+                                                        fontSize: fontSz + 0.5,
+                                                        color: Colors.white70,
+                                                    ),
                                                 ),
                                             ),
                                         ),
                                     ),
-                                ),
+                                ],
                             ],
                         ),
                     ),
@@ -414,22 +435,74 @@ class PipScreen extends StatelessWidget {
                             smoothGaugeCurve: smoothGaugeCurve,
                         ),
                     ),
-                    const SizedBox(height: 1.0),
-                    Expanded(
-                        flex: 2,
-                        child: _buildRefMetricsRow(
-                            label1: "RQ",
-                            value1: signal?.lteRsrq,
-                            unit1: "dB",
-                            label2: "SINR",
-                            value2: signal?.lteSinr,
-                            unit2: "dB",
-                            fontSize: fontSz,
-                            accentColor: const Color(0xFF2196F3),
+                    if (isLoggedIn) ...[
+                        const SizedBox(height: 1.0),
+                        Expanded(
+                            flex: compactRefMetrics ? 3 : 2,
+                            child: compactRefMetrics
+                                ? _buildCompactRefMetrics(
+                                    label1: "RQ",
+                                    value1: signal?.lteRsrq,
+                                    unit1: "dB",
+                                    label2: "SINR",
+                                    value2: signal?.lteSinr,
+                                    unit2: "dB",
+                                    fontSize: fontSz,
+                                    accentColor: const Color(0xFF2196F3),
+                                )
+                                : _buildRefMetricsRow(
+                                    label1: "RQ",
+                                    value1: signal?.lteRsrq,
+                                    unit1: "dB",
+                                    label2: "SINR",
+                                    value2: signal?.lteSinr,
+                                    unit2: "dB",
+                                    fontSize: fontSz,
+                                    accentColor: const Color(0xFF2196F3),
+                                ),
                         ),
-                    ),
+                    ],
                 ],
             ),
+        );
+    }
+
+    /// RQ/SNR を縦積み (0.5行×1列) で表示するコンパクトレイアウト
+    Widget _buildCompactRefMetrics({
+        required String label1,
+        required double? value1,
+        required String unit1,
+        required String label2,
+        required double? value2,
+        required String unit2,
+        required double fontSize,
+        required Color accentColor,
+    }) {
+        final level1 = label1 == "RQ" ? ColorGauge.rateRsrq(value1) : ColorGauge.rateSinr(value1);
+        final level2 = (label2 == "SNR" || label2 == "SINR") ? ColorGauge.rateSinr(value2) : ColorGauge.rateRsrq(value2);
+
+        return Column(
+            children: [
+                Expanded(
+                    child: _buildMiniRefBox(
+                        label: label1,
+                        value: value1,
+                        unit: unit1,
+                        level: level1,
+                        fontSize: fontSize - 0.5,
+                    ),
+                ),
+                const SizedBox(height: 1.0),
+                Expanded(
+                    child: _buildMiniRefBox(
+                        label: label2,
+                        value: value2,
+                        unit: unit2,
+                        level: level2,
+                        fontSize: fontSize - 0.5,
+                    ),
+                ),
+            ],
         );
     }
 
