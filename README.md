@@ -2,8 +2,7 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue.svg)](https://flutter.dev)
 [![Android](<https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-green.svg>)](https://www.android.com)
-[![Version](https://img.shields.io/badge/Version-1.5.0-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Display/releases)
-[![Version](https://img.shields.io/badge/Version-2.0.0-orange.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Display/releases)
+[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Display/releases)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 富士ソフト製 5G/4G モバイルルーター **「+F FS050W」** の電波状態・セル情報・バッテリー詳細・ハードウェア統計をリアルタイムに取得・可視化・常駐監視する Android アプリケーションです。
@@ -92,7 +91,6 @@
 
 ## 🛠 動作環境
 
-**バージョン:** v1.5.0 (Release)  
 **バージョン:** v2.0.0 (Release)  
 **ターゲットOS:** Android 8.0 以上 (API 26+)  
 **対応アーキテクチャ:** arm64-v8a, armeabi-v7a, x86_64

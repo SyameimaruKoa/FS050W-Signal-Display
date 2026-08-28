@@ -480,9 +480,11 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     ),
                                     if (signal?.isLongLifeCharging == true && isCharging) ...[
                                         const SizedBox(height: 2),
-                                        const Text(
-                                            "※ いたわり充電有効中 (70%上限 / 2800mAh で計算)",
-                                            style: TextStyle(fontSize: 10.5, color: Color(0xFF00E5FF)),
+                                        Text(
+                                            signal?.batteryCapacity != null
+                                                ? "※ いたわり充電有効中 (70%上限 / ${(signal!.batteryCapacity! * 0.70).round()}mAh で計算)"
+                                                : "※ いたわり充電有効中 (70%上限で計算)",
+                                            style: const TextStyle(fontSize: 10.5, color: Color(0xFF00E5FF)),
                                         ),
                                     ],
                                 ],
@@ -502,11 +504,11 @@ class BatterySystemDetailSheet extends StatelessWidget {
         final temp = signal?.batteryTemperature;
         final volt = signal?.batteryVoltage;
         final curr = signal?.batteryCurrent;
-        final cap = signal?.batteryCapacity ?? 4000;
+        final cap = signal?.batteryCapacity;
         final chargeStatus = signal?.batteryChargeStatus ?? (signal?.isCharging == true ? "charging" : "discharging");
 
-        // Current mAh calculation
-        final currentMah = rawPercent != null ? ((cap * rawPercent) / 100).round() : null;
+        // Current mAh calculation (dynamic from API, not hardcoded)
+        final currentMah = (cap != null && rawPercent != null) ? ((cap * rawPercent) / 100).round() : null;
 
         return Card(
             color: isDark ? const Color(0xFF252525) : Colors.grey.shade50,
@@ -601,7 +603,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         child: _buildMetricTile(
                                             label: "電流 (入出力)",
                                             value: curr != null ? "${curr > 0 ? '+$curr' : curr} mA" : "--",
-                                            subtitle: currentMah != null ? "残容量: $currentMah / $cap mAh" : null,
+                                            subtitle: (currentMah != null && cap != null) ? "残容量: $currentMah / $cap mAh" : null,
                                             color: curr != null && curr > 0 ? Colors.amberAccent : null,
                                             icon: Icons.speed,
                                         ),

@@ -41,10 +41,6 @@ class SignalData {
     final int? cpuUsagePercent;
     final int? processCount;
 
-    // CA
-    final bool hasCa;
-    final List<String> caBands;
-
     // Computed Connection Mode
     final Fs050wConnectionMode connectionMode;
     final bool isSa;
@@ -83,8 +79,6 @@ class SignalData {
         this.freeRamBytes,
         this.cpuUsagePercent,
         this.processCount,
-        this.hasCa = false,
-        this.caBands = const [],
         required this.connectionMode,
         this.isSa = false,
         this.handoverDescription,
@@ -95,7 +89,7 @@ class SignalData {
     int? get scaledBatteryPercent {
         if (batteryPercent == null) return null;
         if (isLongLifeCharging) {
-            return ((batteryPercent! / 70.0) * 100).clamp(0, 100).round();
+            return ((batteryPercent! / 70.0) * 100).round();
         }
         return batteryPercent;
     }
@@ -112,34 +106,48 @@ class SignalData {
     String get estimatedTimeDisplay {
         if (!isBatteryPresent || batteryPercent == null) return "--";
 
-        final totalCap = batteryCapacity ?? 4000;
-        final targetCap = isLongLifeCharging ? (totalCap * 0.70).round() : totalCap;
-        final currentMah = (totalCap * (batteryPercent! / 100.0)).round();
+        final totalCap = batteryCapacity;
+        final current = batteryCurrent;
+
+        if (totalCap != null && current != null && current.abs() > 30) {
+            final targetPercent = isLongLifeCharging ? 70 : 100;
+            if (isCharging) {
+                if (batteryPercent! >= targetPercent) {
+                    return "充電完了";
+                }
+                final remainingMah = (totalCap * ((targetPercent - batteryPercent!) / 100.0)).round();
+                if (current > 0) {
+                    final totalMinutes = ((remainingMah / current) * 60).round();
+                    if (totalMinutes <= 0) return "充電完了";
+                    final hours = totalMinutes ~/ 60;
+                    final mins = totalMinutes % 60;
+                    if (hours > 0) {
+                        return "約 ${hours}時間${mins}分 (充電完了まで)";
+                    }
+                    return "約 ${mins}分 (充電完了まで)";
+                }
+            } else {
+                final remainingMah = (totalCap * (batteryPercent! / 100.0)).round();
+                final dischargeMa = current.abs();
+                final totalMinutes = ((remainingMah / dischargeMa) * 60).round();
+                if (totalMinutes <= 0) return "--";
+                final hours = totalMinutes ~/ 60;
+                final mins = totalMinutes % 60;
+                if (hours > 0) {
+                    return "約 ${hours}時間${mins}分 (残り使用予想)";
+                }
+                return "約 ${mins}分 (残り使用予想)";
+            }
+        }
 
         if (isCharging) {
-            if (currentMah >= targetCap) {
+            final targetPercent = isLongLifeCharging ? 70 : 100;
+            if (batteryPercent! >= targetPercent) {
                 return "充電完了";
             }
-            final deltaMah = targetCap - currentMah;
-            final currentMa = (batteryCurrent != null && batteryCurrent! > 0) ? batteryCurrent! : 1500;
-            final totalMinutes = ((deltaMah / currentMa) * 60).round();
-            if (totalMinutes <= 0) return "充電完了";
-            final hours = totalMinutes ~/ 60;
-            final mins = totalMinutes % 60;
-            if (hours > 0) {
-                return "約 ${hours}時間${mins}分 (充電完了まで)";
-            }
-            return "約 ${mins}分 (充電完了まで)";
+            return "充電中...";
         } else {
-            final dischargeMa = (batteryCurrent != null && batteryCurrent! < 0) ? batteryCurrent!.abs() : 450;
-            final totalMinutes = ((currentMah / dischargeMa) * 60).round();
-            if (totalMinutes <= 0) return "--";
-            final hours = totalMinutes ~/ 60;
-            final mins = totalMinutes % 60;
-            if (hours > 0) {
-                return "約 ${hours}時間${mins}分 (残り使用予想)";
-            }
-            return "約 ${mins}分 (残り使用予想)";
+            return "バッテリー駆動中";
         }
     }
 
@@ -171,8 +179,6 @@ class SignalData {
     factory SignalData.fromApiResponse(
         Map<String, dynamic> json, {
         Map<String, dynamic>? deviceStateJson,
-        bool hasCa = false,
-        List<String> caBands = const [],
         SignalData? previousData,
         bool adjust5gSnr = true,
     }) {
@@ -293,7 +299,8 @@ class SignalData {
             ? (previousData?.isBatteryPresent ?? true)
             : (rawExist == 'present' || rawExist == '1');
 
-        final int? rawLevel = _parseInt(rawMap['device_battery_level']) ?? previousData?.batteryLevel;
+        final int? rawLevelPercent = _parseInt(rawMap['device_battery_level_percent']) ?? _parseInt(rawMap['battery_percent']);
+        final int? rawLevel = _parseInt(rawMap['device_battery_level']);
         final int? rawCap = _parseInt(rawMap['device_battery_capacity']) ?? previousData?.batteryCapacity;
         final int? rawCurr = _parseInt(rawMap['device_battery_current']) ?? previousData?.batteryCurrent;
         final double? rawTemp = _parseDouble(rawMap['device_battery_temperature']) ?? previousData?.batteryTemperature;
@@ -303,13 +310,9 @@ class SignalData {
         final bool isLongLife = rawLongLife == 'enable' || rawLongLife == '1';
 
         // Calculate batteryPercent
-        int? batteryPercent = _parseInt(rawMap['battery_percent']);
-        if (batteryPercent == null && rawLevel != null) {
-            if (rawLevel <= 4) {
-                batteryPercent = (rawLevel * 25).clamp(0, 100);
-            } else {
-                batteryPercent = rawLevel.clamp(0, 100);
-            }
+        int? batteryPercent = rawLevelPercent;
+        if (batteryPercent == null && rawLevel != null && rawLevel > 4) {
+            batteryPercent = rawLevel.clamp(0, 100);
         }
         batteryPercent ??= previousData?.batteryPercent;
 
@@ -327,7 +330,7 @@ class SignalData {
         final int? cpuUsage = _parseInt(devState?['cpuusage']) ?? previousData?.cpuUsagePercent;
         final int? procs = _parseInt(devState?['procs']) ?? previousData?.processCount;
 
-        // Mode determination
+        // Mode determination (CA is not supported by hardware API)
         final bool isNrActive = (nrRsrp != null && nrRsrp < 0) || (nrBand != null && nrBand > 0);
         final bool isSub6 = FrequencyCalculator.isSub6Band(nrBand);
 
@@ -335,12 +338,12 @@ class SignalData {
         if (isSa) {
             mode = isSub6 ? Fs050wConnectionMode.nr5gSub6 : Fs050wConnectionMode.nr5g;
         } else if (sysmode == 'lte') {
-            mode = hasCa ? Fs050wConnectionMode.lteCa : Fs050wConnectionMode.lte;
+            mode = Fs050wConnectionMode.lte;
         } else if (sysmode == 'nsa') {
             if (isNrActive) {
                 mode = isSub6 ? Fs050wConnectionMode.nr5gSub6 : Fs050wConnectionMode.nr5g;
             } else {
-                mode = hasCa ? Fs050wConnectionMode.nsaReadyCa : Fs050wConnectionMode.nsaReady;
+                mode = Fs050wConnectionMode.nsaReady;
             }
         } else {
             mode = Fs050wConnectionMode.lte;
@@ -403,8 +406,6 @@ class SignalData {
             freeRamBytes: freeRam,
             cpuUsagePercent: cpuUsage,
             processCount: procs,
-            hasCa: hasCa,
-            caBands: caBands,
             connectionMode: mode,
             isSa: isSa,
             handoverDescription: handover,

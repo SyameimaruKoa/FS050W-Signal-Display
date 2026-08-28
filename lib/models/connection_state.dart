@@ -1,10 +1,8 @@
 enum Fs050wConnectionMode {
-    lte,           // ① 4G LTE (CA無) -> [4G]
-    lteCa,         // ② 4G+ LTE (CA有) -> [4G+]
-    nsaReady,      // ③ 4G Ready (5G NSA待機 / CA無) -> [4GN]
-    nsaReadyCa,    // ④ 4G+ Ready (5G NSA待機 / CA有) -> [4GN+]
-    nr5g,          // ⑤ 5G NR (転用/通常5G/SA) -> [5G]
-    nr5gSub6,      // ⑥ 5G+ NR+ (sub6高速5G/SA) -> [5G+]
+    lte,           // ① 4G LTE -> [4G] / [LTE]
+    nsaReady,      // ② 4G Ready (5G NSA待機) -> [e4G] / [eLTE]
+    nr5g,          // ③ 5G NR (転用/通常5G/SA) -> [5G] / [NR]
+    nr5gSub6,      // ④ 5G+ NR+ (sub6高速5G/SA) -> [5G+] / [NR+]
     disconnected,  // 未接続
 }
 
@@ -14,12 +12,8 @@ class ConnectionModeHelper {
         switch (mode) {
             case Fs050wConnectionMode.lte:
                 return isLteNr ? "LTE" : "4G";
-            case Fs050wConnectionMode.lteCa:
-                return isLteNr ? "LTE+" : "4G+";
             case Fs050wConnectionMode.nsaReady:
                 return isLteNr ? "eLTE" : "e4G";
-            case Fs050wConnectionMode.nsaReadyCa:
-                return isLteNr ? "eLTE+" : "e4G+";
             case Fs050wConnectionMode.nr5g:
                 return isLteNr ? "NR" : "5G";
             case Fs050wConnectionMode.nr5gSub6:
@@ -34,12 +28,8 @@ class ConnectionModeHelper {
         switch (mode) {
             case Fs050wConnectionMode.lte:
                 return isLteNr ? "LTE" : "4G";
-            case Fs050wConnectionMode.lteCa:
-                return isLteNr ? "LTE+" : "4G+";
             case Fs050wConnectionMode.nsaReady:
                 return isLteNr ? "eLTE" : "e4G";
-            case Fs050wConnectionMode.nsaReadyCa:
-                return isLteNr ? "eLTE+" : "e4G+";
             case Fs050wConnectionMode.nr5g:
                 final label = isLteNr ? "NR" : "5G";
                 return isSa ? "$label SA" : label;
@@ -56,10 +46,7 @@ class ConnectionModeHelper {
         switch (mode) {
             case Fs050wConnectionMode.lte:
                 return isLteNr ? "LTE" : "4G";
-            case Fs050wConnectionMode.lteCa:
-                return isLteNr ? "LTE+" : "4G+";
             case Fs050wConnectionMode.nsaReady:
-            case Fs050wConnectionMode.nsaReadyCa:
             case Fs050wConnectionMode.nr5g:
             case Fs050wConnectionMode.nr5gSub6:
                 return isLteNr ? "LTE Anchor Cell" : "4G Anchor Cell";
@@ -76,7 +63,6 @@ class ConnectionModeHelper {
             case Fs050wConnectionMode.nr5g:
                 return isLteNr ? "NR" : "5G";
             case Fs050wConnectionMode.nsaReady:
-            case Fs050wConnectionMode.nsaReadyCa:
                 return isLteNr ? "NR (待機中)" : "5G (待機中)";
             default:
                 return isLteNr ? "NR" : "5G";
