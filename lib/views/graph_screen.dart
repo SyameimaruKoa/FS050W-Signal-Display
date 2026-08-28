@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 import '../utils/color_gauge.dart';
+import 'widgets/fs050w_app_bar.dart';
 
 class GraphScreen extends StatefulWidget {
     const GraphScreen({super.key});
@@ -46,12 +47,7 @@ class _GraphScreenState extends State<GraphScreen> {
         }
 
         return Scaffold(
-            appBar: AppBar(
-                title: const Text(
-                    "📊 リアルタイム同期グラフ",
-                    style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-            ),
+            appBar: const Fs050wAppBar(),
             body: Column(
                 children: [
                     _buildSpanSelector(isDark),

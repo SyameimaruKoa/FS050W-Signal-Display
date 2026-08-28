@@ -100,28 +100,48 @@ class PipScreen extends StatelessWidget {
                             child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
-                                    decoration: BoxDecoration(
-                                        color: isConnecting ? Colors.amber.withOpacity(0.25) : const Color(0xFF00E5FF).withOpacity(0.25),
-                                        borderRadius: BorderRadius.circular(2.5),
-                                    ),
-                                    child: Text(
-                                        isConnecting ? "[ 接続中... ]" : "[ $modeBadge ]",
-                                        style: TextStyle(
-                                            fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
-                                            fontSize: is1to1 ? 11.0 : 9.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: isConnecting ? Colors.amberAccent : const Color(0xFF00E5FF),
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
+                                            decoration: BoxDecoration(
+                                                color: isConnecting ? Colors.amber.withOpacity(0.25) : const Color(0xFF00E5FF).withOpacity(0.25),
+                                                borderRadius: BorderRadius.circular(2.5),
+                                            ),
+                                            child: Text(
+                                                isConnecting ? "[ 接続中... ]" : "[ $modeBadge ]",
+                                                style: TextStyle(
+                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                                    fontSize: is1to1 ? 11.0 : 9.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isConnecting ? Colors.amberAccent : const Color(0xFF00E5FF),
+                                                ),
+                                            ),
                                         ),
-                                    ),
+                                        if (signal?.batteryPercent != null || signal?.batteryTemperature != null) ...[
+                                            const SizedBox(width: 4),
+                                            Text(
+                                                "🔋${signal?.batteryPercent != null ? '${signal!.batteryPercent}%' : ''}${signal?.isCharging == true ? '⚡' : ''} ${signal?.batteryTemperature != null ? '${signal!.batteryTemperature!.toStringAsFixed(0)}℃' : ''}",
+                                                style: TextStyle(
+                                                    fontSize: is1to1 ? 10.0 : 8.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: (apiService.settings.batteryTempWarningEnabled &&
+                                                            (signal?.batteryTemperature ?? 0) >= apiService.settings.batteryTempWarningThreshold)
+                                                        ? Colors.redAccent
+                                                        : Colors.white70,
+                                                    fontFamily: 'monospace',
+                                                ),
+                                            ),
+                                        ],
+                                    ],
                                 ),
                             ),
                         ),
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                        flex: 4,
+                        flex: 2,
                         child: Align(
                             alignment: Alignment.centerRight,
                             child: FittedBox(

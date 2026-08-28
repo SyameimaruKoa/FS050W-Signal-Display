@@ -73,6 +73,12 @@ class OverlayService {
                 'nrRsrp': signal?.nrRsrp,
                 'nrRsrq': isLoggedIn ? signal?.nrRsrq : null,
                 'nrSnr': isLoggedIn ? signal?.nrSnr : null,
+                'batteryPercent': signal?.batteryPercent,
+                'scaledBatteryPercent': signal?.scaledBatteryPercent,
+                'isCharging': signal?.isCharging ?? false,
+                'isBatteryPresent': signal?.isBatteryPresent ?? true,
+                'batteryTemperature': signal?.batteryTemperature,
+                'isTempWarning': settings.batteryTempWarningEnabled && ((signal?.batteryTemperature ?? 0) >= settings.batteryTempWarningThreshold),
             };
 
             await _channel.invokeMethod('updateOverlayData', {

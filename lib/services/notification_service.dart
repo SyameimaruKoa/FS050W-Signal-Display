@@ -56,10 +56,34 @@ class NotificationService {
         // 3. Critical low signal trigger (only on transition to critical <= -115 dBm)
         final isCrit = (signal.lteRsrp != null && signal.lteRsrp! <= -115.0) ||
             (signal.nrRsrp != null && signal.nrRsrp! <= -115.0);
-        if (isCrit && !_wasCriticalSignal) {
-            triggerCriticalSignalEvent(settings);
+        // 4. Battery High Temperature Warning trigger
+        if (settings.batteryTempWarningEnabled && signal.batteryTemperature != null) {
+            final isOverheated = signal.batteryTemperature! >= settings.batteryTempWarningThreshold;
+            if (isOverheated && !_wasOverheated) {
+                triggerBatteryTempEvent(settings);
+            }
+            _wasOverheated = isOverheated;
+        } else {
+            _wasOverheated = false;
         }
-        _wasCriticalSignal = isCrit;
+    }
+
+    static bool _wasOverheated = false;
+
+    static Future<void> triggerBatteryTempEvent(AppSettings settings) async {
+        if (settings.batteryTempWarningEnabled) {
+            OverlayService.triggerVibration("battery_temp");
+            HapticFeedback.heavyImpact();
+            Future.delayed(const Duration(milliseconds: 200), () {
+                HapticFeedback.heavyImpact();
+            });
+            Future.delayed(const Duration(milliseconds: 400), () {
+                HapticFeedback.heavyImpact();
+            });
+        }
+        if (settings.eventLampEnabled) {
+            OverlayService.triggerLamp("battery_temp", settings);
+        }
     }
 
     static Future<void> trigger5gSub6Event(AppSettings settings) async {
