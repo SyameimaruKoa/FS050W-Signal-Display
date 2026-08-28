@@ -321,16 +321,20 @@ class ApiService extends ChangeNotifier {
     }
 
     Future<bool> _fetchCsrfToken() async {
-        try {
-            final uri = Uri.parse("http://${_settings.routerIp}/goform/x_csrf_token");
-            final response = await _client.get(uri).timeout(const Duration(seconds: 4));
-            if (response.statusCode == 200) {
-                _updateHeadersFromResponse(response);
-                AppLogger.debug("CSRF token fetched successfully: ${_csrfToken != null}");
-                return _csrfToken != null && _sessionCookie != null;
+        for (final endpoint in ['/goform/x_csrf_token', '/public/x_csrf_token']) {
+            try {
+                final uri = Uri.parse("http://${_settings.routerIp}$endpoint");
+                final response = await _client.get(uri).timeout(const Duration(seconds: 4));
+                if (response.statusCode == 200) {
+                    _updateHeadersFromResponse(response);
+                    if (_csrfToken != null && _sessionCookie != null) {
+                        AppLogger.debug("CSRF token fetched successfully via $endpoint");
+                        return true;
+                    }
+                }
+            } catch (e) {
+                AppLogger.warn("Failed to reach $endpoint: $e");
             }
-        } catch (e) {
-            AppLogger.warn("Failed to reach x_csrf_token: $e");
         }
         return false;
     }
@@ -417,9 +421,9 @@ class ApiService extends ChangeNotifier {
         'mnet_endc_snr',
         'mnet_endc_rsrq',
         'mnet_sysmode',
-        'battery_percent',
-        'battery_charging',
+        'mnet_sig_level_num',
         'mnet_operator_name',
+        'device_battery_level_percent',
         'device_battery_exist',
         'device_battery_level',
         'device_battery_capacity',
@@ -428,6 +432,8 @@ class ApiService extends ChangeNotifier {
         'device_battery_voltage',
         'device_battery_charge_status',
         'device_charge_long_life',
+        'battery_percent',
+        'battery_charging',
     ];
 
     Future<Map<String, dynamic>?> _fetchDeviceState() async {
@@ -484,25 +490,27 @@ class ApiService extends ChangeNotifier {
             }
         }
 
-        // 2. Unauthenticated mode (/goform/get_mgdb_params)
-        final uri = Uri.parse("http://${_settings.routerIp}/goform/get_mgdb_params");
-        final headers = {
-            'Content-Type': 'application/json',
-            if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
-            if (_sessionCookie != null) 'Cookie': _sessionCookie!,
-        };
+        // 2. Unauthenticated mode: try /public/get_mgdb_params and /goform/get_mgdb_params
+        for (final endpoint in ['/public/get_mgdb_params', '/goform/get_mgdb_params', '/action/get_mgdb_params']) {
+            final uri = Uri.parse("http://${_settings.routerIp}$endpoint");
+            final headers = {
+                'Content-Type': 'application/json',
+                if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
+                if (_sessionCookie != null) 'Cookie': _sessionCookie!,
+            };
 
-        try {
-            final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 4));
-            _updateHeadersFromResponse(response);
-            if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
-                final dynamic data = jsonDecode(response.body);
-                if (data is Map<String, dynamic> && data['retcode'] == 0) {
-                    return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
+            try {
+                final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 4));
+                _updateHeadersFromResponse(response);
+                if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
+                    final dynamic data = jsonDecode(response.body);
+                    if (data is Map<String, dynamic> && data['retcode'] == 0) {
+                        return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
+                    }
                 }
+            } catch (e) {
+                AppLogger.warn("Network error on $endpoint: $e");
             }
-        } catch (e) {
-            AppLogger.warn("Network error on /goform/get_mgdb_params: $e");
         }
         return null;
     }

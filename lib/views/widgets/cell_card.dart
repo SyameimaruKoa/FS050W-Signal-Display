@@ -84,8 +84,8 @@ class CellCard extends StatelessWidget {
         }
 
         final mode = signal.connectionMode;
-        final isNrHidden = (mode == Fs050wConnectionMode.lte || mode == Fs050wConnectionMode.lteCa);
-        final isStandby = (mode == Fs050wConnectionMode.nsaReady || mode == Fs050wConnectionMode.nsaReadyCa);
+        final isNrHidden = mode == Fs050wConnectionMode.lte;
+        final isStandby = mode == Fs050wConnectionMode.nsaReady;
 
         if (isNrHidden) {
             return const SizedBox.shrink();
@@ -329,18 +329,6 @@ class CellCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                     ],
-                    if (signal.hasCa)
-                        Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                                color: Colors.blueAccent.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                                "CA 有効",
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueAccent),
-                            ),
-                        ),
                 ],
             ),
             children: [

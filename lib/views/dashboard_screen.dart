@@ -59,24 +59,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             apiService.status == ConnectionStatus.unauthenticatedMode;
         final isConnecting = apiService.status == ConnectionStatus.connecting;
 
-        final statusColor = isConnected
-            ? Colors.greenAccent
-            : (isConnecting ? Colors.orangeAccent : Colors.redAccent);
-
-        final statusText = isConnected
-            ? "🟢 接続中: ${apiService.settings.routerIp}"
-            : (isConnecting ? "🟡 接続試行中... (${apiService.settings.routerIp})" : "🔴 未接続 / エラー");
-
+        final statusColor = isConnected ? const Color(0xFF00E676) : Colors.redAccent;
+        final statusText = isConnected ? "接続中: ${apiService.settings.routerIp}" : "未接続";
         final operatorName = signal?.operatorName ?? "--";
-        final hasBattery = signal?.batteryPercent != null;
-        final batteryText = hasBattery
-            ? "🔋 ${signal!.batteryPercent}%${signal.isCharging ? ' ⚡' : ''}"
-            : null;
 
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
-        final modeBadge = isConnecting
-            ? "接続中..."
-            : ConnectionModeHelper.getIconBadgeText(mode, notation: apiService.settings.generationNotation);
         final uiMode = ConnectionModeHelper.getUiModeText(
             mode,
             isSa: signal?.isSa ?? false,
@@ -118,27 +105,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                 ],
                             ),
-                            Row(
-                                children: [
-                                    Text(
-                                        operatorName,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.white : Colors.black87,
-                                        ),
-                                    ),
-                                    if (batteryText != null) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                            batteryText,
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color: isDark ? Colors.white70 : Colors.black54,
-                                            ),
-                                        ),
-                                    ],
-                                ],
+                            Text(
+                                operatorName,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                ),
                             ),
                         ],
                     ),
@@ -164,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                        isConnecting ? "[ 接続中... ]" : "[ $modeBadge ] $uiMode",
+                                        isConnecting ? "接続中..." : uiMode,
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
@@ -199,8 +172,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final mode = signal?.connectionMode ?? Fs050wConnectionMode.disconnected;
 
         final is5gSub6 = mode == Fs050wConnectionMode.nr5gSub6;
-        final is5gStandby = (mode == Fs050wConnectionMode.nsaReady || mode == Fs050wConnectionMode.nsaReadyCa);
-        final is4gOnly = (mode == Fs050wConnectionMode.lte || mode == Fs050wConnectionMode.lteCa);
+        final is5gStandby = mode == Fs050wConnectionMode.nsaReady;
+        final is4gOnly = mode == Fs050wConnectionMode.lte;
 
         final nrName = ConnectionModeHelper.getGenerationName(true, notation: notation);
         final lteName = ConnectionModeHelper.getGenerationName(false, notation: notation);
@@ -283,7 +256,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 );
                                 final p4g = _buildRsrpOverviewPanel(
                                     context,
-                                    title: signal?.hasCa == true ? "$lteName+ (CA)" : lteName,
+                                    title: lteName,
                                     bandStr: lteBandStr,
                                     rsrp: signal?.lteRsrp,
                                     is5g: false,

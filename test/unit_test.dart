@@ -305,50 +305,55 @@ void main() {
     });
 
     group('Official FS050W Battery & Hardware Parsing Tests', () {
-        test('Battery metrics parsing from get_mgdb_params', () {
+        test('Battery metrics parsing from get_mgdb_params with device_battery_level_percent', () {
             final json = {
                 'device_battery_exist': 'present',
-                'device_battery_level': '70',
+                'device_battery_level_percent': '72',
+                'device_battery_level': '4',
                 'device_battery_capacity': '4000',
-                'device_battery_current': '1250',
-                'device_battery_temperature': '38.5',
-                'device_battery_voltage': '4150',
-                'device_battery_charge_status': 'charging',
-                'device_charge_long_life': 'disable',
-            };
-
-            final signal = SignalData.fromApiResponse(json);
-            expect(signal.isBatteryPresent, isTrue);
-            expect(signal.batteryPercent, equals(70));
-            expect(signal.batteryCapacity, equals(4000));
-            expect(signal.batteryCurrent, equals(1250));
-            expect(signal.batteryTemperature, equals(38.5));
-            expect(signal.batteryVoltage, equals(4150.0));
-            expect(signal.isCharging, isTrue);
-            expect(signal.isLongLifeCharging, isFalse);
-            expect(signal.batteryPercentDisplay, equals("70%"));
-        });
-
-        test('Long Life 70% Care Mode scaling (70% displayed as 100%)', () {
-            final json = {
-                'device_battery_exist': 'present',
-                'device_battery_level': '70',
-                'device_battery_capacity': '4000',
-                'device_battery_charge_status': 'charging',
+                'device_battery_current': '-245',
+                'device_battery_temperature': '34.0',
+                'device_battery_voltage': '4012',
+                'device_battery_charge_status': 'discharging',
                 'device_charge_long_life': 'enable',
             };
 
             final signal = SignalData.fromApiResponse(json);
+            expect(signal.isBatteryPresent, isTrue);
+            expect(signal.batteryPercent, equals(72));
+            expect(signal.batteryCapacity, equals(4000));
+            expect(signal.batteryCurrent, equals(-245));
+            expect(signal.batteryTemperature, equals(34.0));
+            expect(signal.batteryVoltage, equals(4012.0));
+            expect(signal.isCharging, isFalse);
             expect(signal.isLongLifeCharging, isTrue);
-            expect(signal.scaledBatteryPercent, equals(100));
-            expect(signal.batteryPercentDisplay, equals("100% (実70%)"));
+            expect(signal.scaledBatteryPercent, equals(103)); // 72 / 70 * 100 = 102.85 -> 103
+            expect(signal.batteryPercentDisplay, equals("103% (実72%)"));
+        });
+
+        test('Unauthenticated public parameter parsing includes battery percent', () {
+            final unauthJson = {
+                'mnet_sysmode': 'lte',
+                'mnet_operator_name': 'Rakuten',
+                'mnet_rsrp': '75',
+                'device_battery_level_percent': '72',
+                'device_battery_charge_status': 'discharging',
+                'device_battery_exist': 'present',
+                'device_charge_long_life': 'enable',
+            };
+
+            final signal = SignalData.fromApiResponse(unauthJson);
+            expect(signal.batteryPercent, equals(72));
+            expect(signal.scaledBatteryPercent, equals(103));
+            expect(signal.batteryPercentDisplay, equals("103% (実72%)"));
+            expect(signal.isCharging, isFalse);
         });
 
         test('Estimated Remaining Time calculation for charging and discharging', () {
             // Charging at 1500mA from 50% to 100% (4000mAh -> 2000mAh remaining = 80 mins)
             final chargingJson = {
                 'device_battery_exist': 'present',
-                'device_battery_level': '50',
+                'device_battery_level_percent': '50',
                 'device_battery_capacity': '4000',
                 'device_battery_current': '1500',
                 'device_battery_charge_status': 'charging',
@@ -357,10 +362,22 @@ void main() {
             final chargingSignal = SignalData.fromApiResponse(chargingJson);
             expect(chargingSignal.estimatedTimeDisplay, contains("1時間20分"));
 
+            // Discharging at 245mA with 72% battery (4000mAh -> 2880mAh remaining = 11.75 hours)
+            final dischargingJson = {
+                'device_battery_exist': 'present',
+                'device_battery_level_percent': '72',
+                'device_battery_capacity': '4000',
+                'device_battery_current': '-245',
+                'device_battery_charge_status': 'discharging',
+                'device_charge_long_life': 'enable',
+            };
+            final dischargingSignal = SignalData.fromApiResponse(dischargingJson);
+            expect(dischargingSignal.estimatedTimeDisplay, contains("11時間45分"));
+
             // Full battery charging
             final fullJson = {
                 'device_battery_exist': 'present',
-                'device_battery_level': '100',
+                'device_battery_level_percent': '100',
                 'device_battery_capacity': '4000',
                 'device_battery_current': '0',
                 'device_battery_charge_status': 'charging',
