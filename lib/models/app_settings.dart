@@ -62,7 +62,7 @@ class AppSettings {
     NotificationDetailStyle notificationStyle;
 
     AppSettings({
-        this.routerIp = "192.168.100.1",
+        this.routerIp = "",
         this.webPassword = "",
         this.autoPasswordless = true,
         this.foregroundIntervalSeconds = 1,
@@ -133,7 +133,7 @@ class AppSettings {
 
     factory AppSettings.fromJson(Map<String, dynamic> json) {
         return AppSettings(
-            routerIp: json['routerIp'] ?? "192.168.100.1",
+            routerIp: json['routerIp'] ?? "",
             webPassword: json['webPassword'] ?? "",
             autoPasswordless: json['autoPasswordless'] ?? true,
             foregroundIntervalSeconds: json['foregroundIntervalSeconds'] ?? 1,

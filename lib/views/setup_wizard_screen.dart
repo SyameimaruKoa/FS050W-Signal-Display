@@ -15,7 +15,7 @@ class SetupWizardScreen extends StatefulWidget {
 }
 
 class _SetupWizardScreenState extends State<SetupWizardScreen> {
-    final TextEditingController _ipController = TextEditingController(text: "192.168.100.1");
+    final TextEditingController _ipController = TextEditingController();
     final TextEditingController _passwordController = TextEditingController();
 
     bool _isScanning = false;

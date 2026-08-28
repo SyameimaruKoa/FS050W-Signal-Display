@@ -165,8 +165,15 @@ class SignalData {
                 nrSnr = previousData?.nrSnr;
             }
 
-            nrBand = (endcBandVal != null && endcBandVal > 0) ? endcBandVal : (endcBandVal == 0 ? null : previousData?.nrBand);
-            nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? null : previousData?.nrPci);
+            // When ENDC RSRP is 0 (5G out of service/waiting), clear all 5G secondary cell info
+            final bool is5gInactive = rawEndcRsrp == null || rawEndcRsrp == 0;
+            if (is5gInactive) {
+                nrBand = null;
+                nrPci = null;
+            } else {
+                nrBand = (endcBandVal != null && endcBandVal > 0) ? endcBandVal : (endcBandVal == 0 ? null : previousData?.nrBand);
+                nrPci = (endcPciVal != null && endcPciVal > 0) ? endcPciVal : (endcPciVal == 0 ? null : previousData?.nrPci);
+            }
         }
 
         // Battery

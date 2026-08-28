@@ -61,24 +61,16 @@ class OverlayService {
                 'smoothGaugeColor': settings.smoothGaugeColor,
                 'smoothGaugeCurve': settings.smoothGaugeCurve,
                 'operatorName': signal?.operatorName ?? '--',
-                'lteBand': (signal?.lteBand != null && signal!.lteBand! > 0) ? 'B${signal!.lteBand}' : '--',
-                'ltePci': (signal?.ltePci != null && signal!.ltePci! > 0) ? '${signal!.ltePci}' : '--',
-                'lteRsrp': signal?.lteRsrp,
-                'lteRsrq': signal?.lteRsrq,
-                'lteSinr': signal?.lteSinr,
-                'nrBand': (signal?.nrBand != null && signal!.nrBand! > 0) ? 'n${signal!.nrBand}' : '--',
-                'nrPci': (signal?.nrPci != null && signal!.nrPci! > 0) ? '${signal!.nrPci}' : '--',
+                'lteBand': isLoggedIn && (signal?.lteBand != null && signal!.lteBand! > 0) ? 'B${signal!.lteBand}' : '--',
+                'ltePci': isLoggedIn && (signal?.ltePci != null && signal!.ltePci! > 0) ? '${signal!.ltePci}' : '--',
+                'lteSinr': isLoggedIn ? signal?.lteSinr : null,
+                'nrBand': isLoggedIn && (signal?.nrBand != null && signal!.nrBand! > 0) ? 'n${signal!.nrBand}' : '--',
+                'nrPci': isLoggedIn && (signal?.nrPci != null && signal!.nrPci! > 0) ? '${signal!.nrPci}' : '--',
                 'nrRsrp': signal?.nrRsrp,
-                'nrRsrq': signal?.nrRsrq,
-                'nrSnr': signal?.nrSnr,
-            };
-
-            await _channel.invokeMethod('updateOverlayData', {
+                'nrRsrq': isLoggedIn ? signal?.nrRsrq : null,
                 'jsonData': jsonEncode(dataMap),
                 'overlayStyle': settings.overlayStyle,
                 'overlayOpacity': settings.overlayOpacity,
-                'overlayScale': settings.overlayScale,
-                'smoothGaugeCurve': settings.smoothGaugeCurve,
                 'pipAspectRatio': settings.pipAspectRatio,
             });
         } catch (_) {}
