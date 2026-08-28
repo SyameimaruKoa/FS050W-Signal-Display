@@ -102,6 +102,9 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
         apiService.updateSettings(settings);
         apiService.startPolling();
         widget.onComplete?.call();
+        if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+        }
     }
 
     @override

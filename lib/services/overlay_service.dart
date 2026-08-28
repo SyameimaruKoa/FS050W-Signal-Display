@@ -44,6 +44,7 @@ class OverlayService {
         SignalData? signal,
         AppSettings settings, {
         bool isConnecting = false,
+        bool isLoggedIn = false,
     }) async {
         if (!settings.overlayEnabled) return;
 
@@ -55,6 +56,7 @@ class OverlayService {
 
             final Map<String, dynamic> dataMap = {
                 'isConnecting': isConnecting,
+                'isLoggedIn': isLoggedIn,
                 'modeBadge': modeBadge,
                 'modeText': modeText,
                 'generationNotation': notation,
@@ -63,14 +65,22 @@ class OverlayService {
                 'operatorName': signal?.operatorName ?? '--',
                 'lteBand': isLoggedIn && (signal?.lteBand != null && signal!.lteBand! > 0) ? 'B${signal!.lteBand}' : '--',
                 'ltePci': isLoggedIn && (signal?.ltePci != null && signal!.ltePci! > 0) ? '${signal!.ltePci}' : '--',
+                'lteRsrp': signal?.lteRsrp,
+                'lteRsrq': isLoggedIn ? signal?.lteRsrq : null,
                 'lteSinr': isLoggedIn ? signal?.lteSinr : null,
                 'nrBand': isLoggedIn && (signal?.nrBand != null && signal!.nrBand! > 0) ? 'n${signal!.nrBand}' : '--',
                 'nrPci': isLoggedIn && (signal?.nrPci != null && signal!.nrPci! > 0) ? '${signal!.nrPci}' : '--',
                 'nrRsrp': signal?.nrRsrp,
                 'nrRsrq': isLoggedIn ? signal?.nrRsrq : null,
+                'nrSnr': isLoggedIn ? signal?.nrSnr : null,
+            };
+
+            await _channel.invokeMethod('updateOverlayData', {
                 'jsonData': jsonEncode(dataMap),
                 'overlayStyle': settings.overlayStyle,
                 'overlayOpacity': settings.overlayOpacity,
+                'overlayScale': settings.overlayScale,
+                'smoothGaugeCurve': settings.smoothGaugeCurve,
                 'pipAspectRatio': settings.pipAspectRatio,
             });
         } catch (_) {}
