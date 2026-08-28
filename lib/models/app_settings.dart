@@ -21,6 +21,7 @@ class AppSettings {
     String webPassword;
     bool autoPasswordless;
     int foregroundIntervalSeconds;
+    int unauthIntervalSeconds;          // 未ログイン時のポーリング間隔 (3, 5, 10秒)
     int backgroundIntervalSeconds;
     String language;
     AppThemeMode appTheme;
@@ -33,6 +34,8 @@ class AppSettings {
     bool vibrateOn5gSub6;
     bool vibrateOnHandover;
     bool vibrateOnCriticalSignal;
+    bool batteryTempWarningEnabled;     // バッテリー高温警告の有効/無効
+    double batteryTempWarningThreshold; // バッテリー高温警告の温度閾値 (38〜50℃, デフォルト45℃)
 
     // 3. PiP (Picture-in-Picture) 設定
     bool autoPipOnHome;                 // ホーム画面に戻った時に自動PiP起動
@@ -66,6 +69,7 @@ class AppSettings {
         this.webPassword = "",
         this.autoPasswordless = true,
         this.foregroundIntervalSeconds = 1,
+        this.unauthIntervalSeconds = 3,
         this.backgroundIntervalSeconds = 5,
         this.language = "ja",
         this.appTheme = AppThemeMode.system,
@@ -76,6 +80,8 @@ class AppSettings {
         this.vibrateOn5gSub6 = true,
         this.vibrateOnHandover = true,
         this.vibrateOnCriticalSignal = true,
+        this.batteryTempWarningEnabled = true,
+        this.batteryTempWarningThreshold = 45.0,
         this.autoPipOnHome = true,
         this.pipAspectRatio = "16:9",
         this.pipGraphType = "rsrp",
@@ -101,6 +107,7 @@ class AppSettings {
             'webPassword': webPassword,
             'autoPasswordless': autoPasswordless,
             'foregroundIntervalSeconds': foregroundIntervalSeconds,
+            'unauthIntervalSeconds': unauthIntervalSeconds,
             'backgroundIntervalSeconds': backgroundIntervalSeconds,
             'language': language,
             'appTheme': appTheme.index,
@@ -111,6 +118,8 @@ class AppSettings {
             'vibrateOn5gSub6': vibrateOn5gSub6,
             'vibrateOnHandover': vibrateOnHandover,
             'vibrateOnCriticalSignal': vibrateOnCriticalSignal,
+            'batteryTempWarningEnabled': batteryTempWarningEnabled,
+            'batteryTempWarningThreshold': batteryTempWarningThreshold,
             'autoPipOnHome': autoPipOnHome,
             'pipAspectRatio': pipAspectRatio,
             'pipGraphType': pipGraphType,
@@ -137,6 +146,7 @@ class AppSettings {
             webPassword: json['webPassword'] ?? "",
             autoPasswordless: json['autoPasswordless'] ?? true,
             foregroundIntervalSeconds: json['foregroundIntervalSeconds'] ?? 1,
+            unauthIntervalSeconds: json['unauthIntervalSeconds'] ?? 3,
             backgroundIntervalSeconds: json['backgroundIntervalSeconds'] ?? 5,
             language: json['language'] ?? "ja",
             appTheme: AppThemeMode.values[json['appTheme'] ?? 3],
@@ -147,6 +157,8 @@ class AppSettings {
             vibrateOn5gSub6: json['vibrateOn5gSub6'] ?? true,
             vibrateOnHandover: json['vibrateOnHandover'] ?? true,
             vibrateOnCriticalSignal: json['vibrateOnCriticalSignal'] ?? true,
+            batteryTempWarningEnabled: json['batteryTempWarningEnabled'] ?? true,
+            batteryTempWarningThreshold: (json['batteryTempWarningThreshold'] as num?)?.toDouble() ?? 45.0,
             autoPipOnHome: json['autoPipOnHome'] ?? true,
             pipAspectRatio: json['pipAspectRatio'] ?? "16:9",
             pipGraphType: json['pipGraphType'] ?? "rsrp",

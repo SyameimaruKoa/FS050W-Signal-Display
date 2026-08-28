@@ -21,9 +21,27 @@ class SignalData {
     final int? nrBand;
     final int? nrPci;
 
-    // Battery & CA
+    // Battery Parameters (Official FS050W API)
     final int? batteryPercent;
     final bool isCharging;
+    final int? batteryLevel;
+    final int? batteryCapacity;
+    final int? batteryCurrent;
+    final bool isBatteryPresent;
+    final double? batteryTemperature;
+    final double? batteryVoltage;
+    final String? batteryChargeStatus;
+    final bool isLongLifeCharging;
+
+    // Device Hardware Parameters (/action/get_device_state)
+    final int? uptimeSeconds;
+    final int? totalRamBytes;
+    final int? usageRamBytes;
+    final int? freeRamBytes;
+    final int? cpuUsagePercent;
+    final int? processCount;
+
+    // CA
     final bool hasCa;
     final List<String> caBands;
 
@@ -51,6 +69,20 @@ class SignalData {
         this.nrPci,
         this.batteryPercent,
         this.isCharging = false,
+        this.batteryLevel,
+        this.batteryCapacity,
+        this.batteryCurrent,
+        this.isBatteryPresent = true,
+        this.batteryTemperature,
+        this.batteryVoltage,
+        this.batteryChargeStatus,
+        this.isLongLifeCharging = false,
+        this.uptimeSeconds,
+        this.totalRamBytes,
+        this.usageRamBytes,
+        this.freeRamBytes,
+        this.cpuUsagePercent,
+        this.processCount,
         this.hasCa = false,
         this.caBands = const [],
         required this.connectionMode,
@@ -58,8 +90,87 @@ class SignalData {
         this.handoverDescription,
     });
 
+    // --- Helper Getters for UI Calculation ---
+
+    int? get scaledBatteryPercent {
+        if (batteryPercent == null) return null;
+        if (isLongLifeCharging) {
+            return ((batteryPercent! / 70.0) * 100).clamp(0, 100).round();
+        }
+        return batteryPercent;
+    }
+
+    String get batteryPercentDisplay {
+        if (!isBatteryPresent) return "--";
+        if (batteryPercent == null) return "--";
+        if (isLongLifeCharging) {
+            return "$scaledBatteryPercent% (実$batteryPercent%)";
+        }
+        return "$batteryPercent%";
+    }
+
+    String get estimatedTimeDisplay {
+        if (!isBatteryPresent || batteryPercent == null) return "--";
+
+        final totalCap = batteryCapacity ?? 4000;
+        final targetCap = isLongLifeCharging ? (totalCap * 0.70).round() : totalCap;
+        final currentMah = (totalCap * (batteryPercent! / 100.0)).round();
+
+        if (isCharging) {
+            if (currentMah >= targetCap) {
+                return "充電完了";
+            }
+            final deltaMah = targetCap - currentMah;
+            final currentMa = (batteryCurrent != null && batteryCurrent! > 0) ? batteryCurrent! : 1500;
+            final totalMinutes = ((deltaMah / currentMa) * 60).round();
+            if (totalMinutes <= 0) return "充電完了";
+            final hours = totalMinutes ~/ 60;
+            final mins = totalMinutes % 60;
+            if (hours > 0) {
+                return "約 ${hours}時間${mins}分 (充電完了まで)";
+            }
+            return "約 ${mins}分 (充電完了まで)";
+        } else {
+            final dischargeMa = (batteryCurrent != null && batteryCurrent! < 0) ? batteryCurrent!.abs() : 450;
+            final totalMinutes = ((currentMah / dischargeMa) * 60).round();
+            if (totalMinutes <= 0) return "--";
+            final hours = totalMinutes ~/ 60;
+            final mins = totalMinutes % 60;
+            if (hours > 0) {
+                return "約 ${hours}時間${mins}分 (残り使用予想)";
+            }
+            return "約 ${mins}分 (残り使用予想)";
+        }
+    }
+
+    String get formattedUptime {
+        if (uptimeSeconds == null) return "--";
+        final sec = uptimeSeconds!;
+        final days = sec ~/ 86400;
+        final hours = (sec % 86400) ~/ 3600;
+        final mins = (sec % 3600) ~/ 60;
+        final secs = sec % 60;
+
+        if (days > 0) {
+            return "$days日 $hours時間 $mins分";
+        } else if (hours > 0) {
+            return "$hours時間 $mins分 $secs秒";
+        } else {
+            return "$mins分 $secs秒";
+        }
+    }
+
+    String get formattedRamUsage {
+        if (usageRamBytes == null || totalRamBytes == null || totalRamBytes == 0) return "--";
+        final usedMb = (usageRamBytes! / (1024 * 1024)).toStringAsFixed(0);
+        final totalMb = (totalRamBytes! / (1024 * 1024)).toStringAsFixed(0);
+        final percent = ((usageRamBytes! / totalRamBytes!) * 100).toStringAsFixed(1);
+        return "$usedMb MB / $totalMb MB ($percent%)";
+    }
+
     factory SignalData.fromApiResponse(
         Map<String, dynamic> json, {
+        Map<String, dynamic>? deviceStateJson,
         bool hasCa = false,
         List<String> caBands = const [],
         SignalData? previousData,
@@ -165,8 +276,8 @@ class SignalData {
                 nrSnr = previousData?.nrSnr;
             }
 
-            // When ENDC RSRP is 0 (5G out of service/waiting), clear all 5G secondary cell info
-            final bool is5gInactive = rawEndcRsrp == null || rawEndcRsrp == 0;
+            // When ENDC RSRP is explicitly 0 or pspci is 0 (5G out of service/waiting), clear all 5G secondary cell info
+            final bool is5gInactive = (rawMap.containsKey('mnet_endc_rsrp') && rawEndcRsrp == 0) || endcPciVal == 0;
             if (is5gInactive) {
                 nrBand = null;
                 nrPci = null;
@@ -176,9 +287,45 @@ class SignalData {
             }
         }
 
-        // Battery
-        final int? batteryPercent = _parseInt(rawMap['battery_percent']) ?? previousData?.batteryPercent;
-        final bool isCharging = (rawMap['battery_charging']?.toString() == '1') || (previousData?.isCharging ?? false);
+        // Official FS050W Battery Parameters Parsing
+        final String? rawExist = rawMap['device_battery_exist']?.toString().toLowerCase();
+        final bool isBatteryPresent = rawExist == null
+            ? (previousData?.isBatteryPresent ?? true)
+            : (rawExist == 'present' || rawExist == '1');
+
+        final int? rawLevel = _parseInt(rawMap['device_battery_level']) ?? previousData?.batteryLevel;
+        final int? rawCap = _parseInt(rawMap['device_battery_capacity']) ?? previousData?.batteryCapacity;
+        final int? rawCurr = _parseInt(rawMap['device_battery_current']) ?? previousData?.batteryCurrent;
+        final double? rawTemp = _parseDouble(rawMap['device_battery_temperature']) ?? previousData?.batteryTemperature;
+        final double? rawVolt = _parseDouble(rawMap['device_battery_voltage']) ?? previousData?.batteryVoltage;
+        final String? rawChargeStatus = rawMap['device_battery_charge_status']?.toString().toLowerCase() ?? previousData?.batteryChargeStatus;
+        final String? rawLongLife = rawMap['device_charge_long_life']?.toString().toLowerCase() ?? (previousData?.isLongLifeCharging == true ? 'enable' : 'disable');
+        final bool isLongLife = rawLongLife == 'enable' || rawLongLife == '1';
+
+        // Calculate batteryPercent
+        int? batteryPercent = _parseInt(rawMap['battery_percent']);
+        if (batteryPercent == null && rawLevel != null) {
+            if (rawLevel <= 4) {
+                batteryPercent = (rawLevel * 25).clamp(0, 100);
+            } else {
+                batteryPercent = rawLevel.clamp(0, 100);
+            }
+        }
+        batteryPercent ??= previousData?.batteryPercent;
+
+        final bool isCharging = rawChargeStatus == 'charging' ||
+            (rawMap['battery_charging']?.toString() == '1') ||
+            (rawCurr != null && rawCurr > 0) ||
+            (previousData?.isCharging ?? false);
+
+        // Hardware state parameters (/action/get_device_state)
+        final Map<String, dynamic>? devState = deviceStateJson ?? (rawMap['uptime'] != null ? rawMap : null);
+        final int? uptimeSec = _parseInt(devState?['uptime']) ?? previousData?.uptimeSeconds;
+        final int? totalRam = _parseInt(devState?['totalram']) ?? previousData?.totalRamBytes;
+        final int? usageRam = _parseInt(devState?['usageram']) ?? previousData?.usageRamBytes;
+        final int? freeRam = _parseInt(devState?['freeram']) ?? previousData?.freeRamBytes;
+        final int? cpuUsage = _parseInt(devState?['cpuusage']) ?? previousData?.cpuUsagePercent;
+        final int? procs = _parseInt(devState?['procs']) ?? previousData?.processCount;
 
         // Mode determination
         final bool isNrActive = (nrRsrp != null && nrRsrp < 0) || (nrBand != null && nrBand > 0);
@@ -242,6 +389,20 @@ class SignalData {
             nrPci: nrPci,
             batteryPercent: batteryPercent,
             isCharging: isCharging,
+            batteryLevel: rawLevel,
+            batteryCapacity: rawCap,
+            batteryCurrent: rawCurr,
+            isBatteryPresent: isBatteryPresent,
+            batteryTemperature: rawTemp,
+            batteryVoltage: rawVolt,
+            batteryChargeStatus: rawChargeStatus,
+            isLongLifeCharging: isLongLife,
+            uptimeSeconds: uptimeSec,
+            totalRamBytes: totalRam,
+            usageRamBytes: usageRam,
+            freeRamBytes: freeRam,
+            cpuUsagePercent: cpuUsage,
+            processCount: procs,
             hasCa: hasCa,
             caBands: caBands,
             connectionMode: mode,

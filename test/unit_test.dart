@@ -272,6 +272,9 @@ void main() {
                 vibrateOn5gSub6: true,
                 vibrateOnHandover: false,
                 vibrateOnCriticalSignal: true,
+                batteryTempWarningEnabled: true,
+                batteryTempWarningThreshold: 48.0,
+                unauthIntervalSeconds: 5,
             );
 
             final json = original.toJson();
@@ -295,6 +298,98 @@ void main() {
             expect(restored.vibrateOn5gSub6, isTrue);
             expect(restored.vibrateOnHandover, isFalse);
             expect(restored.vibrateOnCriticalSignal, isTrue);
+            expect(restored.batteryTempWarningEnabled, isTrue);
+            expect(restored.batteryTempWarningThreshold, equals(48.0));
+            expect(restored.unauthIntervalSeconds, equals(5));
+        });
+    });
+
+    group('Official FS050W Battery & Hardware Parsing Tests', () {
+        test('Battery metrics parsing from get_mgdb_params', () {
+            final json = {
+                'device_battery_exist': 'present',
+                'device_battery_level': '70',
+                'device_battery_capacity': '4000',
+                'device_battery_current': '1250',
+                'device_battery_temperature': '38.5',
+                'device_battery_voltage': '4150',
+                'device_battery_charge_status': 'charging',
+                'device_charge_long_life': 'disable',
+            };
+
+            final signal = SignalData.fromApiResponse(json);
+            expect(signal.isBatteryPresent, isTrue);
+            expect(signal.batteryPercent, equals(70));
+            expect(signal.batteryCapacity, equals(4000));
+            expect(signal.batteryCurrent, equals(1250));
+            expect(signal.batteryTemperature, equals(38.5));
+            expect(signal.batteryVoltage, equals(4150.0));
+            expect(signal.isCharging, isTrue);
+            expect(signal.isLongLifeCharging, isFalse);
+            expect(signal.batteryPercentDisplay, equals("70%"));
+        });
+
+        test('Long Life 70% Care Mode scaling (70% displayed as 100%)', () {
+            final json = {
+                'device_battery_exist': 'present',
+                'device_battery_level': '70',
+                'device_battery_capacity': '4000',
+                'device_battery_charge_status': 'charging',
+                'device_charge_long_life': 'enable',
+            };
+
+            final signal = SignalData.fromApiResponse(json);
+            expect(signal.isLongLifeCharging, isTrue);
+            expect(signal.scaledBatteryPercent, equals(100));
+            expect(signal.batteryPercentDisplay, equals("100% (実70%)"));
+        });
+
+        test('Estimated Remaining Time calculation for charging and discharging', () {
+            // Charging at 1500mA from 50% to 100% (4000mAh -> 2000mAh remaining = 80 mins)
+            final chargingJson = {
+                'device_battery_exist': 'present',
+                'device_battery_level': '50',
+                'device_battery_capacity': '4000',
+                'device_battery_current': '1500',
+                'device_battery_charge_status': 'charging',
+                'device_charge_long_life': 'disable',
+            };
+            final chargingSignal = SignalData.fromApiResponse(chargingJson);
+            expect(chargingSignal.estimatedTimeDisplay, contains("1時間20分"));
+
+            // Full battery charging
+            final fullJson = {
+                'device_battery_exist': 'present',
+                'device_battery_level': '100',
+                'device_battery_capacity': '4000',
+                'device_battery_current': '0',
+                'device_battery_charge_status': 'charging',
+                'device_charge_long_life': 'disable',
+            };
+            final fullSignal = SignalData.fromApiResponse(fullJson);
+            expect(fullSignal.estimatedTimeDisplay, equals("充電完了"));
+        });
+
+        test('Hardware Device State parsing from get_device_state', () {
+            final mgdbJson = {
+                'mnet_sysmode': 'lte',
+                'mnet_rsrp': '75',
+            };
+            final devStateJson = {
+                'uptime': '100000',
+                'totalram': '${256 * 1024 * 1024}',
+                'usageram': '${128 * 1024 * 1024}',
+                'freeram': '${128 * 1024 * 1024}',
+                'cpuusage': '24',
+                'procs': '88',
+            };
+
+            final signal = SignalData.fromApiResponse(mgdbJson, deviceStateJson: devStateJson);
+            expect(signal.uptimeSeconds, equals(100000));
+            expect(signal.cpuUsagePercent, equals(24));
+            expect(signal.processCount, equals(88));
+            expect(signal.formattedUptime, equals("1日 3時間 46分"));
+            expect(signal.formattedRamUsage, equals("128 MB / 256 MB (50.0%)"));
         });
     });
 }

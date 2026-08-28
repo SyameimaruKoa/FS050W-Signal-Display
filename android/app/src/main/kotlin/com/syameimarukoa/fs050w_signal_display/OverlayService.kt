@@ -1188,10 +1188,11 @@ class OverlayService : Service() {
             type == "5g" -> Color.parseColor("#00E5FF") // Emerald Cyan
             type == "handover" -> Color.parseColor("#FFB300") // Amber Gold
             type == "critical" -> Color.parseColor("#FF1744") // Red
+            type == "battery_temp" -> Color.parseColor("#FF3D00") // Deep Orange-Red
             else -> Color.parseColor("#00E5FF")
         }
 
-        showLampOverlay(color, shape, position, isBlinking = (type == "critical"))
+        showLampOverlay(color, shape, position, isBlinking = (type == "critical" || type == "battery_temp"))
     }
 
     private fun vibrateDevice(type: String) {
@@ -1227,6 +1228,13 @@ class OverlayService : Service() {
                         val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
                         vibrator.vibrate(effect)
                     }
+                    "battery_temp" -> {
+                        // Battery Overheat: 3 alert pulses (200ms on, 100ms off, 200ms on, 100ms off, 200ms on)
+                        val timings = longArrayOf(0, 200, 100, 200, 100, 200)
+                        val amplitudes = intArrayOf(0, 255, 0, 255, 0, 255)
+                        val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                        vibrator.vibrate(effect)
+                    }
                     else -> {
                         val effect = VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE)
                         vibrator.vibrate(effect)
@@ -1238,6 +1246,7 @@ class OverlayService : Service() {
                     "5g" -> vibrator.vibrate(longArrayOf(0, 70, 60, 70), -1)
                     "handover" -> vibrator.vibrate(80)
                     "critical" -> vibrator.vibrate(longArrayOf(0, 150, 100, 150), -1)
+                    "battery_temp" -> vibrator.vibrate(longArrayOf(0, 200, 100, 200, 100, 200), -1)
                     else -> vibrator.vibrate(60)
                 }
             }

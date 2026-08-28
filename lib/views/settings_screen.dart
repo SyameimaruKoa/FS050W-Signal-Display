@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/pip_service.dart';
 import '../services/overlay_service.dart';
 import '../services/storage_service.dart';
+import 'widgets/fs050w_app_bar.dart';
 import 'widgets/log_viewer_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -115,20 +116,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     @override
     Widget build(BuildContext context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
         return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, result) {
                 _save();
             },
             child: Scaffold(
-                appBar: AppBar(
-                    title: const Text(
-                        "⚙ 設定",
-                        style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                ),
+                appBar: const Fs050wAppBar(),
                 body: ListView(
                     padding: const EdgeInsets.all(16.0),
                     children: [
@@ -242,11 +236,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         min: 0.5,
                                         max: 1.5,
                                         divisions: 10,
-                                        label: "しきい値: ${_settings.pipGraphScaleThreshold.toStringAsFixed(1)}倍",
+                                        label: "${_settings.pipGraphScaleThreshold.toStringAsFixed(1)}x",
                                         onChanged: (val) {
                                             setState(() => _settings.pipGraphScaleThreshold = val);
+                                            _save();
                                         },
-                                        onChangeEnd: (val) => _save(),
                                     ),
                                     Text("現在: ${_settings.pipGraphScaleThreshold.toStringAsFixed(1)}倍 (小さいほど表示されやすい)", style: const TextStyle(fontSize: 12, color: Colors.grey)),
                                 ],
@@ -256,13 +250,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // 2. 【イベント検知 & LEDランプ】
-                    _buildSectionHeader("2. イベント検知 & LEDランプ", Icons.lightbulb_outline),
+                    // 2. 【イベントハプティクス & LED通知】
+                    _buildSectionHeader("2. イベントハプティクス & LED通知", Icons.vibration),
                     _buildCard([
                         SwitchListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text("イベント画面上部LEDランプ"),
-                            subtitle: const Text("イベント発生時に画面最上部にパルスランプを3秒点灯"),
+                            title: const Text("最上部イベント LED ランプ"),
+                            subtitle: const Text("5G突入・ハンドオーバー時に最上部にパルス点灯"),
                             value: _settings.eventLampEnabled,
                             onChanged: (val) {
                                 setState(() => _settings.eventLampEnabled = val);
@@ -272,12 +266,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (_settings.eventLampEnabled) ...[
                             ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: const Text("ランプ形状"),
+                                title: const Text("LEDランプ形状"),
                                 trailing: DropdownButton<String>(
                                     value: _settings.eventLampShape,
                                     items: const [
-                                        DropdownMenuItem(value: "bar", child: Text("スリムバー型 (画面幅1/4)")),
-                                        DropdownMenuItem(value: "dot", child: Text("ドット型 (6dp)")),
+                                        DropdownMenuItem(value: "bar", child: Text("スリムバー (画面幅1/4)")),
+                                        DropdownMenuItem(value: "dot", child: Text("丸型 LED (8dp)")),
                                     ],
                                     onChanged: (val) {
                                         if (val != null) {
@@ -289,13 +283,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: const Text("ランプ配置位置"),
+                                title: const Text("LEDランプ配置位置"),
                                 trailing: DropdownButton<String>(
                                     value: _settings.eventLampPosition,
                                     items: const [
-                                        DropdownMenuItem(value: "topCenter", child: Text("画面上部 中央")),
-                                        DropdownMenuItem(value: "topLeft", child: Text("画面上部 左角")),
-                                        DropdownMenuItem(value: "topRight", child: Text("画面上部 右角")),
+                                        DropdownMenuItem(value: "topCenter", child: Text("画面中央上部")),
+                                        DropdownMenuItem(value: "topLeft", child: Text("画面左上")),
+                                        DropdownMenuItem(value: "topRight", child: Text("画面右上")),
                                     ],
                                     onChanged: (val) {
                                         if (val != null) {
@@ -347,6 +341,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _save();
                             },
                         ),
+                        const Divider(height: 16),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("🔥 バッテリー高温警告"),
+                            subtitle: Text("バッテリー温度が指定温度（${_settings.batteryTempWarningThreshold.toInt()}℃）以上で警告バイブ & 赤点滅"),
+                            value: _settings.batteryTempWarningEnabled,
+                            onChanged: (val) {
+                                setState(() => _settings.batteryTempWarningEnabled = val);
+                                _save();
+                            },
+                        ),
+                        if (_settings.batteryTempWarningEnabled) ...[
+                            ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text("警告温度しきい値: ${_settings.batteryTempWarningThreshold.toInt()}℃"),
+                                subtitle: Slider(
+                                    value: _settings.batteryTempWarningThreshold,
+                                    min: 38.0,
+                                    max: 50.0,
+                                    divisions: 12,
+                                    label: "${_settings.batteryTempWarningThreshold.toInt()}℃",
+                                    onChanged: (val) {
+                                        setState(() => _settings.batteryTempWarningThreshold = val);
+                                        _save();
+                                    },
+                                ),
+                            ),
+                        ],
                     ]),
 
                     const SizedBox(height: 16),
@@ -412,7 +434,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text("ポーリング間隔"),
+                            title: const Text("ログイン時ポーリング間隔"),
+                            subtitle: const Text("Webパスワード認証時の取得間隔"),
                             trailing: DropdownButton<int>(
                                 value: _settings.foregroundIntervalSeconds,
                                 items: const [
@@ -424,6 +447,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onChanged: (val) {
                                     if (val != null) {
                                         setState(() => _settings.foregroundIntervalSeconds = val);
+                                        _save();
+                                    }
+                                },
+                            ),
+                        ),
+                        ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("未ログイン時ポーリング間隔"),
+                            subtitle: const Text("未認証 (RSRP基本) 状態の取得間隔"),
+                            trailing: DropdownButton<int>(
+                                value: _settings.unauthIntervalSeconds,
+                                items: const [
+                                    DropdownMenuItem(value: 3, child: Text("3秒 (推奨)")),
+                                    DropdownMenuItem(value: 5, child: Text("5秒")),
+                                    DropdownMenuItem(value: 10, child: Text("10秒")),
+                                ],
+                                onChanged: (val) {
+                                    if (val != null) {
+                                        setState(() => _settings.unauthIntervalSeconds = val);
                                         _save();
                                     }
                                 },

@@ -6,6 +6,7 @@ import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 import '../utils/calc_frequency.dart';
 import '../utils/color_gauge.dart';
+import 'widgets/fs050w_app_bar.dart';
 import 'widgets/cell_card.dart';
 import 'widgets/log_viewer_dialog.dart';
 import 'hud_screen.dart';
@@ -35,49 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
-            appBar: AppBar(
-                title: const Text(
-                    "📶 FS050W Signal Display",
-                    style: TextStyle(fontFamilyFallback: ['Noto Sans JP', 'sans-serif'], fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                actions: [
-                    IconButton(
-                        icon: const Icon(Icons.picture_in_picture_alt, color: Color(0xFF00E5FF)),
-                        tooltip: "PiP (小窓表示) 起動",
-                        onPressed: () async {
-                            final success = await PipService.enterPipMode(apiService.settings.pipAspectRatio);
-                            if (!success && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("PiPモードの起動に失敗しました (端末の設定をご確認ください)")),
-                                );
-                            }
-                        },
-                    ),
-                    IconButton(
-                        icon: Icon(Icons.assignment_outlined, color: isDark ? Colors.white70 : Colors.black87),
-                        tooltip: "診断ログを表示",
-                        onPressed: () => LogViewerDialog.show(context),
-                    ),
-                    IconButton(
-                        icon: const Icon(Icons.bedtime, color: Colors.amberAccent),
-                        tooltip: "HUD / 有機EL 常時表示モード",
-                        onPressed: () {
-                            Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const HudScreen()),
-                            );
-                        },
-                    ),
-                    IconButton(
-                        icon: Icon(Icons.settings, color: isDark ? Colors.white70 : Colors.black87),
-                        tooltip: "設定",
-                        onPressed: widget.onNavigateToSettings ?? () {
-                            Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                            );
-                        },
-                    ),
-                ],
-            ),
+            appBar: const Fs050wAppBar(),
             body: RefreshIndicator(
                 onRefresh: () async {
                     apiService.restartPolling();

@@ -112,7 +112,8 @@ class ApiService extends ChangeNotifier {
 
     void _restartTimer() {
         _pollingTimer?.cancel();
-        final interval = Duration(seconds: _settings.foregroundIntervalSeconds.clamp(1, 10));
+        final int sec = _isLoggedIn ? _settings.foregroundIntervalSeconds : _settings.unauthIntervalSeconds;
+        final interval = Duration(seconds: sec.clamp(1, 10));
         _pollingTimer = Timer.periodic(interval, (_) {
             if (_isScreenOn) {
                 _pollOnce();
@@ -179,6 +180,7 @@ class ApiService extends ChangeNotifier {
 
         try {
             final hasPassword = _settings.webPassword.isNotEmpty;
+            final bool wasLoggedIn = _isLoggedIn;
 
             // 1. Validate router IP is configured
             if (_settings.routerIp.isEmpty) {
@@ -202,7 +204,6 @@ class ApiService extends ChangeNotifier {
             }
 
             // 3. Perform login if password is configured and not yet authenticated
-            //    When password is empty, NEVER attempt login (explicit unauthenticated mode)
             if (hasPassword && !_isLoggedIn) {
                 final now = DateTime.now();
                 if (_lockoutUntil != null && now.isBefore(_lockoutUntil!)) {
@@ -212,7 +213,6 @@ class ApiService extends ChangeNotifier {
                     _errorMessage = "ルーター一時ロック中 (残り ${remaining} 秒)";
                 } else {
                     if (_lockoutUntil != null) {
-                        // Lockout just expired - get fresh CSRF before retrying
                         _lockoutUntil = null;
                         _csrfToken = null;
                         _sessionCookie = null;
@@ -233,9 +233,10 @@ class ApiService extends ChangeNotifier {
                             _errorMessage = null;
                             _consecutiveLoginFailures = 0;
                             AppLogger.info("Authentication succeeded: Full parameter mode active");
+                            if (!wasLoggedIn) {
+                                _restartTimer();
+                            }
                         } else {
-                            // Do NOT call _resetSession() here - preserve CSRF token
-                            // so unauthenticated fetch can still work
                             _isLoggedIn = false;
                             _consecutiveLoginFailures++;
                             _status = ConnectionStatus.unauthenticatedMode;
@@ -266,7 +267,6 @@ class ApiService extends ChangeNotifier {
                         params = await _fetchParams();
                     } else {
                         _isLoggedIn = false;
-                        // Try unauthenticated fallback
                         params = await _fetchParams();
                     }
                 }
@@ -285,8 +285,14 @@ class ApiService extends ChangeNotifier {
                     _errorMessage = null;
                 }
 
+                Map<String, dynamic>? devState;
+                if (_isLoggedIn) {
+                    devState = await _fetchDeviceState();
+                }
+
                 final signal = SignalData.fromApiResponse(
                     params,
+                    deviceStateJson: devState,
                     previousData: _currentSignal,
                     adjust5gSnr: _settings.adjust5gSnr,
                 );
@@ -414,7 +420,38 @@ class ApiService extends ChangeNotifier {
         'battery_percent',
         'battery_charging',
         'mnet_operator_name',
+        'device_battery_exist',
+        'device_battery_level',
+        'device_battery_capacity',
+        'device_battery_current',
+        'device_battery_temperature',
+        'device_battery_voltage',
+        'device_battery_charge_status',
+        'device_charge_long_life',
     ];
+
+    Future<Map<String, dynamic>?> _fetchDeviceState() async {
+        if (!_isLoggedIn) return null;
+        final authUri = Uri.parse("http://${_settings.routerIp}/action/get_device_state");
+        final authHeaders = {
+            'Content-Type': 'application/json',
+            if (_csrfToken != null) 'X-Csrf-Token': _csrfToken!,
+            if (_sessionCookie != null) 'Cookie': _sessionCookie!,
+        };
+        try {
+            final response = await _client.post(authUri, headers: authHeaders, body: '{}').timeout(const Duration(seconds: 4));
+            _updateHeadersFromResponse(response);
+            if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
+                final dynamic data = jsonDecode(response.body);
+                if (data is Map<String, dynamic> && data['retcode'] == 0) {
+                    return (data['data'] is Map<String, dynamic>) ? (data['data'] as Map<String, dynamic>) : data;
+                }
+            }
+        } catch (e) {
+            AppLogger.warn("Network error on /action/get_device_state: $e");
+        }
+        return null;
+    }
 
     Future<Map<String, dynamic>?> _fetchParams() async {
         final keysPayload = jsonEncode({'keys': kValidParamKeys});
