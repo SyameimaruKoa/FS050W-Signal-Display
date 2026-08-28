@@ -81,8 +81,15 @@ $$\text{p2} = \text{HMAC-MD5}(\text{key}, \text{p1} + \text{prikey})$$
 | **NR Operating Band** | `mnet_wnw_psband`| ✕ | ◯ | `"n" + val` (例: `"77"` $\to$ `n77`) | - |
 | **NR PCI** | `mnet_wnw_pspci` | ✕ | ◯ | 整数 (例: `723`) | - |
 | **NR-ARFCN** | `mnet_wnw_psnrarfcn`| ✕ | ◯ | 整数 (例: `650000`) | - |
-| **Battery Level**| `battery_percent`| ✕ | ◯ | `"0"` 〜 `"100"` | % |
-| **Charging Status**| `battery_charging`| ✕ | ◯ | `"0"`: 放電中, `"1"`: 充電中 | - |
+| **バッテリー残量 (0~100%)**| `battery_percent`| ✕ | ◯ | `"0"` 〜 `"100"` *(※環境により非サポート)* | % |
+| **充電ステータス**| `battery_charging`| ✕ | ◯ | `"0"`: 放電中, `"1"`: 充電中 *(※環境により非サポート)* | - |
+| **バッテリーレベル (0~4)**| `device_battery_level`| ✕ | ◯ | `"0"` 〜 `"4"` (アイコンのバー数) | - |
+| **バッテリー容量**| `device_battery_capacity`| ✕ | ◯ | 整数 (例: `"4000"`) | mAh |
+| **バッテリー電圧**| `device_battery_voltage`| ✕ | ◯ | 整数 (例: `"4036"`) | mV |
+| **バッテリー電流**| `device_battery_current`| ✕ | ◯ | 整数 (例: `"299"`) | mA |
+| **バッテリー温度**| `device_battery_temperature`| ✕ | ◯ | 整数 (例: `"38"`) | ℃ |
+| **いたわり充電設定**| `device_charge_long_life`| ✕ | ◯ | `"enable"` または `"disable"` | - |
+| **CPU温度**| `device_cpu_temp`| ✕ | ◯ | 現在のFWでは無効値 (`"65535"`) を返却 | ℃ |
 
 ---
 
