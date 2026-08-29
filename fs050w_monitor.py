@@ -23,7 +23,6 @@ def main():
         "--password",
         "-p",
         type=str,
-        default="admin",
         help="ルーターのログインパスワード",
     )
     args = parser.parse_args()
