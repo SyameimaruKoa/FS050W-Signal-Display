@@ -121,17 +121,25 @@ class PipScreen extends StatelessWidget {
                                         ),
                                         if (signal?.batteryPercent != null || signal?.batteryTemperature != null) ...[
                                             const SizedBox(width: 4),
-                                            Text(
-                                                "🔋${signal?.batteryPercent != null ? '${signal!.batteryPercent}%' : ''}${signal?.isCharging == true ? '⚡' : ''} ${signal?.batteryTemperature != null ? '${signal!.batteryTemperature!.toStringAsFixed(0)}℃' : ''}",
-                                                style: TextStyle(
-                                                    fontSize: is1to1 ? 10.0 : 8.5,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: (apiService.settings.batteryTempWarningEnabled &&
-                                                            (signal?.batteryTemperature ?? 0) >= apiService.settings.batteryTempWarningThreshold)
-                                                        ? Colors.redAccent
-                                                        : Colors.white70,
-                                                    fontFamily: 'monospace',
-                                                ),
+                                            Builder(
+                                                builder: (context) {
+                                                    final batStr = signal?.batteryPercent != null ? '${signal!.batteryPercent}%' : '';
+                                                    final chargeStr = signal?.isCharging == true ? '⚡' : '';
+                                                    final tempStr = signal?.batteryTemperature != null ? '${signal!.batteryTemperature!.round()}℃' : '';
+                                                    final timeStr = signal?.remainingTimeHHMM != null ? ' ${signal!.remainingTimeHHMM}' : '';
+                                                    return Text(
+                                                        "🔋$batStr$chargeStr $tempStr$timeStr".trim(),
+                                                        style: TextStyle(
+                                                            fontSize: is1to1 ? 10.0 : 8.5,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: (apiService.settings.batteryTempWarningEnabled &&
+                                                                    (signal?.batteryTemperature ?? 0) >= apiService.settings.batteryTempWarningThreshold)
+                                                                ? Colors.redAccent
+                                                                : Colors.white70,
+                                                            fontFamily: 'monospace',
+                                                        ),
+                                                    );
+                                                },
                                             ),
                                         ],
                                     ],

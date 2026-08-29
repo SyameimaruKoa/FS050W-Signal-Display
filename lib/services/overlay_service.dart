@@ -78,6 +78,7 @@ class OverlayService {
                 'isCharging': signal?.isCharging ?? false,
                 'isBatteryPresent': signal?.isBatteryPresent ?? true,
                 'batteryTemperature': signal?.batteryTemperature,
+                'remainingTimeHHMM': signal?.remainingTimeHHMM,
                 'isTempWarning': settings.batteryTempWarningEnabled && ((signal?.batteryTemperature ?? 0) >= settings.batteryTempWarningThreshold),
             };
 

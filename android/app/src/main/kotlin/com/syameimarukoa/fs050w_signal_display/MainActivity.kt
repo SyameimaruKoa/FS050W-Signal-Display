@@ -126,17 +126,23 @@ class MainActivity : FlutterActivity() {
                         val ratio = call.argument<String>("pipAspectRatio")
                         val curve = call.argument<String>("smoothGaugeCurve")
 
-                        val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
-                            action = OverlayService.ACTION_UPDATE_DATA
-                            putExtra(OverlayService.EXTRA_JSON_DATA, jsonData)
-                            if (style != null) putExtra("overlayStyle", style)
-                            if (opacity != null) putExtra("overlayOpacity", opacity)
-                            if (scale != null) putExtra("overlayScale", scale)
-                            if (ratio != null) putExtra("pipAspectRatio", ratio)
-                            if (curve != null) putExtra("smoothGaugeCurve", curve)
+                        val activeService = OverlayService.instance
+                        if (activeService != null) {
+                            activeService.updateDataDirectly(jsonData, style, opacity, scale, curve)
+                            result.success(true)
+                        } else {
+                            val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
+                                action = OverlayService.ACTION_UPDATE_DATA
+                                putExtra(OverlayService.EXTRA_JSON_DATA, jsonData)
+                                if (style != null) putExtra("overlayStyle", style)
+                                if (opacity != null) putExtra("overlayOpacity", opacity)
+                                if (scale != null) putExtra("overlayScale", scale)
+                                if (ratio != null) putExtra("pipAspectRatio", ratio)
+                                if (curve != null) putExtra("smoothGaugeCurve", curve)
+                            }
+                            safeStartService(intent)
+                            result.success(true)
                         }
-                        safeStartService(intent)
-                        result.success(true)
                     }
                     "triggerLamp" -> {
                         val type = call.argument<String>("type") ?: "5g"
@@ -170,15 +176,19 @@ class MainActivity : FlutterActivity() {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
         }
-        registerReceiver(screenReceiver, screenFilter)
+        try {
+            registerReceiver(screenReceiver, screenFilter)
+        } catch (_: Exception) {}
 
-        val dialogFilter = IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
-        @Suppress("DEPRECATION")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(systemDialogReceiver, dialogFilter, Context.RECEIVER_EXPORTED)
-        } else {
-            registerReceiver(systemDialogReceiver, dialogFilter)
-        }
+        try {
+            val dialogFilter = IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+            @Suppress("DEPRECATION")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(systemDialogReceiver, dialogFilter, Context.RECEIVER_EXPORTED)
+            } else {
+                registerReceiver(systemDialogReceiver, dialogFilter)
+            }
+        } catch (_: Exception) {}
     }
 
     private var isHomeKeyPressed = false
@@ -188,15 +198,12 @@ class MainActivity : FlutterActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_CLOSE_SYSTEM_DIALOGS) {
                 val reason = intent.getStringExtra("reason")
-                if (reason == "homekey") {
-                    isHomeKeyPressed = true
-                    isRecentAppsPressed = false
-                    if (autoPipEnabled && isPipSupported()) {
-                        enterPip(pipNumerator, pipDenominator)
+                if (reason != null) {
+                    if (reason == "homekey") {
+                        isHomeKeyPressed = true
+                    } else if (reason == "recentapps") {
+                        isRecentAppsPressed = true
                     }
-                } else if (reason == "recentapps") {
-                    isRecentAppsPressed = true
-                    isHomeKeyPressed = false
                 }
             }
         }

@@ -74,6 +74,8 @@ class OverlayService : Service() {
     private var screenHeight = 2400
 
     companion object {
+        var instance: OverlayService? = null
+
         const val ACTION_START_OVERLAY = "com.syameimarukoa.fs050w_signal_display.START_OVERLAY"
         const val ACTION_STOP_OVERLAY = "com.syameimarukoa.fs050w_signal_display.STOP_OVERLAY"
         const val ACTION_UPDATE_DATA = "com.syameimarukoa.fs050w_signal_display.UPDATE_DATA"
@@ -139,6 +141,7 @@ class OverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         updateScreenDimensions()
     }
@@ -175,10 +178,48 @@ class OverlayService : Service() {
                 .build()
 
             try {
-                startForeground(1001, notification)
+                if (Build.VERSION.SDK_INT >= 34) {
+                    startForeground(1001, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                } else {
+                    startForeground(1001, notification)
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
+                try {
+                    startForeground(1001, notification)
+                } catch (e2: Exception) {
+                    e2.printStackTrace()
+                }
             }
+        }
+    }
+
+    fun updateDataDirectly(
+        jsonStr: String,
+        style: String?,
+        opacity: Float?,
+        scale: Float?,
+        curve: String?
+    ) {
+        if (style != null && style != overlayStyle) {
+            overlayStyle = style
+            currentModeViewType = null
+        }
+        if (opacity != null) {
+            overlayOpacity = opacity
+        }
+        if (scale != null && userCustomWidthPx == null) {
+            overlayScale = scale
+        }
+        if (curve != null) {
+            smoothGaugeCurve = curve
+        }
+        if (jsonStr.isNotEmpty()) {
+            try {
+                lastSignalJson = JSONObject(jsonStr)
+            } catch (_: Exception) {}
+        }
+        Handler(Looper.getMainLooper()).post {
+            updateFloatingViewContent()
         }
     }
 
@@ -419,15 +460,40 @@ class OverlayService : Service() {
         }
     }
 
+    private class AntennaPictViewHolder(
+        val container: LinearLayout,
+        val barViews: List<View>,
+        val badgeTextView: TextView
+    ) {
+        fun update(barCount: Int, modeBadge: String, themeColor: Int) {
+            badgeTextView.text = modeBadge
+            badgeTextView.setTextColor(themeColor)
+            val bg = GradientDrawable().apply {
+                setColor(Color.argb(38, Color.red(themeColor), Color.green(themeColor), Color.blue(themeColor)))
+                cornerRadius = 8f
+                setStroke(1, Color.argb(150, Color.red(themeColor), Color.green(themeColor), Color.blue(themeColor)))
+            }
+            container.background = bg
+            barViews.forEachIndexed { index, bar ->
+                val isActive = index < barCount
+                bar.setBackgroundColor(if (isActive) themeColor else Color.parseColor("#33FFFFFF"))
+            }
+        }
+    }
+
     private class PillViewHolder(
         val pillLayout: LinearLayout,
-        val badgeText: TextView
+        val pictHolder: AntennaPictViewHolder,
+        val badgeText: TextView,
+        val batteryText: TextView
     )
 
     private class CardViewHolder(
         val mainCard: FrameLayout,
         val badgeView: TextView,
         val opView: TextView,
+        val loginView: TextView,
+        val batteryView: TextView,
         val nrHeader: TextView,
         val nrRsrpCell: MetricCellHolder,
         val nrRefCell: DualRefMetricsHolder,
@@ -439,6 +505,8 @@ class OverlayService : Service() {
     private class CompactViewHolder(
         val mainCard: FrameLayout,
         val statusView: TextView,
+        val loginView: TextView,
+        val batteryView: TextView,
         val nrCell: MetricCellHolder,
         val lteCell: MetricCellHolder
     )
@@ -605,6 +673,7 @@ class OverlayService : Service() {
         val opName = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
         val modeBadge = json?.optString("modeBadge", json.optString("connectionModeBadge", "5G+")) ?: "5G+"
         val isConnecting = json?.optBoolean("isConnecting", false) ?: false
+        val isLoggedIn = json?.optBoolean("isLoggedIn", false) ?: false
         val notation = json?.optString("generationNotation", "4g_5g") ?: "4g_5g"
         val smoothColor = json?.optBoolean("smoothGaugeColor", false) ?: false
 
@@ -631,9 +700,38 @@ class OverlayService : Service() {
         val lteRsrq = json?.optDouble("lteRsrq", Double.NaN)
         val lteSinr = json?.optDouble("lteSinr", Double.NaN)
 
+        val batteryPercent = if (json?.has("batteryPercent") == true && !json.isNull("batteryPercent")) json.optInt("batteryPercent") else null
+        val isCharging = json?.optBoolean("isCharging", false) ?: false
+        val tempVal = if (json?.has("batteryTemperature") == true && !json.isNull("batteryTemperature")) json.optDouble("batteryTemperature") else null
+        val remainingTimeStr = json?.optString("remainingTimeHHMM", "") ?: ""
+
+        val batSb = StringBuilder()
+        if (batteryPercent != null) {
+            batSb.append("🔋").append(batteryPercent).append("%")
+            if (isCharging) batSb.append("⚡")
+        }
+        if (tempVal != null && !tempVal.isNaN()) {
+            if (batSb.isNotEmpty()) batSb.append(" ")
+            batSb.append(tempVal.toInt()).append("℃")
+        }
+        if (remainingTimeStr.isNotEmpty()) {
+            if (batSb.isNotEmpty()) batSb.append(" ")
+            batSb.append(remainingTimeStr)
+        }
+        val batterySummary = batSb.toString()
+
+        val mainRsrp = if (nrRsrp != null && !nrRsrp.isNaN() && nrRsrp > -150) nrRsrp else lteRsrp
+        val barCount = when {
+            mainRsrp == null || mainRsrp.isNaN() || mainRsrp <= -120.0 -> 0
+            mainRsrp <= -110.0 -> 1
+            mainRsrp <= -100.0 -> 2
+            mainRsrp <= -90.0 -> 3
+            else -> 4
+        }
+        val themeColor = if (badge.contains("5G") || badge.contains("NR")) Color.parseColor("#00E5FF") else Color.parseColor("#2196F3")
+
         if (!isExpanded) {
             val holder = pillHolder ?: return
-            val mainRsrp = if (nrRsrp != null && !nrRsrp.isNaN() && nrRsrp > -150) nrRsrp else lteRsrp
             val mainSnr = if (nrSnr != null && !nrSnr.isNaN()) nrSnr else lteSinr
 
             val rpStr = if (mainRsrp != null && !mainRsrp.isNaN() && mainRsrp > -150) "${mainRsrp.toInt()}" else "--"
@@ -642,8 +740,9 @@ class OverlayService : Service() {
             val rpColor = getRsrpColor(mainRsrp)
             val snrColor = getSinrColor(mainSnr)
 
+            holder.pictHolder.update(barCount, if (isConnecting) "..." else badge, themeColor)
+
             val ssb = SpannableStringBuilder()
-            ssb.append(" $badge ")
             val rpStart = ssb.length
             ssb.append("RP:$rpStr")
             ssb.setSpan(
@@ -663,6 +762,12 @@ class OverlayService : Service() {
             )
 
             holder.badgeText.text = ssb
+            if (batterySummary.isNotEmpty()) {
+                holder.batteryText.visibility = View.VISIBLE
+                holder.batteryText.text = batterySummary
+            } else {
+                holder.batteryText.visibility = View.GONE
+            }
             holder.pillLayout.alpha = overlayOpacity
             return
         }
@@ -673,6 +778,14 @@ class OverlayService : Service() {
             holder.badgeView.text = if (isConnecting) "[ 接続中... ]" else "[ $modeBadge ]"
             holder.badgeView.setTextColor(if (isConnecting) Color.YELLOW else Color.parseColor("#00E5FF"))
             holder.opView.text = "  $opName"
+
+            holder.loginView.visibility = if (!isLoggedIn && !isConnecting) View.VISIBLE else View.GONE
+            if (batterySummary.isNotEmpty()) {
+                holder.batteryView.visibility = View.VISIBLE
+                holder.batteryView.text = batterySummary
+            } else {
+                holder.batteryView.visibility = View.GONE
+            }
 
             val nrTitle = if (nrBand == "--" && nrPci == "--") {
                 if (modeBadge.contains("+")) "$nrLabel+ (--)" else "$nrLabel (--)"
@@ -698,6 +811,14 @@ class OverlayService : Service() {
             holder.mainCard.alpha = overlayOpacity
             holder.statusView.text = "[$modeBadge] $opName"
 
+            holder.loginView.visibility = if (!isLoggedIn && !isConnecting) View.VISIBLE else View.GONE
+            if (batterySummary.isNotEmpty()) {
+                holder.batteryView.visibility = View.VISIBLE
+                holder.batteryView.text = batterySummary
+            } else {
+                holder.batteryView.visibility = View.GONE
+            }
+
             val nrTitle = if (modeBadge.contains("+")) {
                 if (nrBand == "--") "$nrLabel+ --" else "$nrLabel+ $nrBand"
             } else {
@@ -710,11 +831,56 @@ class OverlayService : Service() {
         }
     }
 
+    private fun createAntennaPictView(): Pair<View, AntennaPictViewHolder> {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(4f), dpToPx(2f), dpToPx(4f), dpToPx(2f))
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#2200E5FF"))
+                cornerRadius = dpToPx(4f).toFloat()
+                setStroke(dpToPx(0.8f), Color.parseColor("#6600E5FF"))
+            }
+            background = bg
+        }
+
+        val barsLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.BOTTOM
+        }
+
+        val barViews = mutableListOf<View>()
+        for (i in 0..3) {
+            val barH = dpToPx(3.5f + (i * 2.5f))
+            val bar = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dpToPx(2f), barH).apply {
+                    setMargins(dpToPx(0.5f), 0, dpToPx(0.5f), 0)
+                }
+                setBackgroundColor(Color.parseColor("#00E5FF"))
+            }
+            barViews.add(bar)
+            barsLayout.addView(bar)
+        }
+
+        val badgeText = TextView(this).apply {
+            text = "5G"
+            textSize = 9f
+            setTextColor(Color.parseColor("#00E5FF"))
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(dpToPx(3f), 0, 0, 0)
+        }
+
+        container.addView(barsLayout)
+        container.addView(badgeText)
+
+        return Pair(container, AntennaPictViewHolder(container, barViews, badgeText))
+    }
+
     private fun createMiniPillView(): View {
         val pill = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(10f), dpToPx(6f), dpToPx(10f), dpToPx(6f))
+            setPadding(dpToPx(6f), dpToPx(4f), dpToPx(8f), dpToPx(4f))
             val bg = GradientDrawable().apply {
                 setColor(Color.parseColor("#1E1E1E"))
                 cornerRadius = dpToPx(18f).toFloat()
@@ -724,21 +890,29 @@ class OverlayService : Service() {
             alpha = overlayOpacity
         }
 
-        val iconText = TextView(this).apply {
-            text = "📶"
-            textSize = 11f
-        }
+        val (pictView, pictHolder) = createAntennaPictView()
+
         val labelText = TextView(this).apply {
-            text = " 5G RP:-- SNR:--"
-            textSize = 11f
+            text = "RP:-- SNR:--"
+            textSize = 10f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
+            setPadding(dpToPx(4f), 0, 0, 0)
         }
 
-        pill.addView(iconText)
-        pill.addView(labelText)
+        val batteryText = TextView(this).apply {
+            text = "🔋--%"
+            textSize = 9.5f
+            setTextColor(Color.LTGRAY)
+            typeface = Typeface.MONOSPACE
+            setPadding(dpToPx(4f), 0, 0, 0)
+        }
 
-        pillHolder = PillViewHolder(pill, labelText)
+        pill.addView(pictView)
+        pill.addView(labelText)
+        pill.addView(batteryText)
+
+        pillHolder = PillViewHolder(pill, pictHolder, labelText, batteryText)
         return pill
     }
 
@@ -752,6 +926,10 @@ class OverlayService : Service() {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
         val badgeView = TextView(this).apply {
@@ -774,8 +952,43 @@ class OverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
         }
 
+        val loginView = TextView(this).apply {
+            text = "要ログイン"
+            textSize = 8.5f
+            setTextColor(Color.parseColor("#FFB300"))
+            typeface = Typeface.DEFAULT_BOLD
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#22FFB300"))
+                cornerRadius = dpToPx(3f).toFloat()
+            }
+            background = bg
+            setPadding(dpToPx(3f), dpToPx(1f), dpToPx(3f), dpToPx(1f))
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(dpToPx(4f), 0, 0, 0)
+            }
+        }
+
+        val batteryView = TextView(this).apply {
+            text = "🔋--%"
+            textSize = 9.5f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.MONOSPACE
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        }
+
         header.addView(badgeView)
         header.addView(opView)
+        header.addView(loginView)
+        header.addView(batteryView)
         root.addView(header)
 
         // 5G Header & Metric Cells
@@ -814,6 +1027,8 @@ class OverlayService : Service() {
             mainCard = mainCard,
             badgeView = badgeView,
             opView = opView,
+            loginView = loginView,
+            batteryView = batteryView,
             nrHeader = nrHeader,
             nrRsrpCell = nrRsrpCell,
             nrRefCell = nrRefCell,
@@ -831,14 +1046,61 @@ class OverlayService : Service() {
             setPadding(dpToPx(6f), dpToPx(4f), dpToPx(6f), dpToPx(4f))
         }
 
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(2f))
+            }
+        }
+
         val statusView = TextView(this).apply {
             text = "[5G+] Rakuten"
             textSize = 9.5f
             setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, dpToPx(2f))
         }
-        root.addView(statusView)
+
+        val loginView = TextView(this).apply {
+            text = "要ログイン"
+            textSize = 8.5f
+            setTextColor(Color.parseColor("#FFB300"))
+            typeface = Typeface.DEFAULT_BOLD
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#22FFB300"))
+                cornerRadius = dpToPx(3f).toFloat()
+            }
+            background = bg
+            setPadding(dpToPx(3f), dpToPx(0.5f), dpToPx(3f), dpToPx(0.5f))
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(dpToPx(4f), 0, 0, 0)
+            }
+        }
+
+        val batteryView = TextView(this).apply {
+            text = "🔋--%"
+            textSize = 9f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.MONOSPACE
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        }
+
+        header.addView(statusView)
+        header.addView(loginView)
+        header.addView(batteryView)
+        root.addView(header)
 
         val nrCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#00E5FF"))
         val lteCell = createMetricCellHolder("RSRP", "dBm", -120.0, -70.0, Color.parseColor("#2196F3"))
@@ -849,6 +1111,8 @@ class OverlayService : Service() {
         compactHolder = CompactViewHolder(
             mainCard = mainCard,
             statusView = statusView,
+            loginView = loginView,
+            batteryView = batteryView,
             nrCell = nrCell,
             lteCell = lteCell
         )
@@ -1370,6 +1634,7 @@ class OverlayService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
+        instance = null
         hideFloatingOverlay()
         removeLampOverlay()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -1382,6 +1647,7 @@ class OverlayService : Service() {
     }
 
     override fun onDestroy() {
+        instance = null
         hideFloatingOverlay()
         removeLampOverlay()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

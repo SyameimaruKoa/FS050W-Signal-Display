@@ -300,6 +300,15 @@ class CellCard extends StatelessWidget {
         final sinrLevel = ColorGauge.rateSinr(signal.lteSinr);
         final hasDetailParams = signal.lteRsrq != null || signal.lteSinr != null || signal.ltePci != null;
 
+        final op = (signal.operatorName).toLowerCase().replaceAll(" ", "");
+        final isRakuten = op.contains("rakuten") || op.contains("楽天") || op.contains("44011") || op.contains("44053");
+        final isRakutenBadge = isRakuten && (lteBadge == "楽天回線" || lteBadge == "ローミング" || lteBadge == "プラチナ");
+        final badgeColor = isRakutenBadge
+            ? const Color(0xFFE6007A)
+            : ((lteBadge?.contains("楽天") == true || lteBadge?.contains("au") == true || lteBadge == "ローミング")
+                ? Colors.pinkAccent
+                : Colors.blueAccent);
+
         return CellCard(
             title: titleText,
             icon: Icons.network_cell,
@@ -311,9 +320,7 @@ class CellCard extends StatelessWidget {
                         Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                                color: (lteBadge.contains("楽天") || lteBadge.contains("au"))
-                                    ? Colors.pinkAccent.withOpacity(0.2)
-                                    : Colors.blueAccent.withOpacity(0.2),
+                                color: badgeColor.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -321,9 +328,7 @@ class CellCard extends StatelessWidget {
                                 style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: (lteBadge.contains("楽天") || lteBadge.contains("au"))
-                                        ? Colors.pinkAccent
-                                        : Colors.blueAccent,
+                                    color: badgeColor,
                                 ),
                             ),
                         ),
