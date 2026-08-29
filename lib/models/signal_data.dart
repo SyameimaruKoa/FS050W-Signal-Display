@@ -117,14 +117,16 @@ class SignalData {
                 }
                 final remainingMah = (totalCap * ((targetPercent - batteryPercent!) / 100.0)).round();
                 if (current > 0) {
-                    final totalMinutes = ((remainingMah / current) * 60).round();
+                    // Charging speed capped at 1A (1000mA) max hardware charging limit
+                    final effectiveCurrent = current.clamp(1, 1000);
+                    final totalMinutes = ((remainingMah / effectiveCurrent) * 60).round();
                     if (totalMinutes <= 0) return "充電完了";
                     final hours = totalMinutes ~/ 60;
                     final mins = totalMinutes % 60;
                     if (hours > 0) {
-                        return "約 ${hours}時間${mins}分 (充電完了まで)";
+                        return "約 ${hours}時間${mins}分";
                     }
-                    return "約 ${mins}分 (充電完了まで)";
+                    return "約 ${mins}分";
                 }
             } else {
                 final remainingMah = (totalCap * (batteryPercent! / 100.0)).round();
@@ -134,9 +136,9 @@ class SignalData {
                 final hours = totalMinutes ~/ 60;
                 final mins = totalMinutes % 60;
                 if (hours > 0) {
-                    return "約 ${hours}時間${mins}分 (残り使用予想)";
+                    return "約 ${hours}時間${mins}分";
                 }
-                return "約 ${mins}分 (残り使用予想)";
+                return "約 ${mins}分";
             }
         }
 
@@ -149,6 +151,38 @@ class SignalData {
         } else {
             return "バッテリー駆動中";
         }
+    }
+
+    String? get remainingTimeHHMM {
+        if (!isBatteryPresent || batteryPercent == null) return null;
+        final totalCap = batteryCapacity;
+        final current = batteryCurrent;
+        if (totalCap == null || current == null || current.abs() <= 30) return null;
+
+        final targetPercent = isLongLifeCharging ? 70 : 100;
+        if (isCharging) {
+            if (batteryPercent! >= targetPercent) return null;
+            final remainingMah = (totalCap * ((targetPercent - batteryPercent!) / 100.0)).round();
+            if (current > 0) {
+                final effectiveCurrent = current.clamp(1, 1000);
+                final totalMinutes = ((remainingMah / effectiveCurrent) * 60).round();
+                if (totalMinutes <= 0) return null;
+                final hours = totalMinutes ~/ 60;
+                final mins = totalMinutes % 60;
+                final minsStr = mins.toString().padLeft(2, '0');
+                return "$hours:$minsStr";
+            }
+        } else {
+            final remainingMah = (totalCap * (batteryPercent! / 100.0)).round();
+            final dischargeMa = current.abs();
+            final totalMinutes = ((remainingMah / dischargeMa) * 60).round();
+            if (totalMinutes <= 0) return null;
+            final hours = totalMinutes ~/ 60;
+            final mins = totalMinutes % 60;
+            final minsStr = mins.toString().padLeft(2, '0');
+            return "$hours:$minsStr";
+        }
+        return null;
     }
 
     String get formattedUptime {
@@ -176,6 +210,16 @@ class SignalData {
         return "$usedMb MB / $totalMb MB ($percent%)";
     }
 
+    static String normalizeOperatorName(String raw) {
+        final trimmed = raw.trim();
+        final clean = trimmed.replaceAll(' ', '');
+        if (clean == '44011' || clean == '44053') return 'Rakuten';
+        if (clean == '44010' || clean == '44001') return 'NTT DOCOMO';
+        if (clean == '44050' || clean == '44051' || clean == '44052' || clean == '44054') return 'au';
+        if (clean == '44020' || clean == '44000') return 'SoftBank';
+        return trimmed.isEmpty ? '--' : trimmed;
+    }
+
     factory SignalData.fromApiResponse(
         Map<String, dynamic> json, {
         Map<String, dynamic>? deviceStateJson,
@@ -188,7 +232,8 @@ class SignalData {
         final now = DateTime.now();
         final sysmode = (rawMap['mnet_sysmode'] ?? previousData?.sysmode ?? 'lte').toString().toLowerCase();
         final isSa = sysmode == 'nr5g';
-        final operatorName = (rawMap['mnet_operator_name'] ?? previousData?.operatorName ?? '--').toString();
+        final rawOp = (rawMap['mnet_operator_name'] ?? previousData?.operatorName ?? '--').toString();
+        final operatorName = normalizeOperatorName(rawOp);
 
         // 4G LTE & 5G NR Parsing
         final rawLteRsrp = _parseInt(rawMap['mnet_rsrp']);

@@ -259,8 +259,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         final signal = apiService.currentSignal;
         final settings = apiService.settings;
         final isConnecting = apiService.isConnecting;
-
-        OverlayService.updateOverlayData(signal, settings, isConnecting: isConnecting);
+        OverlayService.updateOverlayData(
+            signal,
+            settings,
+            isConnecting: isConnecting,
+            isLoggedIn: apiService.isLoggedIn,
+        );
     }
 
     @override

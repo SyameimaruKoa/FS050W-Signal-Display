@@ -23,14 +23,26 @@ void main() {
 
         test('Rakuten and General Badge Tests', () {
             expect(FrequencyCalculator.getLteBadgeText(3, operatorName: "Rakuten"), equals("楽天回線"));
-            expect(FrequencyCalculator.getLteBadgeText(18, operatorName: "Rakuten"), equals("auローミング"));
-            expect(FrequencyCalculator.getLteBadgeText(28, operatorName: "Rakuten"), equals("楽天プラチナ"));
+            expect(FrequencyCalculator.getLteBadgeText(18, operatorName: "Rakuten"), equals("ローミング"));
+            expect(FrequencyCalculator.getLteBadgeText(26, operatorName: "Rakuten"), equals("ローミング"));
+            expect(FrequencyCalculator.getLteBadgeText(28, operatorName: "Rakuten"), equals("プラチナ"));
+            expect(FrequencyCalculator.getLteBadgeText(18, operatorName: "440 53"), equals("ローミング"));
+            expect(FrequencyCalculator.getLteBadgeText(28, operatorName: "440 11"), equals("プラチナ"));
             expect(FrequencyCalculator.getLteBadgeText(1), equals("FDD"));
             expect(FrequencyCalculator.getLteBadgeText(19), equals("プラチナ"));
             expect(FrequencyCalculator.getLteBadgeText(41), equals("TDD"));
 
             expect(FrequencyCalculator.getNrBadgeText(77), equals("Sub6"));
             expect(FrequencyCalculator.getNrBadgeText(28), equals("転用5G"));
+        });
+
+        test('Operator Name Normalization Tests', () {
+            expect(SignalData.normalizeOperatorName("440 53"), equals("Rakuten"));
+            expect(SignalData.normalizeOperatorName("44053"), equals("Rakuten"));
+            expect(SignalData.normalizeOperatorName("440 11"), equals("Rakuten"));
+            expect(SignalData.normalizeOperatorName("44011"), equals("Rakuten"));
+            expect(SignalData.normalizeOperatorName("440 10"), equals("NTT DOCOMO"));
+            expect(SignalData.normalizeOperatorName("Rakuten"), equals("Rakuten"));
         });
     });
 
@@ -350,7 +362,7 @@ void main() {
         });
 
         test('Estimated Remaining Time calculation for charging and discharging', () {
-            // Charging at 1500mA from 50% to 100% (4000mAh -> 2000mAh remaining = 80 mins)
+            // Charging at 1500mA (capped to 1000mA / 1A) from 50% to 100% (4000mAh -> 2000mAh remaining = 120 mins = 2h 0m)
             final chargingJson = {
                 'device_battery_exist': 'present',
                 'device_battery_level_percent': '50',
@@ -360,9 +372,10 @@ void main() {
                 'device_charge_long_life': 'disable',
             };
             final chargingSignal = SignalData.fromApiResponse(chargingJson);
-            expect(chargingSignal.estimatedTimeDisplay, contains("1時間20分"));
+            expect(chargingSignal.estimatedTimeDisplay, equals("約 2時間0分"));
+            expect(chargingSignal.remainingTimeHHMM, equals("2:00"));
 
-            // Discharging at 245mA with 72% battery (4000mAh -> 2880mAh remaining = 11.75 hours)
+            // Discharging at 245mA with 72% battery (4000mAh -> 2880mAh remaining = 705 mins = 11h 45m)
             final dischargingJson = {
                 'device_battery_exist': 'present',
                 'device_battery_level_percent': '72',
@@ -372,7 +385,8 @@ void main() {
                 'device_charge_long_life': 'enable',
             };
             final dischargingSignal = SignalData.fromApiResponse(dischargingJson);
-            expect(dischargingSignal.estimatedTimeDisplay, contains("11時間45分"));
+            expect(dischargingSignal.estimatedTimeDisplay, equals("約 11時間45分"));
+            expect(dischargingSignal.remainingTimeHHMM, equals("11:45"));
 
             // Full battery charging
             final fullJson = {
@@ -385,6 +399,7 @@ void main() {
             };
             final fullSignal = SignalData.fromApiResponse(fullJson);
             expect(fullSignal.estimatedTimeDisplay, equals("充電完了"));
+            expect(fullSignal.remainingTimeHHMM, isNull);
         });
 
         test('Hardware Device State parsing from get_device_state', () {

@@ -35,8 +35,8 @@ class FrequencyCalculator {
     static String? getLteBadgeText(int? band, {String? operatorName}) {
         if (band == null || band <= 0) return null;
 
-        final op = (operatorName ?? "").toLowerCase();
-        final isRakuten = op.contains("rakuten") || op.contains("楽天");
+        final op = (operatorName ?? "").toLowerCase().replaceAll(" ", "");
+        final isRakuten = op.contains("rakuten") || op.contains("楽天") || op.contains("44011") || op.contains("44053");
 
         if (isRakuten) {
             switch (band) {
@@ -44,9 +44,9 @@ class FrequencyCalculator {
                     return "楽天回線";
                 case 18:
                 case 26:
-                    return "auローミング";
+                    return "ローミング";
                 case 28:
-                    return "楽天プラチナ";
+                    return "プラチナ";
             }
         }
 

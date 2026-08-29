@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
@@ -28,7 +27,6 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
     Widget build(BuildContext context) {
         final apiService = context.watch<ApiService>();
         final signal = apiService.currentSignal;
-        final settings = apiService.settings;
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return AppBar(
@@ -51,6 +49,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         final notation = apiService.settings.generationNotation;
         final modeBadge = ConnectionModeHelper.getIconBadgeText(mode, notation: notation);
         final isConnecting = apiService.isConnecting;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         final isTempWarning = apiService.settings.batteryTempWarningEnabled &&
             signal?.batteryTemperature != null &&
@@ -73,11 +72,21 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         final String tempText = temp != null ? "${temp.round()}℃" : "--";
         final String currText = curr != null ? "${curr > 0 ? '+$curr' : curr}mA" : "";
 
+        final Color tempColor = isTempWarning
+            ? Colors.redAccent
+            : (isDark ? _getTempColor(temp) : _getLightTempColor(temp));
+
+        final Color currColor = isCharging
+            ? (isDark ? Colors.amberAccent : Colors.orange.shade800)
+            : (isDark ? Colors.white60 : Colors.black54);
+
+        final Color chargeIconColor = isDark ? Colors.amberAccent : Colors.orange.shade800;
+
         return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
                 // 1. Antenna Pict Icon & Badge
-                _buildAntennaPict(signal, mode, modeBadge, isConnecting),
+                _buildAntennaPict(signal, mode, modeBadge, isConnecting, isDark),
                 const SizedBox(width: 8),
 
                 // 2. Compact Battery & Hardware Summary
@@ -95,7 +104,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                             : _getBatteryIcon(batPercent),
                                         size: 14,
                                         color: isCharging
-                                            ? Colors.amberAccent
+                                            ? chargeIconColor
                                             : _getBatteryColor(batPercent),
                                     ),
                                     const SizedBox(width: 3),
@@ -113,7 +122,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                         decoration: BoxDecoration(
                                             color: isTempWarning
                                                 ? Colors.red.withOpacity(0.25)
-                                                : Colors.white.withOpacity(0.08),
+                                                : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
                                             borderRadius: BorderRadius.circular(4),
                                             border: Border.all(
                                                 color: isTempWarning
@@ -135,9 +144,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                                     style: TextStyle(
                                                         fontSize: 11,
                                                         fontWeight: FontWeight.bold,
-                                                        color: isTempWarning
-                                                            ? Colors.redAccent
-                                                            : _getTempColor(temp),
+                                                        color: tempColor,
                                                         fontFamily: 'monospace',
                                                     ),
                                                 ),
@@ -150,7 +157,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                             currText,
                                             style: TextStyle(
                                                 fontSize: 10.5,
-                                                color: isCharging ? Colors.amberAccent : Colors.white60,
+                                                color: currColor,
                                                 fontFamily: 'monospace',
                                             ),
                                         ),
@@ -163,17 +170,25 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 children: [
                                     Text(
                                         signal?.operatorName ?? "FS050W",
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 10,
-                                            color: Colors.white54,
-                                            fontWeight: FontWeight.w500,
+                                            color: isDark ? Colors.white70 : Colors.black87,
+                                            fontWeight: FontWeight.w600,
                                         ),
                                     ),
                                     const SizedBox(width: 4),
-                                    const Icon(Icons.touch_app, size: 10, color: Color(0xFF00E5FF)),
-                                    const Text(
+                                    Icon(
+                                        Icons.touch_app,
+                                        size: 10,
+                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F),
+                                    ),
+                                    Text(
                                         "詳細",
-                                        style: TextStyle(fontSize: 9, color: Color(0xFF00E5FF)),
+                                        style: TextStyle(
+                                            fontSize: 9,
+                                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F),
+                                            fontWeight: FontWeight.w600,
+                                        ),
                                     ),
                                 ],
                             ),
@@ -184,18 +199,22 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         );
     }
 
-    Widget _buildAntennaPict(SignalData? signal, Fs050wConnectionMode mode, String modeBadge, bool isConnecting) {
+    Widget _buildAntennaPict(SignalData? signal, Fs050wConnectionMode mode, String modeBadge, bool isConnecting, bool isDark) {
         if (isConnecting) {
             return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                 decoration: BoxDecoration(
                     color: Colors.amber.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.amberAccent, width: 0.8),
+                    border: Border.all(color: isDark ? Colors.amberAccent : Colors.orange.shade800, width: 0.8),
                 ),
-                child: const Text(
+                child: Text(
                     "接続中",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.amberAccent : Colors.orange.shade800,
+                    ),
                 ),
             );
         }
@@ -216,7 +235,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         }
 
         final Color themeColor = mode == Fs050wConnectionMode.nr5gSub6 || mode == Fs050wConnectionMode.nr5g
-            ? const Color(0xFF00ADB5)
+            ? (isDark ? const Color(0xFF00ADB5) : const Color(0xFF00838F))
             : const Color(0xFF2196F3);
 
         return Container(
@@ -240,7 +259,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 height: barHeight,
                                 margin: const EdgeInsets.symmetric(horizontal: 0.7),
                                 decoration: BoxDecoration(
-                                    color: isActive ? themeColor : Colors.white24,
+                                    color: isActive ? themeColor : (isDark ? Colors.white24 : Colors.black12),
                                     borderRadius: BorderRadius.circular(1),
                                 ),
                             );
@@ -282,6 +301,13 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (temp >= 45) return Colors.redAccent;
         if (temp >= 40) return Colors.amberAccent;
         return const Color(0xFF00E5FF);
+    }
+
+    Color _getLightTempColor(double? temp) {
+        if (temp == null) return Colors.black54;
+        if (temp >= 45) return Colors.red.shade800;
+        if (temp >= 40) return Colors.orange.shade900;
+        return const Color(0xFF00838F);
     }
 
     List<Widget> _buildDefaultActions(BuildContext context, ApiService apiService, bool isDark) {
@@ -543,9 +569,13 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(4),
                                             border: Border.all(color: const Color(0xFF00ADB5), width: 0.8),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                             "いたわり充電 (70%制限)",
-                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E5FF)),
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F),
+                                            ),
                                         ),
                                     ),
                             ],
@@ -582,8 +612,9 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         child: _buildMetricTile(
                                             label: "温度",
                                             value: temp != null ? "${temp.toStringAsFixed(1)} °C" : "--",
-                                            color: _getTemperatureColor(temp),
+                                            color: _getTemperatureColor(temp, isDark),
                                             icon: Icons.thermostat,
+                                            isDark: isDark,
                                         ),
                                     ),
                                     Expanded(
@@ -592,6 +623,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                             value: volt != null ? "${(volt / 1000.0).toStringAsFixed(3)} V" : "--",
                                             subtitle: volt != null ? "(${volt.round()} mV)" : null,
                                             icon: Icons.electric_bolt,
+                                            isDark: isDark,
                                         ),
                                     ),
                                 ],
@@ -604,8 +636,9 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                             label: "電流 (入出力)",
                                             value: curr != null ? "${curr > 0 ? '+$curr' : curr} mA" : "--",
                                             subtitle: (currentMah != null && cap != null) ? "残容量: $currentMah / $cap mAh" : null,
-                                            color: curr != null && curr > 0 ? Colors.amberAccent : null,
+                                            color: curr != null && curr > 0 ? (isDark ? Colors.amberAccent : Colors.orange.shade800) : null,
                                             icon: Icons.speed,
+                                            isDark: isDark,
                                         ),
                                     ),
                                     Expanded(
@@ -615,6 +648,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                                 ? "充電中 (⚡)"
                                                 : (chargeStatus == "discharging" ? "放電中 (バッテリー駆動)" : chargeStatus),
                                             icon: Icons.power,
+                                            isDark: isDark,
                                         ),
                                     ),
                                 ],
@@ -672,12 +706,12 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                 ),
                                 child: Row(
                                     children: [
-                                        const Icon(Icons.lock_outline, size: 18, color: Colors.amberAccent),
+                                        Icon(Icons.lock_outline, size: 18, color: isDark ? Colors.amberAccent : Colors.orange.shade800),
                                         const SizedBox(width: 8),
-                                        const Expanded(
+                                        Expanded(
                                             child: Text(
                                                 "CPU・RAM・プロセス数・稼働時間はWebパスワード設定・ログイン時に取得されます",
-                                                style: TextStyle(fontSize: 11.5, color: Colors.amberAccent),
+                                                style: TextStyle(fontSize: 11.5, color: isDark ? Colors.amberAccent : Colors.orange.shade900),
                                             ),
                                         ),
                                         TextButton(
@@ -723,6 +757,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         label: "稼働時間",
                                         value: uptime,
                                         icon: Icons.access_time,
+                                        isDark: isDark,
                                     ),
                                 ),
                                 Expanded(
@@ -730,6 +765,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         label: "実行プロセス数",
                                         value: procs != null ? "$procs" : "--",
                                         icon: Icons.developer_board,
+                                        isDark: isDark,
                                     ),
                                 ),
                             ],
@@ -780,12 +816,13 @@ class BatterySystemDetailSheet extends StatelessWidget {
         String? subtitle,
         Color? color,
         IconData? icon,
+        required bool isDark,
     }) {
         return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                 if (icon != null) ...[
-                    Icon(icon, size: 16, color: color ?? Colors.white54),
+                    Icon(icon, size: 16, color: color ?? (isDark ? Colors.white54 : Colors.black54)),
                     const SizedBox(width: 6),
                 ],
                 Expanded(
@@ -799,7 +836,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                 style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
-                                    color: color,
+                                    color: color ?? (isDark ? Colors.white : Colors.black87),
                                     fontFamily: 'monospace',
                                 ),
                             ),
@@ -807,7 +844,11 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                 const SizedBox(height: 1),
                                 Text(
                                     subtitle,
-                                    style: const TextStyle(fontSize: 10, color: Colors.white54, fontFamily: 'monospace'),
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: isDark ? Colors.white54 : Colors.black54,
+                                        fontFamily: 'monospace',
+                                    ),
                                 ),
                             ],
                         ],
@@ -824,11 +865,11 @@ class BatterySystemDetailSheet extends StatelessWidget {
         return Colors.redAccent;
     }
 
-    Color _getTemperatureColor(double? temp) {
+    Color _getTemperatureColor(double? temp, bool isDark) {
         if (temp == null) return Colors.grey;
         if (temp >= 45) return Colors.redAccent;
-        if (temp >= 40) return Colors.amberAccent;
-        return const Color(0xFF00E5FF);
+        if (temp >= 40) return isDark ? Colors.amberAccent : Colors.orange.shade800;
+        return isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F);
     }
 
     Color _getCpuColor(int? cpu) {

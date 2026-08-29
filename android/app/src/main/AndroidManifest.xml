@@ -20,8 +20,13 @@
 
         <service
             android:name=".OverlayService"
+            android:foregroundServiceType="specialUse"
             android:stopWithTask="true"
-            android:exported="false" />
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="FS050W router signal and battery status floating overlay" />
+        </service>
 
         <activity
             android:name=".MainActivity"
