@@ -131,43 +131,50 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                         padding: const EdgeInsets.only(left: 2),
                                     ),
                                     const SizedBox(width: 5),
-                                    if (hasBattery && temp != null)
-                                    Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                        decoration: BoxDecoration(
-                                            color: isTempWarning
-                                                ? Colors.red.withOpacity(0.25)
-                                                : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(
+                                    if (hasBattery && temp != null) ...[
+                                        Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                            decoration: BoxDecoration(
                                                 color: isTempWarning
-                                                    ? Colors.redAccent
-                                                    : Colors.transparent,
-                                                width: 0.8,
+                                                    ? Colors.red.withOpacity(0.25)
+                                                    : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(
+                                                    color: isTempWarning
+                                                        ? Colors.redAccent
+                                                        : Colors.transparent,
+                                                    width: 0.8,
+                                                ),
+                                            ),
+                                            child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                    if (isTempWarning)
+                                                        const Padding(
+                                                            padding: EdgeInsets.only(right: 2),
+                                                            child: Icon(Icons.warning_amber_rounded, size: 11, color: Colors.redAccent),
+                                                        ),
+                                                    Text(
+                                                        tempText,
+                                                        style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: tempColor,
+                                                            fontFamily: 'monospace',
+                                                        ),
+                                                    ),
+                                                ],
                                             ),
                                         ),
-                                        child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                                if (isTempWarning)
-                                                    const Padding(
-                                                        padding: EdgeInsets.only(right: 2),
-                                                        child: Icon(Icons.warning_amber_rounded, size: 11, color: Colors.redAccent),
-                                                    ),
-                                                Text(
-                                                    tempText,
-                                                    style: TextStyle(
-                                                        fontSize: 11,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: tempColor,
-                                                        fontFamily: 'monospace',
-                                                    ),
-                                                ),
-                                            ],
+                                        FlashDotIndicator(
+                                            value: temp,
+                                            dotColor: tempColor,
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 2),
                                         ),
-                                    ),
+                                    ],
                                     if (hasBattery && currText.isNotEmpty) ...[
-                                        const SizedBox(width: 5),
+                                        const SizedBox(width: 4),
                                         Text(
                                             currText,
                                             style: TextStyle(
@@ -175,6 +182,12 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                                 color: currColor,
                                                 fontFamily: 'monospace',
                                             ),
+                                        ),
+                                        FlashDotIndicator(
+                                            value: curr,
+                                            dotColor: currColor,
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 2),
                                         ),
                                     ],
                                 ],
@@ -640,6 +653,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                 valueText: isLongLife
                                     ? "${scaledPercent ?? '--'}% (実${rawPercent ?? '--'}%)"
                                     : "${rawPercent ?? '--'}%",
+                                dynamicValue: rawPercent,
                                 progress: (scaledPercent ?? rawPercent ?? 0) / 100.0,
                                 progressColor: _getBatteryProgressColor(scaledPercent ?? rawPercent),
                                 isDark: isDark,
@@ -653,6 +667,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         child: _buildMetricTile(
                                             label: "温度",
                                             value: temp != null ? "${temp.toStringAsFixed(1)} °C" : "--",
+                                            dynamicValue: temp,
                                             color: _getTemperatureColor(temp, isDark),
                                             icon: Icons.thermostat,
                                             isDark: isDark,
@@ -661,8 +676,8 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     Expanded(
                                         child: _buildMetricTile(
                                             label: "電圧",
-                                            value: volt != null ? "${(volt / 1000.0).toStringAsFixed(3)} V" : "--",
-                                            subtitle: volt != null ? "(${volt.round()} mV)" : null,
+                                            value: volt != null ? "${volt.round()} mV" : "--",
+                                            dynamicValue: volt,
                                             icon: Icons.electric_bolt,
                                             isDark: isDark,
                                         ),
@@ -676,6 +691,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         child: _buildMetricTile(
                                             label: "電流 (入出力)",
                                             value: curr != null ? "${curr > 0 ? '+$curr' : curr} mA" : "--",
+                                            dynamicValue: curr,
                                             subtitle: (currentMah != null && cap != null) ? "残容量: $currentMah / $cap mAh" : null,
                                             color: curr != null && curr > 0 ? (isDark ? Colors.amberAccent : Colors.orange.shade800) : null,
                                             icon: Icons.speed,
@@ -774,6 +790,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                         _buildProgressBarRow(
                             label: "CPU使用率",
                             valueText: cpu != null ? "$cpu %" : "--",
+                            dynamicValue: cpu,
                             progress: (cpu ?? 0) / 100.0,
                             progressColor: _getCpuColor(cpu),
                             isDark: isDark,
@@ -784,6 +801,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                         _buildProgressBarRow(
                             label: "RAM使用率",
                             valueText: ramText,
+                            dynamicValue: usageRam,
                             progress: ramRatio,
                             progressColor: _getRamColor(ramRatio),
                             isDark: isDark,
@@ -805,6 +823,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     child: _buildMetricTile(
                                         label: "実行プロセス数",
                                         value: procs != null ? "$procs" : "--",
+                                        dynamicValue: procs,
                                         icon: Icons.developer_board,
                                         isDark: isDark,
                                     ),
@@ -820,6 +839,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
     Widget _buildProgressBarRow({
         required String label,
         required String valueText,
+        dynamic dynamicValue,
         required double progress,
         required Color progressColor,
         required bool isDark,
@@ -830,7 +850,19 @@ class BatterySystemDetailSheet extends StatelessWidget {
                 Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                        Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                        Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                                Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                if (dynamicValue != null)
+                                    FlashDotIndicator(
+                                        value: dynamicValue,
+                                        dotColor: progressColor,
+                                        size: 3.5,
+                                        padding: const EdgeInsets.only(left: 3),
+                                    ),
+                            ],
+                        ),
                         Text(
                             valueText,
                             style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
@@ -854,6 +886,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
     Widget _buildMetricTile({
         required String label,
         required String value,
+        dynamic dynamicValue,
         String? subtitle,
         Color? color,
         IconData? icon,
@@ -870,7 +903,19 @@ class BatterySystemDetailSheet extends StatelessWidget {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                    Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                    if (dynamicValue != null)
+                                        FlashDotIndicator(
+                                            value: dynamicValue,
+                                            dotColor: color ?? const Color(0xFF00E5FF),
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 3),
+                                        ),
+                                ],
+                            ),
                             const SizedBox(height: 1),
                             Text(
                                 value,
