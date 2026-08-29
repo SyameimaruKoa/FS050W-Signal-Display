@@ -72,6 +72,13 @@ class PipScreen extends StatelessWidget {
         );
     }
 
+    Color _getLatencyColor(int? latencyMs) {
+        if (latencyMs == null) return Colors.transparent;
+        if (latencyMs <= 50) return const Color(0xFF00E676);
+        if (latencyMs <= 150) return Colors.amberAccent;
+        return Colors.redAccent;
+    }
+
     Widget _buildHeader(
         BuildContext context,
         ApiService apiService,
@@ -84,6 +91,11 @@ class PipScreen extends StatelessWidget {
         final modeBadge = ConnectionModeHelper.getIconBadgeText(mode, notation: notation);
         final opName = signal?.operatorName ?? "--";
         final is1to1 = aspectRatioStr == '1:1';
+
+        final latency = signal?.routerLatencyMs;
+        final isDelayed = latency != null && latency > 150;
+        final latencyColor = _getLatencyColor(latency);
+        final ratio = latency != null ? (latency / 200.0).clamp(0.0, 1.0) : 0.0;
 
         return Container(
             padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: is1to1 ? 2.5 : 1.5),
@@ -166,13 +178,42 @@ class PipScreen extends StatelessWidget {
                             child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerRight,
-                                child: Text(
-                                    opName,
-                                    style: TextStyle(
-                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
-                                        fontSize: is1to1 ? 11.0 : 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white70,
+                                child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(3.0),
+                                    child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                            if (ratio > 0)
+                                                Positioned.fill(
+                                                    child: FractionallySizedBox(
+                                                        alignment: Alignment.centerLeft,
+                                                        widthFactor: ratio,
+                                                        child: Container(
+                                                            color: latencyColor.withOpacity(0.35),
+                                                        ),
+                                                    ),
+                                                ),
+                                            Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
+                                                decoration: BoxDecoration(
+                                                    color: latency != null ? latencyColor.withOpacity(0.12) : Colors.transparent,
+                                                    borderRadius: BorderRadius.circular(3.0),
+                                                    border: Border.all(
+                                                        color: latency != null ? latencyColor.withOpacity(0.4) : Colors.transparent,
+                                                        width: 0.6,
+                                                    ),
+                                                ),
+                                                child: Text(
+                                                    isDelayed ? "${latency}ms" : opName,
+                                                    style: TextStyle(
+                                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                                                        fontSize: is1to1 ? 11.0 : 9.5,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isDelayed ? latencyColor : Colors.white70,
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
                                     ),
                                 ),
                             ),
@@ -276,6 +317,27 @@ class PipScreen extends StatelessWidget {
         final pciStr = isLoggedIn && (signal?.nrPci != null && signal!.nrPci! > 0) ? "${signal!.nrPci}" : "--";
 
         final fontSz = isSingleMode ? 10.5 : 8.5;
+
+        if (signal?.is5gDisabledByConfig == true) {
+            return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(3.5),
+                    border: Border.all(color: Colors.blueGrey.withOpacity(0.3), width: 0.6),
+                ),
+                child: Center(
+                    child: Text(
+                        "[$genName無効]",
+                        style: TextStyle(
+                            fontSize: fontSz,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white38,
+                        ),
+                    ),
+                ),
+            );
+        }
 
         return Container(
             padding: const EdgeInsets.symmetric(horizontal: 3.0, vertical: 2.0),

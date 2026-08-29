@@ -543,6 +543,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         SwitchListTile(
                             contentPadding: EdgeInsets.zero,
+                            title: const Text("更新時ポッチ点滅 (フラッシュインジケーター)"),
+                            subtitle: const Text("各メトリクス更新時に淡いインジケーターを点滅表示"),
+                            value: _settings.updateFlashDotEnabled,
+                            onChanged: (val) {
+                                setState(() => _settings.updateFlashDotEnabled = val);
+                                _save();
+                            },
+                        ),
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
                             title: const Text("シームレスゲージカラー"),
                             subtitle: const Text("電波バーの色をグラデーションで滑らかに変化"),
                             value: _settings.smoothGaugeColor,

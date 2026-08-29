@@ -4,6 +4,7 @@ import '../../models/connection_state.dart';
 import '../../utils/calc_frequency.dart';
 import '../../utils/color_gauge.dart';
 import 'metric_gauge.dart';
+import 'flash_dot_indicator.dart';
 
 class CellCard extends StatelessWidget {
     final String title;
@@ -80,6 +81,48 @@ class CellCard extends StatelessWidget {
                 children: [
                     Text("データ取得待機中...", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
                 ],
+            );
+        }
+
+        if (signal.is5gDisabledByConfig) {
+            return Card(
+                elevation: 1,
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: Colors.blueGrey.withOpacity(0.3), width: 1.0),
+                ),
+                color: Theme.of(context).cardColor,
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    child: Row(
+                        children: [
+                            Icon(Icons.block, color: Colors.blueGrey.shade400, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(
+                                    "【$genLabel】5Gは無効です (ルーター設定: 4G優先)",
+                                    style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white60 : Colors.black54,
+                                    ),
+                                ),
+                            ),
+                            Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                    color: Colors.blueGrey.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                    "4G固定",
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
             );
         }
 
@@ -526,6 +569,12 @@ class CellCard extends StatelessWidget {
                                                         fontWeight: FontWeight.bold,
                                                         color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white38 : Colors.black38),
                                                     ),
+                                                ),
+                                                FlashDotIndicator(
+                                                    value: value,
+                                                    dotColor: color,
+                                                    size: 3.5,
+                                                    padding: const EdgeInsets.only(left: 2),
                                                 ),
                                                 const SizedBox(width: 3),
                                                 Container(

@@ -7,6 +7,7 @@ import '../../models/connection_state.dart';
 import '../hud_screen.dart';
 import '../settings_screen.dart';
 import 'log_viewer_dialog.dart';
+import 'flash_dot_indicator.dart';
 
 class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
     final List<Widget>? actions;
@@ -124,7 +125,12 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                             fontFamily: !hasBattery ? null : 'monospace',
                                         ),
                                     ),
-                                    const SizedBox(width: 6),
+                                    FlashDotIndicator(
+                                        value: batPercent,
+                                        size: 3.5,
+                                        padding: const EdgeInsets.only(left: 2),
+                                    ),
+                                    const SizedBox(width: 5),
                                     if (hasBattery && temp != null)
                                     Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),

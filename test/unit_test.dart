@@ -478,5 +478,65 @@ void main() {
             expect(settings.notificationStyle, equals(NotificationDetailStyle.compact));
         });
     });
+
+    group('FS050W Wi-Fi, Latency, and Network Preference Tests', () {
+        test('Wi-Fi status parsing with 5GHz and W56 frequency', () {
+            final json = {
+                'wifi_state_0': 'ap_enable',
+                'wifi_freq_0': '5g',
+                'wifi_5g_sub_freq': 'w56',
+                'wifi_client_0': '3',
+                'wifi_work_status': 'open',
+            };
+            final signal = SignalData.fromApiResponse(json, routerLatencyMs: 14);
+            expect(signal.isWifiEnabled, isTrue);
+            expect(signal.wifiFreq, equals('5g'));
+            expect(signal.wifiSubFreq, equals('w56'));
+            expect(signal.wifiFreqDisplay, equals('5GHz (W56)'));
+            expect(signal.wifiClientCount, equals(3));
+            expect(signal.routerLatencyMs, equals(14));
+        });
+
+        test('Wi-Fi status parsing with 2.4GHz disabled', () {
+            final json = {
+                'wifi_state_0': 'ap_disable',
+                'wifi_freq_0': '2.4g',
+                'wifi_client_0': '0',
+                'wifi_work_status': 'close',
+            };
+            final signal = SignalData.fromApiResponse(json);
+            expect(signal.isWifiEnabled, isFalse);
+            expect(signal.wifiFreqDisplay, equals('2.4GHz'));
+            expect(signal.wifiClientCount, equals(0));
+        });
+
+        test('4G/5G Router Preference detects 4G only mode and disables 5G', () {
+            final json4gOnly = {
+                'mnet_acqorder': '4g FDD TDD',
+            };
+            final signal4g = SignalData.fromApiResponse(json4gOnly);
+            expect(signal4g.preferNetMode, equals('4g FDD TDD'));
+            expect(signal4g.is5gDisabledByConfig, isTrue);
+
+            final json5gAllowed = {
+                'mnet_acqorder': '5g 4g FDD TDD',
+            };
+            final signal5g = SignalData.fromApiResponse(json5gAllowed);
+            expect(signal5g.preferNetMode, equals('5g 4g FDD TDD'));
+            expect(signal5g.is5gDisabledByConfig, isFalse);
+        });
+
+        test('AppSettings updateFlashDotEnabled serialization roundtrip', () {
+            final settingsTrue = AppSettings(updateFlashDotEnabled: true);
+            final jsonTrue = settingsTrue.toJson();
+            expect(jsonTrue['updateFlashDotEnabled'], isTrue);
+            expect(AppSettings.fromJson(jsonTrue).updateFlashDotEnabled, isTrue);
+
+            final settingsFalse = AppSettings(updateFlashDotEnabled: false);
+            final jsonFalse = settingsFalse.toJson();
+            expect(jsonFalse['updateFlashDotEnabled'], isFalse);
+            expect(AppSettings.fromJson(jsonFalse).updateFlashDotEnabled, isFalse);
+        });
+    });
 }
 

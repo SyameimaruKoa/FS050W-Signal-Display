@@ -744,32 +744,27 @@ class OverlayService : Service() {
 
             val ssb = SpannableStringBuilder()
             val rpStart = ssb.length
-            ssb.append("RP:$rpStr")
-            ssb.setSpan(
+            ssb.append(rpStr)
                 ForegroundColorSpan(rpColor),
                 rpStart,
                 ssb.length,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
-            ssb.append(" ")
+            ssb.append(" / ")
             val snrStart = ssb.length
-            ssb.append("SNR:$snrStr")
             ssb.setSpan(
                 ForegroundColorSpan(snrColor),
-                snrStart,
                 ssb.length,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
 
-            holder.badgeText.text = ssb
-            if (batterySummary.isNotEmpty()) {
-                holder.batteryText.visibility = View.VISIBLE
-                holder.batteryText.text = batterySummary
-            } else {
-                holder.batteryText.visibility = View.GONE
+            if (latencyMs != null) {
+                val latStart = ssb.length
+                ssb.append(" ${latencyMs}ms")
+            val pillBatSb = SpannableStringBuilder()
+            if (batteryPercent != null) {
             }
             holder.pillLayout.alpha = overlayOpacity
-            return
         }
 
         if (overlayStyle == "card") {
@@ -777,39 +772,33 @@ class OverlayService : Service() {
             holder.mainCard.alpha = overlayOpacity
             holder.badgeView.text = if (isConnecting) "[ 接続中... ]" else "[ $modeBadge ]"
             holder.badgeView.setTextColor(if (isConnecting) Color.YELLOW else Color.parseColor("#00E5FF"))
-            holder.opView.text = "  $opName"
 
-            holder.loginView.visibility = if (!isLoggedIn && !isConnecting) View.VISIBLE else View.GONE
-            if (batterySummary.isNotEmpty()) {
-                holder.batteryView.visibility = View.VISIBLE
-                holder.batteryView.text = batterySummary
-            } else {
-                holder.batteryView.visibility = View.GONE
+            val opText = if (isDelayed) "${latencyMs}ms" else opName
+            val latColor = getLatencyColor(latencyMs)
+            holder.opView.text = opText
+            holder.opView.setTextColor(if (isDelayed) latColor else Color.LTGRAY)
+            if (latencyMs != null) {
+                val opBg = GradientDrawable().apply {
             }
 
-            val nrTitle = if (nrBand == "--" && nrPci == "--") {
-                if (modeBadge.contains("+")) "$nrLabel+ (--)" else "$nrLabel (--)"
+            if (is5gDisabled) {
+                holder.nrHeader.text = "$nrLabel (5Gは無効です)"
+                holder.nrHeader.setTextColor(Color.GRAY)
+                holder.nrRsrpCell.container.visibility = View.GONE
+                holder.nrRefCell.container.visibility = View.GONE
             } else {
-                if (modeBadge.contains("+")) "$nrLabel+ ($nrBand/$nrPci)" else "$nrLabel ($nrBand/$nrPci)"
-            }
-            val lteTitle = if (lteBand == "--" && ltePci == "--") {
-                "$lteLabel (--)"
-            } else {
-                "$lteLabel ($lteBand/$ltePci)"
-            }
+                holder.nrRsrpCell.container.visibility = View.VISIBLE
+                holder.nrRefCell.container.visibility = View.VISIBLE
+                }
+                holder.nrHeader.text = nrTitle
 
-            holder.nrHeader.text = nrTitle
-            holder.lteHeader.text = lteTitle
-
-            holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.nrRefCell.update(nrRsrq, nrSnr, curveType = smoothGaugeCurve)
-
-            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
             holder.lteRefCell.update(lteRsrq, lteSinr, curveType = smoothGaugeCurve)
         } else {
             val holder = compactHolder ?: return
             holder.mainCard.alpha = overlayOpacity
-            holder.statusView.text = "[$modeBadge] $opName"
+            val statusText = if (isDelayed) "[$modeBadge] ${latencyMs}ms" else "[$modeBadge] $opName"
+            holder.statusView.text = statusText
+            holder.statusView.setTextColor(if (isDelayed) getLatencyColor(latencyMs) else Color.WHITE)
 
             holder.loginView.visibility = if (!isLoggedIn && !isConnecting) View.VISIBLE else View.GONE
             if (batterySummary.isNotEmpty()) {
@@ -819,30 +808,22 @@ class OverlayService : Service() {
                 holder.batteryView.visibility = View.GONE
             }
 
-            val nrTitle = if (modeBadge.contains("+")) {
-                if (nrBand == "--") "$nrLabel+ --" else "$nrLabel+ $nrBand"
-            } else {
-                if (nrBand == "--") "$nrLabel --" else "$nrLabel $nrBand"
+            if (is5gDisabled) {
+                holder.nrCell.container.visibility = View.GONE
+                    if (nrBand == "--") "$nrLabel+ --" else "$nrLabel+ $nrBand"
+                } else {
+                    if (nrBand == "--") "$nrLabel --" else "$nrLabel $nrBand"
+                }
+                holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
             }
-            val lteTitle = if (lteBand == "--") "$lteLabel --" else "$lteLabel $lteBand"
 
-            holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            val lteTitle = if (lteBand == "--") "$lteLabel --" else "$lteLabel $lteBand"
             holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
         }
     }
-
-    private fun createAntennaPictView(): Pair<View, AntennaPictViewHolder> {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(4f), dpToPx(2f), dpToPx(4f), dpToPx(2f))
-            val bg = GradientDrawable().apply {
-                setColor(Color.parseColor("#2200E5FF"))
-                cornerRadius = dpToPx(4f).toFloat()
-                setStroke(dpToPx(0.8f), Color.parseColor("#6600E5FF"))
-            }
             background = bg
-        }
 
         val barsLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL

@@ -9,6 +9,7 @@ import '../utils/color_gauge.dart';
 import 'widgets/fs050w_app_bar.dart';
 import 'widgets/cell_card.dart';
 import 'widgets/log_viewer_dialog.dart';
+import 'widgets/flash_dot_indicator.dart';
 import 'hud_screen.dart';
 import 'settings_screen.dart';
 
@@ -28,6 +29,16 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
     bool _isCellDetailsExpanded = false;
+
+    Color _getLatencyColor(int latencyMs, bool isDark) {
+        if (latencyMs <= 50) {
+            return isDark ? const Color(0xFF00E676) : const Color(0xFF2E7D32);
+        } else if (latencyMs <= 150) {
+            return isDark ? Colors.amberAccent : Colors.orange.shade800;
+        } else {
+            return isDark ? Colors.redAccent : Colors.red.shade700;
+        }
+    }
 
     @override
     Widget build(BuildContext context) {
@@ -103,15 +114,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             color: isDark ? statusColor : (isConnected ? const Color(0xFF2E7D32) : Colors.red.shade700),
                                         ),
                                     ),
+                                    if (isConnected && signal?.routerLatencyMs != null) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                                color: _getLatencyColor(signal!.routerLatencyMs!, isDark).withOpacity(0.18),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(
+                                                    color: _getLatencyColor(signal.routerLatencyMs!, isDark).withOpacity(0.5),
+                                                    width: 0.8,
+                                                ),
+                                            ),
+                                            child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                    Icon(
+                                                        Icons.speed,
+                                                        size: 10.5,
+                                                        color: _getLatencyColor(signal.routerLatencyMs!, isDark),
+                                                    ),
+                                                    const SizedBox(width: 3),
+                                                    Text(
+                                                        "${signal.routerLatencyMs}ms",
+                                                        style: TextStyle(
+                                                            fontSize: 10.5,
+                                                            fontWeight: FontWeight.bold,
+                                                            fontFamily: 'monospace',
+                                                            color: _getLatencyColor(signal.routerLatencyMs!, isDark),
+                                                        ),
+                                                    ),
+                                                    FlashDotIndicator(
+                                                        value: signal.routerLatencyMs,
+                                                        dotColor: _getLatencyColor(signal.routerLatencyMs!, isDark),
+                                                        size: 4,
+                                                        padding: const EdgeInsets.only(left: 3),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
                                 ],
                             ),
-                            Text(
-                                operatorName,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : Colors.black87,
-                                ),
+                            Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                    Text(
+                                        operatorName,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                        ),
+                                    ),
+                                    FlashDotIndicator(
+                                        value: operatorName,
+                                        size: 4,
+                                        padding: const EdgeInsets.only(left: 4),
+                                    ),
+                                ],
                             ),
                         ],
                     ),
@@ -123,33 +184,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                                Text(
-                                    "ステータス: ",
-                                    style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
-                                ),
-                                Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                        color: isConnecting
-                                            ? Colors.amber.withOpacity(0.2)
-                                            : (isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15)),
-                                        borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                        isConnecting ? "接続中..." : uiMode,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: isConnecting
-                                                ? Colors.amberAccent
-                                                : (isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
+                                Row(
+                                    children: [
+                                        Text(
+                                            "ステータス: ",
+                                            style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
                                         ),
-                                    ),
+                                        Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                                color: isConnecting
+                                                    ? Colors.amber.withOpacity(0.2)
+                                                    : (isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15)),
+                                                borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                    Text(
+                                                        isConnecting ? "接続中..." : uiMode,
+                                                        style: TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: isConnecting
+                                                                ? Colors.amberAccent
+                                                                : (isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
+                                                        ),
+                                                    ),
+                                                    FlashDotIndicator(
+                                                        value: uiMode,
+                                                        size: 4,
+                                                        padding: const EdgeInsets.only(left: 3),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
                                 ),
                             ],
                         ),
                     ),
+                    const SizedBox(height: 6),
+                    // Wi-Fi Summary Row
+                    _buildWifiSummaryRow(context, signal, isDark),
                     if (apiService.errorMessage != null && !isConnected) ...[
                         const SizedBox(height: 6),
                         Text(
@@ -157,6 +236,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             style: const TextStyle(fontSize: 12, color: Colors.orangeAccent),
                         ),
                     ],
+                ],
+            ),
+        );
+    }
+
+    Widget _buildWifiSummaryRow(BuildContext context, SignalData? signal, bool isDark) {
+        final isWifiOn = signal?.isWifiEnabled ?? false;
+        final wifiFreq = signal?.wifiFreqDisplay ?? '--';
+        final clients = signal?.wifiClientCount ?? 0;
+        final wifiColor = isWifiOn ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F)) : Colors.grey;
+
+        return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.025) : Colors.black.withOpacity(0.025),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: isDark ? Colors.white10 : Colors.black12, width: 0.8),
+            ),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                    Row(
+                        children: [
+                            Icon(
+                                isWifiOn ? Icons.wifi : Icons.wifi_off,
+                                size: 14,
+                                color: wifiColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                                "Wi-Fi: ",
+                                style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
+                            ),
+                            Text(
+                                isWifiOn ? "有効 ($wifiFreq)" : "無効",
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: wifiColor,
+                                ),
+                            ),
+                        ],
+                    ),
+                    Row(
+                        children: [
+                            Icon(
+                                Icons.devices,
+                                size: 13,
+                                color: isDark ? Colors.white60 : Colors.black54,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                                "$clients台 接続中",
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontFamily: 'monospace',
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white70 : Colors.black87,
+                                ),
+                            ),
+                            FlashDotIndicator(
+                                value: "$isWifiOn-$wifiFreq-$clients",
+                                size: 4,
+                                padding: const EdgeInsets.only(left: 3),
+                            ),
+                        ],
+                    ),
                 ],
             ),
         );
@@ -242,6 +388,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         LayoutBuilder(
                             builder: (context, constraints) {
                                 final isNarrow = constraints.maxWidth < 340;
+                                final is5gDisabled = signal?.is5gDisabledByConfig ?? false;
+
                                 final p5g = _buildRsrpOverviewPanel(
                                     context,
                                     title: is5gSub6 ? "$nrName+ (Sub6)" : nrName,
@@ -250,6 +398,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     is5g: true,
                                     isStandby: is5gStandby,
                                     isSingleMode: is4gOnly,
+                                    is5gDisabled: is5gDisabled,
                                     smoothGaugeColor: smooth,
                                     smoothGaugeCurve: curve,
                                     accentColor: is5gSub6 ? const Color(0xFF00E5FF) : const Color(0xFF00ADB5),
@@ -262,10 +411,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     is5g: false,
                                     isStandby: false,
                                     isSingleMode: signal?.isSa ?? false,
+                                    is5gDisabled: false,
                                     smoothGaugeColor: smooth,
                                     smoothGaugeCurve: curve,
                                     accentColor: const Color(0xFF2196F3),
                                 );
+
+                                if (is5gDisabled) {
+                                    return Column(
+                                        children: [
+                                            p4g,
+                                            const SizedBox(height: 8),
+                                            p5g,
+                                        ],
+                                    );
+                                }
 
                                 if (isNarrow) {
                                     return Column(
@@ -302,11 +462,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
         required bool is5g,
         required bool isStandby,
         required bool isSingleMode,
+        required bool is5gDisabled,
         required bool smoothGaugeColor,
         required String smoothGaugeCurve,
         required Color accentColor,
     }) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        if (is5g && is5gDisabled) {
+            return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isDark ? Colors.white12 : Colors.black12, width: 0.8),
+                ),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                        Row(
+                            children: [
+                                Icon(Icons.block, size: 14, color: isDark ? Colors.white38 : Colors.black38),
+                                const SizedBox(width: 6),
+                                Text(
+                                    "$title: 5Gは無効です (ルーター設定: 4G優先)",
+                                    style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: isDark ? Colors.white60 : Colors.black54,
+                                        fontWeight: FontWeight.w600,
+                                    ),
+                                ),
+                            ],
+                        ),
+                        Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                                color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                                "4G固定",
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white54 : Colors.black45,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            );
+        }
+
         final isValid = rsrp != null && !rsrp.isNaN && rsrp < 0;
         final level = isValid ? ColorGauge.rateRsrp(rsrp) : SignalRatingLevel.unknown;
         final color = isValid
@@ -379,14 +586,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                        mainValText,
-                        style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: isValid ? (isDark ? Colors.white : Colors.black87) : (isDark ? Colors.white38 : Colors.black38),
-                        ),
+                    Row(
+                        children: [
+                            Text(
+                                mainValText,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: isValid ? (isDark ? Colors.white : Colors.black87) : (isDark ? Colors.white38 : Colors.black38),
+                                ),
+                            ),
+                            FlashDotIndicator(
+                                value: rsrp,
+                                dotColor: color,
+                                size: 5,
+                                padding: const EdgeInsets.only(left: 6),
+                            ),
+                        ],
                     ),
                     const SizedBox(height: 6),
                     ClipRRect(

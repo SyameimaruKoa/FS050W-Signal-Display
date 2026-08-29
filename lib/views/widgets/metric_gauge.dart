@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/color_gauge.dart';
+import 'flash_dot_indicator.dart';
 
 class MetricGauge extends StatelessWidget {
     final String label;
@@ -70,20 +71,23 @@ class MetricGauge extends StatelessWidget {
                             Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                    SizedBox(
-                                        width: 96,
-                                        child: Text(
-                                            valueText,
-                                            textAlign: TextAlign.right,
-                                            style: TextStyle(
-                                                fontFamily: 'monospace',
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: color,
-                                            ),
+                                    Text(
+                                        valueText,
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                            fontFamily: 'monospace',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: color,
                                         ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    FlashDotIndicator(
+                                        value: value,
+                                        dotColor: color,
+                                        size: 4,
+                                        padding: const EdgeInsets.only(left: 4),
+                                    ),
+                                    const SizedBox(width: 6),
                                     Container(
                                         width: 78,
                                         height: 24,

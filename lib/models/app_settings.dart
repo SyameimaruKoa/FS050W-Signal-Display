@@ -59,6 +59,7 @@ class AppSettings {
     String generationNotation;          // "4g_5g" (4G / 5G / e4G), "lte_nr" (LTE / NR / eLTE)
     bool smoothGaugeColor;              // シームレスゲージカラー (グラデーション変化)
     String smoothGaugeCurve;            // "easeOut", "easeIn", "easeInOut", "linear"
+    bool updateFlashDotEnabled;         // メトリクス更新時の淡いポッチ点滅表示
 
     // 7. レガシー通知設定 (非推奨/互換性保持用)
     bool foregroundNotificationEnabled;
@@ -97,6 +98,7 @@ class AppSettings {
         this.generationNotation = "4g_5g",
         this.smoothGaugeColor = false,
         this.smoothGaugeCurve = "easeOut",
+        this.updateFlashDotEnabled = true,
         this.foregroundNotificationEnabled = false,
         this.notificationStyle = NotificationDetailStyle.detailed,
     });
@@ -135,6 +137,7 @@ class AppSettings {
             'generationNotation': generationNotation,
             'smoothGaugeColor': smoothGaugeColor,
             'smoothGaugeCurve': smoothGaugeCurve,
+            'updateFlashDotEnabled': updateFlashDotEnabled,
             'foregroundNotificationEnabled': foregroundNotificationEnabled,
             'notificationStyle': notificationStyle.index,
         };
@@ -174,6 +177,7 @@ class AppSettings {
             generationNotation: json['generationNotation'] ?? "4g_5g",
             smoothGaugeColor: json['smoothGaugeColor'] ?? false,
             smoothGaugeCurve: json['smoothGaugeCurve'] ?? "easeOut",
+            updateFlashDotEnabled: json['updateFlashDotEnabled'] ?? true,
             foregroundNotificationEnabled: json['foregroundNotificationEnabled'] ?? false,
             notificationStyle: NotificationDetailStyle.values[((json['notificationStyle'] ?? 0) as int).clamp(0, NotificationDetailStyle.values.length - 1)],
         );

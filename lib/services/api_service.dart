@@ -41,6 +41,7 @@ class ApiService extends ChangeNotifier {
     DateTime? _lockoutUntil;
     int _lockoutRemainSeconds = 0;
     int _consecutiveLoginFailures = 0;
+    int? _lastLatencyMs;
 
     ApiService(this._settings);
 
@@ -51,6 +52,7 @@ class ApiService extends ChangeNotifier {
     bool get isLoggedIn => _isLoggedIn;
     AppSettings get settings => _settings;
     bool get isConnecting => _status == ConnectionStatus.connecting;
+    int? get lastLatencyMs => _lastLatencyMs;
     bool get isLockedOut => _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
     int get lockoutRemainSeconds => _lockoutUntil != null ? _lockoutUntil!.difference(DateTime.now()).inSeconds.clamp(0, 999) : 0;
 
@@ -295,6 +297,7 @@ class ApiService extends ChangeNotifier {
                     deviceStateJson: devState,
                     previousData: _currentSignal,
                     adjust5gSnr: _settings.adjust5gSnr,
+                    routerLatencyMs: _lastLatencyMs,
                 );
 
                 NotificationService.handleSignalEvents(signal, _settings);
@@ -423,6 +426,12 @@ class ApiService extends ChangeNotifier {
         'mnet_sysmode',
         'mnet_sig_level_num',
         'mnet_operator_name',
+        'mnet_acqorder',
+        'wifi_state_0',
+        'wifi_freq_0',
+        'wifi_5g_sub_freq',
+        'wifi_client_0',
+        'wifi_work_status',
         'device_battery_level_percent',
         'device_battery_exist',
         'device_battery_level',
@@ -472,7 +481,11 @@ class ApiService extends ChangeNotifier {
             };
 
             try {
+                final stopwatch = Stopwatch()..start();
                 final response = await _client.post(authUri, headers: authHeaders, body: keysPayload).timeout(const Duration(seconds: 4));
+                stopwatch.stop();
+                _lastLatencyMs = stopwatch.elapsedMilliseconds;
+
                 _updateHeadersFromResponse(response);
                 if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
                     final dynamic data = jsonDecode(response.body);
@@ -500,7 +513,11 @@ class ApiService extends ChangeNotifier {
             };
 
             try {
+                final stopwatch = Stopwatch()..start();
                 final response = await _client.post(uri, headers: headers, body: keysPayload).timeout(const Duration(seconds: 4));
+                stopwatch.stop();
+                _lastLatencyMs = stopwatch.elapsedMilliseconds;
+
                 _updateHeadersFromResponse(response);
                 if (response.statusCode == 200 && !response.body.startsWith('<!DOCTYPE')) {
                     final dynamic data = jsonDecode(response.body);

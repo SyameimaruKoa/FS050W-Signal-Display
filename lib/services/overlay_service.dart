@@ -80,6 +80,13 @@ class OverlayService {
                 'batteryTemperature': signal?.batteryTemperature,
                 'remainingTimeHHMM': signal?.remainingTimeHHMM,
                 'isTempWarning': settings.batteryTempWarningEnabled && ((signal?.batteryTemperature ?? 0) >= settings.batteryTempWarningThreshold),
+                'routerLatencyMs': signal?.routerLatencyMs,
+                'is5gDisabledByConfig': signal?.is5gDisabledByConfig ?? false,
+                'preferNetMode': signal?.preferNetMode,
+                'wifiState': signal?.wifiState,
+                'wifiFreq': signal?.wifiFreq,
+                'wifiSubFreq': signal?.wifiSubFreq,
+                'wifiClientCount': signal?.wifiClientCount,
             };
 
             await _channel.invokeMethod('updateOverlayData', {

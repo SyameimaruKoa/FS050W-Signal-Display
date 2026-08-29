@@ -48,6 +48,15 @@ class SignalData {
     // Handover info if detected in this sample
     final String? handoverDescription;
 
+    // Router Response Speed & Mode / Wi-Fi Parameters
+    final int? routerLatencyMs;
+    final String? preferNetMode;
+    final String? wifiState;
+    final String? wifiFreq;
+    final String? wifiSubFreq;
+    final int? wifiClientCount;
+    final String? wifiWorkStatus;
+
     SignalData({
         required this.timestamp,
         required this.sysmode,
@@ -82,9 +91,35 @@ class SignalData {
         required this.connectionMode,
         this.isSa = false,
         this.handoverDescription,
+        this.routerLatencyMs,
+        this.preferNetMode,
+        this.wifiState,
+        this.wifiFreq,
+        this.wifiSubFreq,
+        this.wifiClientCount,
+        this.wifiWorkStatus,
     });
 
     // --- Helper Getters for UI Calculation ---
+
+    bool get is5gDisabledByConfig =>
+        preferNetMode != null &&
+        preferNetMode!.isNotEmpty &&
+        !preferNetMode!.toLowerCase().contains('5g');
+
+    bool get isWifiEnabled =>
+        wifiState == 'ap_enable' ||
+        (wifiWorkStatus != null && wifiWorkStatus == 'open' && wifiState != 'ap_disable');
+
+    String get wifiFreqDisplay {
+        if (wifiFreq == '5g') {
+            final sub = wifiSubFreq != null && wifiSubFreq!.isNotEmpty ? ' (${wifiSubFreq!.toUpperCase()})' : '';
+            return '5GHz$sub';
+        } else if (wifiFreq == '2.4g') {
+            return '2.4GHz';
+        }
+        return wifiFreq ?? '--';
+    }
 
     int? get scaledBatteryPercent {
         if (batteryPercent == null) return null;
@@ -225,6 +260,7 @@ class SignalData {
         Map<String, dynamic>? deviceStateJson,
         SignalData? previousData,
         bool adjust5gSnr = true,
+        int? routerLatencyMs,
     }) {
         final Map<String, dynamic> rawMap = (json['data'] is Map<String, dynamic>)
             ? (json['data'] as Map<String, dynamic>)
@@ -444,6 +480,14 @@ class SignalData {
             }
         }
 
+        // 4G/5G Router Preference & Wi-Fi Parsing
+        final String? rawPreferNet = rawMap['mnet_acqorder']?.toString() ?? previousData?.preferNetMode;
+        final String? rawWifiState = rawMap['wifi_state_0']?.toString() ?? previousData?.wifiState;
+        final String? rawWifiFreq = rawMap['wifi_freq_0']?.toString() ?? previousData?.wifiFreq;
+        final String? rawWifiSubFreq = rawMap['wifi_5g_sub_freq']?.toString() ?? previousData?.wifiSubFreq;
+        final int? rawWifiClients = _parseInt(rawMap['wifi_client_0']) ?? previousData?.wifiClientCount;
+        final String? rawWifiWork = rawMap['wifi_work_status']?.toString() ?? previousData?.wifiWorkStatus;
+
         return SignalData(
             timestamp: now,
             sysmode: sysmode,
@@ -478,6 +522,13 @@ class SignalData {
             connectionMode: mode,
             isSa: isSa,
             handoverDescription: handover,
+            routerLatencyMs: routerLatencyMs ?? previousData?.routerLatencyMs,
+            preferNetMode: rawPreferNet,
+            wifiState: rawWifiState,
+            wifiFreq: rawWifiFreq,
+            wifiSubFreq: rawWifiSubFreq,
+            wifiClientCount: rawWifiClients,
+            wifiWorkStatus: rawWifiWork,
         );
     }
 
