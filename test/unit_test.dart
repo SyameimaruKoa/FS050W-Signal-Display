@@ -423,5 +423,47 @@ void main() {
             expect(signal.formattedUptime, equals("1日 3時間 46分"));
             expect(signal.formattedRamUsage, equals("128 MB / 256 MB (50.0%)"));
         });
+
+        test('Battery-less mode sanitizes battery metrics and displays AC power', () {
+            final batteryLessJson = {
+                'device_battery_exist': 'absent',
+                'device_battery_level_percent': '0',
+                'device_battery_level': '0',
+                'device_battery_capacity': '4000',
+                'device_battery_current': '0',
+                'device_battery_temperature': '65535',
+                'device_battery_voltage': '0',
+                'device_battery_charge_status': 'charging',
+                'battery_charging': '1',
+            };
+
+            final signal = SignalData.fromApiResponse(batteryLessJson);
+            expect(signal.isBatteryPresent, isFalse);
+            expect(signal.batteryPercent, isNull);
+            expect(signal.batteryLevel, isNull);
+            expect(signal.batteryCapacity, isNull);
+            expect(signal.batteryCurrent, isNull);
+            expect(signal.batteryTemperature, isNull);
+            expect(signal.batteryVoltage, isNull);
+            expect(signal.batteryChargeStatus, isNull);
+            expect(signal.isCharging, isFalse);
+            expect(signal.batteryPercentDisplay, equals("--"));
+            expect(signal.estimatedTimeDisplay, equals("--"));
+            expect(signal.remainingTimeHHMM, isNull);
+        });
+
+        test('Abnormal temperature values are sanitized to null', () {
+            final normalJson = {'device_battery_temperature': '32.5'};
+            final normalSignal = SignalData.fromApiResponse(normalJson);
+            expect(normalSignal.batteryTemperature, equals(32.5));
+
+            final abnormalHighJson = {'device_battery_temperature': '65535'};
+            final abnormalSignal = SignalData.fromApiResponse(abnormalHighJson);
+            expect(abnormalSignal.batteryTemperature, isNull);
+
+            final abnormalLowJson = {'device_battery_temperature': '-50'};
+            final lowSignal = SignalData.fromApiResponse(abnormalLowJson);
+            expect(lowSignal.batteryTemperature, isNull);
+        });
     });
 }

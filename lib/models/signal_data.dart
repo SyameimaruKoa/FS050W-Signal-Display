@@ -348,23 +348,47 @@ class SignalData {
         final int? rawLevel = _parseInt(rawMap['device_battery_level']);
         final int? rawCap = _parseInt(rawMap['device_battery_capacity']) ?? previousData?.batteryCapacity;
         final int? rawCurr = _parseInt(rawMap['device_battery_current']) ?? previousData?.batteryCurrent;
-        final double? rawTemp = _parseDouble(rawMap['device_battery_temperature']) ?? previousData?.batteryTemperature;
+        double? rawTemp = _parseDouble(rawMap['device_battery_temperature']) ?? previousData?.batteryTemperature;
+        if (rawTemp != null && (rawTemp < -30 || rawTemp > 100)) {
+            rawTemp = null;
+        }
         final double? rawVolt = _parseDouble(rawMap['device_battery_voltage']) ?? previousData?.batteryVoltage;
         final String? rawChargeStatus = rawMap['device_battery_charge_status']?.toString().toLowerCase() ?? previousData?.batteryChargeStatus;
         final String? rawLongLife = rawMap['device_charge_long_life']?.toString().toLowerCase() ?? (previousData?.isLongLifeCharging == true ? 'enable' : 'disable');
         final bool isLongLife = rawLongLife == 'enable' || rawLongLife == '1';
 
-        // Calculate batteryPercent
-        int? batteryPercent = rawLevelPercent;
-        if (batteryPercent == null && rawLevel != null && rawLevel > 4) {
-            batteryPercent = rawLevel.clamp(0, 100);
-        }
-        batteryPercent ??= previousData?.batteryPercent;
+        // Calculate batteryPercent (Sanitize to null if battery is absent)
+        int? batteryPercent;
+        bool isCharging = false;
+        int? resolvedLevel = rawLevel;
+        int? resolvedCap = rawCap;
+        int? resolvedCurr = rawCurr;
+        double? resolvedTemp = rawTemp;
+        double? resolvedVolt = rawVolt;
+        String? resolvedChargeStatus = rawChargeStatus;
 
-        final bool isCharging = rawChargeStatus == 'charging' ||
-            (rawMap['battery_charging']?.toString() == '1') ||
-            (rawCurr != null && rawCurr > 0) ||
-            (previousData?.isCharging ?? false);
+        if (isBatteryPresent) {
+            batteryPercent = rawLevelPercent;
+            if (batteryPercent == null && rawLevel != null && rawLevel > 4) {
+                batteryPercent = rawLevel.clamp(0, 100);
+            }
+            batteryPercent ??= previousData?.batteryPercent;
+
+            isCharging = rawChargeStatus == 'charging' ||
+                (rawMap['battery_charging']?.toString() == '1') ||
+                (rawCurr != null && rawCurr > 0) ||
+                (previousData?.isCharging ?? false);
+        } else {
+            // When battery is absent, sanitize all battery metrics
+            batteryPercent = null;
+            resolvedLevel = null;
+            resolvedCap = null;
+            resolvedCurr = null;
+            resolvedTemp = null;
+            resolvedVolt = null;
+            resolvedChargeStatus = null;
+            isCharging = false;
+        }
 
         // Hardware state parameters (/action/get_device_state)
         final Map<String, dynamic>? devState = deviceStateJson ?? (rawMap['uptime'] != null ? rawMap : null);
@@ -437,13 +461,13 @@ class SignalData {
             nrPci: nrPci,
             batteryPercent: batteryPercent,
             isCharging: isCharging,
-            batteryLevel: rawLevel,
-            batteryCapacity: rawCap,
-            batteryCurrent: rawCurr,
+            batteryLevel: resolvedLevel,
+            batteryCapacity: resolvedCap,
+            batteryCurrent: resolvedCurr,
             isBatteryPresent: isBatteryPresent,
-            batteryTemperature: rawTemp,
-            batteryVoltage: rawVolt,
-            batteryChargeStatus: rawChargeStatus,
+            batteryTemperature: resolvedTemp,
+            batteryVoltage: resolvedVolt,
+            batteryChargeStatus: resolvedChargeStatus,
             isLongLifeCharging: isLongLife,
             uptimeSeconds: uptimeSec,
             totalRamBytes: totalRam,
