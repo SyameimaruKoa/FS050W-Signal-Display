@@ -71,32 +71,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
     }
 
+    Future<bool> _showPermissionDialog(String message) async {
+        if (!mounted) return false;
+        final shouldOpenSettings = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+                title: const Text("権限の許可が必要です"),
+                content: Text(message),
+                actions: [
+                    TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text("キャンセル"),
+                    ),
+                    ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text("設定を開く"),
+                    ),
+                ],
+            ),
+        );
+        return shouldOpenSettings == true;
+    }
+
     Future<void> _toggleOverlay(bool enabled) async {
         if (enabled) {
             final hasPermission = await OverlayService.checkPermission();
             if (!hasPermission) {
-                if (!mounted) return;
-                final shouldOpenSettings = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                        title: const Text("権限の許可が必要です"),
-                        content: const Text("フローティングオーバーレイを表示するには、「他のアプリの上に重ねて表示」の権限を許可してください。"),
-                        actions: [
-                            TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text("キャンセル"),
-                            ),
-                            ElevatedButton(
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text("設定を開く"),
-                            ),
-                        ],
-                    ),
+                final shouldOpen = await _showPermissionDialog(
+                    "フローティングオーバーレイを表示するには、「他のアプリの上に重ねて表示」の権限を許可してください。",
                 );
-
-                if (shouldOpenSettings == true) {
-                    await OverlayService.requestPermission();
-                }
+                if (shouldOpen) await OverlayService.requestPermission();
                 return;
             }
             await OverlayService.startOverlay(_settings);
@@ -118,28 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (enabled) {
             final hasPermission = await OverlayService.checkPermission();
             if (!hasPermission) {
-                if (!mounted) return;
-                final shouldOpenSettings = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                        title: const Text("権限の許可が必要です"),
-                        content: const Text("最上部イベントLEDランプ（通知用オーバーレイ）を表示するには、「他のアプリの上に重ねて表示」の権限を許可してください。"),
-                        actions: [
-                            TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text("キャンセル"),
-                            ),
-                            ElevatedButton(
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text("設定を開く"),
-                            ),
-                        ],
-                    ),
+                final shouldOpen = await _showPermissionDialog(
+                    "最上部イベントLEDランプ（通知用オーバーレイ）を表示するには、「他のアプリの上に重ねて表示」の権限を許可してください。",
                 );
-
-                if (shouldOpenSettings == true) {
-                    await OverlayService.requestPermission();
-                }
+                if (shouldOpen) await OverlayService.requestPermission();
                 return;
             }
         }
@@ -153,28 +139,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Future<void> _testEventLamp() async {
         final hasPermission = await OverlayService.checkPermission();
         if (!hasPermission) {
-            if (!mounted) return;
-            final shouldOpenSettings = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                    title: const Text("権限の許可が必要です"),
-                    content: const Text("最上部イベントLEDランプを点灯テストするには、「他のアプリの上に重ねて表示」の権限を許可してください。"),
-                    actions: [
-                        TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text("キャンセル"),
-                        ),
-                        ElevatedButton(
-                            onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text("設定を開く"),
-                        ),
-                    ],
-                ),
+            final shouldOpen = await _showPermissionDialog(
+                "最上部イベントLEDランプを点灯テストするには、「他のアプリの上に重ねて表示」の権限を許可してください。",
             );
-
-            if (shouldOpenSettings == true) {
-                await OverlayService.requestPermission();
-            }
+            if (shouldOpen) await OverlayService.requestPermission();
             return;
         }
         await OverlayService.triggerLamp("5g", _settings);
@@ -324,10 +292,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: const Text("最上部イベント LED ランプ"),
                             subtitle: const Text("5G突入・ハンドオーバー時に最上部にパルス点灯"),
                             value: _settings.eventLampEnabled,
-                            onChanged: (val) {
-                                setState(() => _settings.eventLampEnabled = val);
-                                _save();
-                            },
                             onChanged: (val) => _toggleEventLamp(val),
                         ),
                         if (_settings.eventLampEnabled) ...[
@@ -371,9 +335,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: OutlinedButton.icon(
                                     icon: const Icon(Icons.flash_on, size: 16, color: Color(0xFF00E5FF)),
                                     label: const Text("LEDランプ点灯テスト"),
-                                    onPressed: () {
-                                        OverlayService.triggerLamp("5g", _settings);
-                                    },
                                     onPressed: () => _testEventLamp(),
                                 ),
                             ),

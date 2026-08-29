@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
+import 'app_logger.dart';
 
 class StorageService {
     static const String _kSettingsKey = "fs050w_app_settings";
@@ -14,7 +15,7 @@ class StorageService {
                 return AppSettings.fromJson(map);
             }
         } catch (e) {
-            // fallback to default
+            AppLogger.error("StorageService.loadSettings failed: $e");
         }
         return AppSettings();
     }
@@ -25,7 +26,7 @@ class StorageService {
             final jsonStr = jsonEncode(settings.toJson());
             await prefs.setString(_kSettingsKey, jsonStr);
         } catch (e) {
-            // log error
+            AppLogger.error("StorageService.saveSettings failed: $e");
         }
     }
 }

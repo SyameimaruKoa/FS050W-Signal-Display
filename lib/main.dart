@@ -58,6 +58,7 @@ class Fs050wApp extends StatefulWidget {
 
 class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
     static const MethodChannel _lifecycleChannel = MethodChannel('com.syameimarukoa.fs050w_signal_display/lifecycle');
+    bool? _lastKeepScreenOn;
 
     @override
     void initState() {
@@ -93,7 +94,17 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
             api.startPolling();
             PipService.setAutoEnterPip(api.settings.autoPipOnHome, api.settings.pipAspectRatio);
         } else if (state == AppLifecycleState.paused) {
-            // Background handling
+            api.stopPolling();
+        }
+    }
+
+    void _applyWakelock(bool keepScreenOn) {
+        if (_lastKeepScreenOn == keepScreenOn) return;
+        _lastKeepScreenOn = keepScreenOn;
+        if (keepScreenOn) {
+            WakelockPlus.enable();
+        } else {
+            WakelockPlus.disable();
         }
     }
 
@@ -102,12 +113,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
         final apiService = context.watch<ApiService>();
         final settings = apiService.settings;
 
-        // Keep Screen On
-        if (settings.keepScreenOn) {
-            WakelockPlus.enable();
-        } else {
-            WakelockPlus.disable();
-        }
+        _applyWakelock(settings.keepScreenOn);
 
         return MaterialApp(
             title: 'FS050W Signal Display',

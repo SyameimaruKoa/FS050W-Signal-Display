@@ -149,10 +149,10 @@ class AppSettings {
             unauthIntervalSeconds: json['unauthIntervalSeconds'] ?? 3,
             backgroundIntervalSeconds: json['backgroundIntervalSeconds'] ?? 5,
             language: json['language'] ?? "ja",
-            appTheme: AppThemeMode.values[json['appTheme'] ?? 3],
+            appTheme: AppThemeMode.values[((json['appTheme'] ?? 3) as int).clamp(0, AppThemeMode.values.length - 1)],
             graphSpanMinutes: json['graphSpanMinutes'] ?? 3,
             keepScreenOn: json['keepScreenOn'] ?? true,
-            navigationStyle: AppNavigationStyle.values[json['navigationStyle'] ?? 0],
+            navigationStyle: AppNavigationStyle.values[((json['navigationStyle'] ?? 0) as int).clamp(0, AppNavigationStyle.values.length - 1)],
             isSetupCompleted: json['isSetupCompleted'] ?? false,
             vibrateOn5gSub6: json['vibrateOn5gSub6'] ?? true,
             vibrateOnHandover: json['vibrateOnHandover'] ?? true,
@@ -175,7 +175,7 @@ class AppSettings {
             smoothGaugeColor: json['smoothGaugeColor'] ?? false,
             smoothGaugeCurve: json['smoothGaugeCurve'] ?? "easeOut",
             foregroundNotificationEnabled: json['foregroundNotificationEnabled'] ?? false,
-            notificationStyle: NotificationDetailStyle.values[json['notificationStyle'] ?? 0],
+            notificationStyle: NotificationDetailStyle.values[((json['notificationStyle'] ?? 0) as int).clamp(0, NotificationDetailStyle.values.length - 1)],
         );
     }
 }

@@ -76,7 +76,9 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
 
         final Color tempColor = isTempWarning
             ? Colors.redAccent
-            : (isDark ? _getTempColor(temp) : _getLightTempColor(temp));
+            : (isDark
+                ? _getTempColor(temp, apiService.settings.batteryTempWarningThreshold)
+                : _getLightTempColor(temp, apiService.settings.batteryTempWarningThreshold));
 
         final Color currColor = isCharging
             ? (isDark ? Colors.amberAccent : Colors.orange.shade800)
@@ -303,17 +305,17 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         return Colors.redAccent;
     }
 
-    Color _getTempColor(double? temp) {
+    Color _getTempColor(double? temp, [double threshold = 45.0]) {
         if (temp == null) return Colors.white70;
-        if (temp >= 45) return Colors.redAccent;
-        if (temp >= 40) return Colors.amberAccent;
+        if (temp >= threshold) return Colors.redAccent;
+        if (temp >= threshold - 5.0) return Colors.amberAccent;
         return const Color(0xFF00E5FF);
     }
 
-    Color _getLightTempColor(double? temp) {
+    Color _getLightTempColor(double? temp, [double threshold = 45.0]) {
         if (temp == null) return Colors.black54;
-        if (temp >= 45) return Colors.red.shade800;
-        if (temp >= 40) return Colors.orange.shade900;
+        if (temp >= threshold) return Colors.red.shade800;
+        if (temp >= threshold - 5.0) return Colors.orange.shade900;
         return const Color(0xFF00838F);
     }
 

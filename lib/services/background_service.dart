@@ -1,6 +1,4 @@
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import '../models/signal_data.dart';
-import '../models/app_settings.dart';
 
 class BackgroundService {
     static void initService() {
@@ -37,8 +35,5 @@ class BackgroundService {
             await FlutterForegroundTask.stopService();
         }
     }
-
-    static Future<void> updateNotification(SignalData signal, AppSettings settings) async {
-        // Notifications are abolished in SPECIFICATION_PIP_OVERLAY.md
-    }
 }
+

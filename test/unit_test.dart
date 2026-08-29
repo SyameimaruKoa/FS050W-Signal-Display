@@ -465,5 +465,18 @@ void main() {
             final lowSignal = SignalData.fromApiResponse(abnormalLowJson);
             expect(lowSignal.batteryTemperature, isNull);
         });
+
+        test('AppSettings fromJson gracefully clamps out-of-range enum indices', () {
+            final invalidEnumJson = {
+                'appTheme': 99,
+                'navigationStyle': -5,
+                'notificationStyle': 42,
+            };
+            final settings = AppSettings.fromJson(invalidEnumJson);
+            expect(settings.appTheme, equals(AppThemeMode.system));
+            expect(settings.navigationStyle, equals(AppNavigationStyle.bottomNav));
+            expect(settings.notificationStyle, equals(NotificationDetailStyle.compact));
+        });
     });
 }
+

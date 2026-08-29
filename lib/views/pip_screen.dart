@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../models/app_settings.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
 import '../utils/color_gauge.dart';
@@ -681,7 +682,7 @@ class PipScreen extends StatelessWidget {
                     : graphType == 'snr'
                         ? 'rsrq'
                         : 'rsrp';
-                final updated = apiService.settings;
+                final updated = AppSettings.fromJson(apiService.settings.toJson());
                 updated.pipGraphType = nextType;
                 apiService.updateSettings(updated);
                 StorageService.saveSettings(updated);
@@ -868,6 +869,9 @@ class PipMiniChartPainter extends CustomPainter {
 
     @override
     bool shouldRepaint(covariant PipMiniChartPainter oldDelegate) {
-        return true;
+        if (oldDelegate.graphType != graphType) return true;
+        if (oldDelegate.history.length != history.length) return true;
+        if (history.isEmpty) return false;
+        return oldDelegate.history.last != history.last;
     }
 }

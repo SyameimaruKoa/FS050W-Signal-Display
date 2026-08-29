@@ -272,7 +272,9 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                     _testResult!,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                        color: _isTestSuccess ? Colors.greenAccent : Colors.orangeAccent,
+                                        color: _isTestSuccess
+                                            ? (isDark ? Colors.greenAccent : const Color(0xFF2E7D32))
+                                            : (isDark ? Colors.orangeAccent : Colors.orange.shade800),
                                         fontWeight: FontWeight.bold,
                                     ),
                                 ),

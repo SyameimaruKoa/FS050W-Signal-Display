@@ -56,6 +56,11 @@ class NotificationService {
         // 3. Critical low signal trigger (only on transition to critical <= -115 dBm)
         final isCrit = (signal.lteRsrp != null && signal.lteRsrp! <= -115.0) ||
             (signal.nrRsrp != null && signal.nrRsrp! <= -115.0);
+        if (settings.vibrateOnCriticalSignal && isCrit && !_wasCriticalSignal) {
+            triggerCriticalSignalEvent(settings);
+        }
+        _wasCriticalSignal = isCrit;
+
         // 4. Battery High Temperature Warning trigger
         if (settings.batteryTempWarningEnabled && signal.batteryTemperature != null) {
             final isOverheated = signal.batteryTemperature! >= settings.batteryTempWarningThreshold;
