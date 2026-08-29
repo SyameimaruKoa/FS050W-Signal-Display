@@ -185,24 +185,13 @@ class CellCard extends StatelessWidget {
                         color: (isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50)).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                            Text(
-                                tagText,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
-                                ),
-                            ),
-                            FlashDotIndicator(
-                                value: tagText,
-                                dotColor: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
-                                size: 3.5,
-                                padding: const EdgeInsets.only(left: 3),
-                            ),
-                        ],
+                    child: Text(
+                        tagText,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isSub6 ? const Color(0xFF00E5FF) : const Color(0xFF4CAF50),
+                        ),
                     ),
                 )
                 : null,
@@ -228,11 +217,6 @@ class CellCard extends StatelessWidget {
                                             color: isDark ? Colors.white : Colors.black87,
                                         ),
                                     ),
-                                    FlashDotIndicator(
-                                        value: signal.nrPci,
-                                        size: 3.5,
-                                        padding: const EdgeInsets.only(left: 3),
-                                    ),
                                 ],
                             ),
                             Flexible(
@@ -251,11 +235,6 @@ class CellCard extends StatelessWidget {
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                             ),
-                                        ),
-                                        FlashDotIndicator(
-                                            value: nrBandName,
-                                            size: 3.5,
-                                            padding: const EdgeInsets.only(left: 3),
                                         ),
                                     ],
                                 ),
@@ -387,24 +366,13 @@ class CellCard extends StatelessWidget {
                                 color: badgeColor.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                    Text(
-                                        lteBadge,
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: badgeColor,
-                                        ),
-                                    ),
-                                    FlashDotIndicator(
-                                        value: lteBadge,
-                                        dotColor: badgeColor,
-                                        size: 3.5,
-                                        padding: const EdgeInsets.only(left: 3),
-                                    ),
-                                ],
+                            child: Text(
+                                lteBadge,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: badgeColor,
+                                ),
                             ),
                         ),
                         const SizedBox(width: 4),
@@ -433,11 +401,6 @@ class CellCard extends StatelessWidget {
                                             color: isDark ? Colors.white : Colors.black87,
                                         ),
                                     ),
-                                    FlashDotIndicator(
-                                        value: signal.ltePci,
-                                        size: 3.5,
-                                        padding: const EdgeInsets.only(left: 3),
-                                    ),
                                 ],
                             ),
                             Flexible(
@@ -456,11 +419,6 @@ class CellCard extends StatelessWidget {
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                             ),
-                                        ),
-                                        FlashDotIndicator(
-                                            value: bandName,
-                                            size: 3.5,
-                                            padding: const EdgeInsets.only(left: 3),
                                         ),
                                     ],
                                 ),
@@ -587,13 +545,24 @@ class CellCard extends StatelessWidget {
                         child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                                Text(
-                                    label,
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark ? Colors.white60 : Colors.black54,
-                                    ),
+                                Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Text(
+                                            label,
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: isDark ? Colors.white60 : Colors.black54,
+                                            ),
+                                        ),
+                                        FlashDotIndicator(
+                                            value: value,
+                                            dotColor: color,
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 3),
+                                        ),
+                                    ],
                                 ),
                                 const SizedBox(width: 2),
                                 Expanded(
@@ -612,13 +581,7 @@ class CellCard extends StatelessWidget {
                                                         color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white38 : Colors.black38),
                                                     ),
                                                 ),
-                                                FlashDotIndicator(
-                                                    value: value,
-                                                    dotColor: color,
-                                                    size: 3.5,
-                                                    padding: const EdgeInsets.only(left: 2),
-                                                ),
-                                                const SizedBox(width: 3),
+                                                const SizedBox(width: 4),
                                                 Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                                                     decoration: BoxDecoration(

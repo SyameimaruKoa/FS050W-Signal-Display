@@ -689,11 +689,14 @@ class OverlayService : Service() {
         }
 
         val json = lastSignalJson
-        val opName = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
-        val modeBadge = json?.optString("modeBadge", json.optString("connectionModeBadge", "5G+")) ?: "5G+"
+        val opNameRaw = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
+        val opName = if (opNameRaw == "null" || opNameRaw.isBlank()) "Rakuten" else opNameRaw
+        val modeBadgeRaw = json?.optString("modeBadge", json.optString("connectionModeBadge", "5G+")) ?: "5G+"
+        val modeBadge = if (modeBadgeRaw == "null" || modeBadgeRaw.isBlank()) "5G+" else modeBadgeRaw
         val isConnecting = json?.optBoolean("isConnecting", false) ?: false
         val isLoggedIn = json?.optBoolean("isLoggedIn", false) ?: false
-        val notation = json?.optString("generationNotation", "4g_5g") ?: "4g_5g"
+        val notationRaw = json?.optString("generationNotation", "4g_5g") ?: "4g_5g"
+        val notation = if (notationRaw == "null" || notationRaw.isBlank()) "4g_5g" else notationRaw
         val smoothColor = json?.optBoolean("smoothGaugeColor", false) ?: false
 
         val isLteNr = notation == "lte_nr"
@@ -704,41 +707,50 @@ class OverlayService : Service() {
         val badge = if (isSub6) "$nrLabel+" else if (modeBadge.contains("5G") || modeBadge.contains("NR")) nrLabel else if (modeBadge.contains("4G") || modeBadge.contains("LTE")) lteLabel else modeBadge
 
         val rawNrBand = json?.optString("nrBand", "--") ?: "--"
-        val nrBand = if (rawNrBand == "0" || rawNrBand == "n0" || rawNrBand.isBlank()) "--" else rawNrBand
+        val nrBand = if (rawNrBand == "0" || rawNrBand == "n0" || rawNrBand == "null" || rawNrBand.isBlank()) "--" else rawNrBand
         val rawNrPci = json?.optString("nrPci", "--") ?: "--"
-        val nrPci = if (rawNrPci == "0" || rawNrPci.isBlank()) "--" else rawNrPci
+        val nrPci = if (rawNrPci == "0" || rawNrPci == "null" || rawNrPci.isBlank()) "--" else rawNrPci
         val nrRsrp = json?.optDouble("nrRsrp", Double.NaN)
         val nrRsrq = json?.optDouble("nrRsrq", Double.NaN)
         val nrSnr = json?.optDouble("nrSnr", Double.NaN)
 
         val rawLteBand = json?.optString("lteBand", "--") ?: "--"
-        val lteBand = if (rawLteBand == "0" || rawLteBand == "B0" || rawLteBand.isBlank()) "--" else rawLteBand
+        val lteBand = if (rawLteBand == "0" || rawLteBand == "B0" || rawLteBand == "null" || rawLteBand.isBlank()) "--" else rawLteBand
         val rawLtePci = json?.optString("ltePci", "--") ?: "--"
-        val ltePci = if (rawLtePci == "0" || rawLtePci.isBlank()) "--" else rawLtePci
+        val ltePci = if (rawLtePci == "0" || rawLtePci == "null" || rawLtePci.isBlank()) "--" else rawLtePci
         val lteRsrp = json?.optDouble("lteRsrp", Double.NaN)
         val lteRsrq = json?.optDouble("lteRsrq", Double.NaN)
         val lteSinr = json?.optDouble("lteSinr", Double.NaN)
 
+        val isBatteryPresent = json?.optBoolean("isBatteryPresent", true) ?: true
         val batteryPercent = if (json?.has("batteryPercent") == true && !json.isNull("batteryPercent")) json.optInt("batteryPercent") else null
         val isCharging = json?.optBoolean("isCharging", false) ?: false
         val tempVal = if (json?.has("batteryTemperature") == true && !json.isNull("batteryTemperature")) json.optDouble("batteryTemperature") else null
-        val remainingTimeStr = json?.optString("remainingTimeHHMM", "") ?: ""
+        val remainingTimeRaw = if (json?.has("remainingTimeHHMM") == true && !json.isNull("remainingTimeHHMM")) json.optString("remainingTimeHHMM", "") else ""
+        val remainingTimeStr = if (remainingTimeRaw == "null") "" else remainingTimeRaw
         val latencyMs = if (json?.has("routerLatencyMs") == true && !json.isNull("routerLatencyMs")) json.optInt("routerLatencyMs") else null
         val is5gDisabled = json?.optBoolean("is5gDisabledByConfig", false) ?: false
         val isDelayed = latencyMs != null && latencyMs > 150
 
         val batSb = StringBuilder()
-        if (batteryPercent != null) {
-            batSb.append("🔋").append(batteryPercent).append("%")
-            if (isCharging) batSb.append("⚡")
-        }
-        if (tempVal != null && !tempVal.isNaN()) {
-            if (batSb.isNotEmpty()) batSb.append(" ")
-            batSb.append(tempVal.toInt()).append("℃")
-        }
-        if (remainingTimeStr.isNotEmpty()) {
-            if (batSb.isNotEmpty()) batSb.append(" ")
-            batSb.append(remainingTimeStr)
+        if (!isBatteryPresent) {
+            batSb.append("AC給電")
+            if (tempVal != null && !tempVal.isNaN()) {
+                batSb.append(" ").append(tempVal.toInt()).append("℃")
+            }
+        } else {
+            if (batteryPercent != null) {
+                batSb.append("🔋").append(batteryPercent).append("%")
+                if (isCharging) batSb.append("⚡")
+            }
+            if (tempVal != null && !tempVal.isNaN()) {
+                if (batSb.isNotEmpty()) batSb.append(" ")
+                batSb.append(tempVal.toInt()).append("℃")
+            }
+            if (remainingTimeStr.isNotEmpty()) {
+                if (batSb.isNotEmpty()) batSb.append(" ")
+                batSb.append(remainingTimeStr)
+            }
         }
         val batterySummary = batSb.toString()
 
@@ -797,20 +809,35 @@ class OverlayService : Service() {
             holder.badgeText.text = ssb
 
             val pillBatSb = SpannableStringBuilder()
-            if (batteryPercent != null) {
-                pillBatSb.append("🔋").append(batteryPercent.toString()).append("%")
-                if (isCharging) pillBatSb.append("⚡")
-            }
-            if (tempVal != null && !tempVal.isNaN()) {
-                if (pillBatSb.isNotEmpty()) pillBatSb.append(" ")
-                val tempStart = pillBatSb.length
-                pillBatSb.append("${tempVal.toInt()}℃")
-                pillBatSb.setSpan(
-                    ForegroundColorSpan(getTempColor(tempVal)),
-                    tempStart,
-                    pillBatSb.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
+            if (!isBatteryPresent) {
+                pillBatSb.append("AC給電")
+                if (tempVal != null && !tempVal.isNaN()) {
+                    pillBatSb.append(" ")
+                    val tempStart = pillBatSb.length
+                    pillBatSb.append("${tempVal.toInt()}℃")
+                    pillBatSb.setSpan(
+                        ForegroundColorSpan(getTempColor(tempVal)),
+                        tempStart,
+                        pillBatSb.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+            } else {
+                if (batteryPercent != null) {
+                    pillBatSb.append("🔋").append(batteryPercent.toString()).append("%")
+                    if (isCharging) pillBatSb.append("⚡")
+                }
+                if (tempVal != null && !tempVal.isNaN()) {
+                    if (pillBatSb.isNotEmpty()) pillBatSb.append(" ")
+                    val tempStart = pillBatSb.length
+                    pillBatSb.append("${tempVal.toInt()}℃")
+                    pillBatSb.setSpan(
+                        ForegroundColorSpan(getTempColor(tempVal)),
+                        tempStart,
+                        pillBatSb.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
             }
 
             if (pillBatSb.isNotEmpty()) {

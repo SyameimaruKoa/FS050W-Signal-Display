@@ -53,11 +53,10 @@ class MetricGauge extends StatelessWidget {
                     Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                            Expanded(
-                                child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
+                            Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                    Text(
                                         label,
                                         style: TextStyle(
                                             fontSize: 13,
@@ -65,7 +64,13 @@ class MetricGauge extends StatelessWidget {
                                             color: isDark ? Colors.white70 : Colors.black87,
                                         ),
                                     ),
-                                ),
+                                    FlashDotIndicator(
+                                        value: value,
+                                        dotColor: color,
+                                        size: 4,
+                                        padding: const EdgeInsets.only(left: 4),
+                                    ),
+                                ],
                             ),
                             const SizedBox(width: 6),
                             Row(
@@ -80,12 +85,6 @@ class MetricGauge extends StatelessWidget {
                                             fontWeight: FontWeight.bold,
                                             color: color,
                                         ),
-                                    ),
-                                    FlashDotIndicator(
-                                        value: value,
-                                        dotColor: color,
-                                        size: 4,
-                                        padding: const EdgeInsets.only(left: 4),
                                     ),
                                     const SizedBox(width: 6),
                                     Container(
