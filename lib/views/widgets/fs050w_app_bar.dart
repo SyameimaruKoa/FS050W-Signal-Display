@@ -123,7 +123,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                         ),
                                     ),
                                     const SizedBox(width: 6),
-                                    if (hasBattery || temp != null)
+                                    if (hasBattery && temp != null)
                                     Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                         decoration: BoxDecoration(
@@ -158,7 +158,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                             ],
                                         ),
                                     ),
-                                    if (currText.isNotEmpty) ...[
+                                    if (hasBattery && currText.isNotEmpty) ...[
                                         const SizedBox(width: 5),
                                         Text(
                                             currText,
@@ -468,7 +468,9 @@ class BatterySystemDetailSheet extends StatelessWidget {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
                 side: BorderSide(
-                    color: isCharging ? Colors.amberAccent.withOpacity(0.5) : const Color(0xFF00ADB5).withOpacity(0.4),
+                    color: !hasBattery
+                        ? (isDark ? const Color(0xFF00E5FF).withOpacity(0.4) : const Color(0xFF00838F).withOpacity(0.4))
+                        : (isCharging ? Colors.amberAccent.withOpacity(0.5) : const Color(0xFF00ADB5).withOpacity(0.4)),
                     width: 1.2,
                 ),
             ),
@@ -479,14 +481,20 @@ class BatterySystemDetailSheet extends StatelessWidget {
                         Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                                color: isCharging
-                                    ? Colors.amber.withOpacity(0.15)
-                                    : const Color(0xFF00ADB5).withOpacity(0.15),
+                                color: !hasBattery
+                                    ? (isDark ? const Color(0xFF00E5FF).withOpacity(0.15) : const Color(0xFF00838F).withOpacity(0.15))
+                                    : (isCharging
+                                        ? Colors.amber.withOpacity(0.15)
+                                        : const Color(0xFF00ADB5).withOpacity(0.15)),
                                 shape: BoxShape.circle,
                             ),
                             child: Icon(
-                                isCharging ? Icons.bolt : Icons.timer_outlined,
-                                color: isCharging ? Colors.amberAccent : const Color(0xFF00E5FF),
+                                !hasBattery
+                                    ? Icons.power
+                                    : (isCharging ? Icons.bolt : Icons.timer_outlined),
+                                color: !hasBattery
+                                    ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
+                                    : (isCharging ? Colors.amberAccent : const Color(0xFF00E5FF)),
                                 size: 24,
                             ),
                         ),
@@ -496,7 +504,9 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                     Text(
-                                        isCharging ? "充電完了予想時間" : "バッテリー残り稼働予想",
+                                        !hasBattery
+                                            ? "給電状態"
+                                            : (isCharging ? "充電完了予想時間" : "バッテリー残り稼働予想"),
                                         style: TextStyle(
                                             fontSize: 12,
                                             color: isDark ? Colors.white60 : Colors.black54,
@@ -504,14 +514,16 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                        !hasBattery ? "🔌 外部電源駆動 (バッテリーレス運用中)" : estimateStr,
+                                        !hasBattery ? "🔌 外部電源駆動 (バッテリーレス)" : estimateStr,
                                         style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
-                                            color: isCharging ? Colors.amberAccent : (isDark ? Colors.white : Colors.black87),
+                                            color: !hasBattery
+                                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
+                                                : (isCharging ? Colors.amberAccent : (isDark ? Colors.white : Colors.black87)),
                                         ),
                                     ),
-                                    if (signal?.isLongLifeCharging == true && isCharging) ...[
+                                    if (hasBattery && signal?.isLongLifeCharging == true && isCharging) ...[
                                         const SizedBox(height: 2),
                                         Text(
                                             signal?.batteryCapacity != null
@@ -568,7 +580,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         ),
                                     ],
                                 ),
-                                if (isLongLife)
+                                if (hasBattery && isLongLife)
                                     Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
@@ -592,59 +604,23 @@ class BatterySystemDetailSheet extends StatelessWidget {
                         if (!hasBattery)
                             Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 14.0),
+                                padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 14.0),
                                 decoration: BoxDecoration(
                                     color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
                                 ),
-                                child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Row(
                                     children: [
-                                        Row(
-                                            children: [
-                                                Icon(Icons.check_circle_outline, size: 16, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F)),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                    "バッテリー未装着 (AC外部電源駆動中)",
-                                                    style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: isDark ? Colors.white : Colors.black87,
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                        const SizedBox(height: 6),
+                                        Icon(Icons.power, size: 20, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F)),
+                                        const SizedBox(width: 10),
                                         Text(
-                                            "バッテリーレス運用の利点: バッテリー劣化や膨張の心配がなく、据え置きルーター・車載用途として安全に連続稼働できます。",
+                                            "バッテリー未装着 (AC給電駆動中)",
                                             style: TextStyle(
-                                                fontSize: 11.5,
-                                                color: isDark ? Colors.white70 : Colors.black54,
-                                                height: 1.4,
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark ? Colors.white : Colors.black87,
                                             ),
-                                        ),
-                                        const Divider(height: 16),
-                                        Row(
-                                            children: [
-                                                Expanded(
-                                                    child: _buildMetricTile(
-                                                        label: "給電方式",
-                                                        value: "USB Type-C (AC給電)",
-                                                        icon: Icons.electrical_services,
-                                                        isDark: isDark,
-                                                    ),
-                                                ),
-                                                Expanded(
-                                                    child: _buildMetricTile(
-                                                        label: "動作モード",
-                                                        value: "バッテリーレス",
-                                                        icon: Icons.power,
-                                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F),
-                                                        isDark: isDark,
-                                                    ),
-                                                ),
-                                            ],
                                         ),
                                     ],
                                 ),
