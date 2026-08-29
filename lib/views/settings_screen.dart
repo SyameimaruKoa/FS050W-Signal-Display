@@ -324,6 +324,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: const Text("最上部イベント LED ランプ"),
                             subtitle: const Text("5G突入・ハンドオーバー時に最上部にパルス点灯"),
                             value: _settings.eventLampEnabled,
+                            onChanged: (val) {
+                                setState(() => _settings.eventLampEnabled = val);
+                                _save();
+                            },
                             onChanged: (val) => _toggleEventLamp(val),
                         ),
                         if (_settings.eventLampEnabled) ...[
@@ -367,6 +371,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: OutlinedButton.icon(
                                     icon: const Icon(Icons.flash_on, size: 16, color: Color(0xFF00E5FF)),
                                     label: const Text("LEDランプ点灯テスト"),
+                                    onPressed: () {
+                                        OverlayService.triggerLamp("5g", _settings);
+                                    },
                                     onPressed: () => _testEventLamp(),
                                 ),
                             ),
