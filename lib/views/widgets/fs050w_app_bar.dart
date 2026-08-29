@@ -62,7 +62,9 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
         final curr = signal?.batteryCurrent;
 
         final String batText;
-        if (!hasBattery || batPercent == null) {
+        if (!hasBattery) {
+            batText = "AC給電";
+        } else if (batPercent == null) {
             batText = "--";
         } else {
             final chargeIcon = isCharging ? "⚡" : "";
@@ -99,24 +101,29 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                     Icon(
-                                        isCharging
-                                            ? Icons.battery_charging_full
-                                            : _getBatteryIcon(batPercent),
+                                        !hasBattery
+                                            ? Icons.power
+                                            : isCharging
+                                                ? Icons.battery_charging_full
+                                                : _getBatteryIcon(batPercent),
                                         size: 14,
-                                        color: isCharging
-                                            ? chargeIconColor
-                                            : _getBatteryColor(batPercent),
+                                        color: !hasBattery
+                                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
+                                            : isCharging
+                                                ? chargeIconColor
+                                                : _getBatteryColor(batPercent),
                                     ),
                                     const SizedBox(width: 3),
                                     Text(
                                         batText,
-                                        style: const TextStyle(
-                                            fontSize: 13,
+                                        style: TextStyle(
+                                            fontSize: !hasBattery ? 12 : 13,
                                             fontWeight: FontWeight.bold,
-                                            fontFamily: 'monospace',
+                                            fontFamily: !hasBattery ? null : 'monospace',
                                         ),
                                     ),
                                     const SizedBox(width: 6),
+                                    if (hasBattery || temp != null)
                                     Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                         decoration: BoxDecoration(
@@ -497,7 +504,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                        !hasBattery ? "バッテリー未装着 (AC電源駆動)" : estimateStr,
+                                        !hasBattery ? "🔌 外部電源駆動 (バッテリーレス運用中)" : estimateStr,
                                         style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -583,13 +590,63 @@ class BatterySystemDetailSheet extends StatelessWidget {
                         const SizedBox(height: 12),
 
                         if (!hasBattery)
-                            const Center(
-                                child: Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                                    child: Text(
-                                        "バッテリー未装着 (外部電源給電中)",
-                                        style: TextStyle(fontSize: 13, color: Colors.grey),
-                                    ),
+                            Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 14.0),
+                                decoration: BoxDecoration(
+                                    color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+                                ),
+                                child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                        Row(
+                                            children: [
+                                                Icon(Icons.check_circle_outline, size: 16, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F)),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                    "バッテリー未装着 (AC外部電源駆動中)",
+                                                    style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isDark ? Colors.white : Colors.black87,
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                            "バッテリーレス運用の利点: バッテリー劣化や膨張の心配がなく、据え置きルーター・車載用途として安全に連続稼働できます。",
+                                            style: TextStyle(
+                                                fontSize: 11.5,
+                                                color: isDark ? Colors.white70 : Colors.black54,
+                                                height: 1.4,
+                                            ),
+                                        ),
+                                        const Divider(height: 16),
+                                        Row(
+                                            children: [
+                                                Expanded(
+                                                    child: _buildMetricTile(
+                                                        label: "給電方式",
+                                                        value: "USB Type-C (AC給電)",
+                                                        icon: Icons.electrical_services,
+                                                        isDark: isDark,
+                                                    ),
+                                                ),
+                                                Expanded(
+                                                    child: _buildMetricTile(
+                                                        label: "動作モード",
+                                                        value: "バッテリーレス",
+                                                        icon: Icons.power,
+                                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F),
+                                                        isDark: isDark,
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ],
                                 ),
                             )
                         else ...[

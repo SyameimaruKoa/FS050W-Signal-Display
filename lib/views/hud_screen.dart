@@ -78,7 +78,13 @@ class _HudScreenState extends State<HudScreen> {
                                                                 color: Color(0xFF00E5FF),
                                                             ),
                                                         ),
-                                                        if (signal?.batteryPercent != null) ...[
+                                                        if (signal != null && !signal.isBatteryPresent) ...[
+                                                            const SizedBox(width: 12),
+                                                            const Text(
+                                                                "🔌 AC給電",
+                                                                style: TextStyle(fontSize: 12, color: Color(0xFF00E5FF)),
+                                                            ),
+                                                        ] else if (signal?.batteryPercent != null) ...[
                                                             const SizedBox(width: 12),
                                                             Text(
                                                                 "🔋 ${signal!.batteryPercent}%${isCharging ? '⚡' : ''}",
