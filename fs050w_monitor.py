@@ -11,19 +11,19 @@ import sys
 def main():
     parser = argparse.ArgumentParser(
         description="富士ソフト +F FS050W 全パラメータ（CPU/RAM・電波・バッテリー・通信量・SIM・Wi-Fi・端末情報）一括取得・表示スクリプト",
-        epilog="例: python fs050w_monitor.py --ip 192.168.155.1 --password admin",
+        epilog="例: python fs050w_monitor.py --ip 192.168.100.1 --password admin",
     )
     parser.add_argument(
         "--ip",
         type=str,
-        default="192.168.155.1",
-        help="ルーターのIPアドレス (デフォルト: 192.168.155.1)",
+        default="192.168.100.1",
+        help="ルーターのIPアドレス (デフォルト: 192.168.100.1)",
     )
     parser.add_argument(
         "--password",
         "-p",
         type=str,
-        default="w4rtDruULP5x",
+        default="admin",
         help="ルーターのログインパスワード",
     )
     args = parser.parse_args()
