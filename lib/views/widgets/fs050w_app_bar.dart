@@ -163,6 +163,12 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                                         fontFamily: 'monospace',
                                                     ),
                                                 ),
+                                                FlashDotIndicator(
+                                                    value: temp,
+                                                    dotColor: tempColor,
+                                                    size: 3,
+                                                    padding: const EdgeInsets.only(left: 2),
+                                                ),
                                             ],
                                         ),
                                     ),
@@ -190,6 +196,11 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                             color: isDark ? Colors.white70 : Colors.black87,
                                             fontWeight: FontWeight.w600,
                                         ),
+                                    ),
+                                    FlashDotIndicator(
+                                        value: signal?.operatorName,
+                                        size: 3,
+                                        padding: const EdgeInsets.only(left: 2),
                                     ),
                                     const SizedBox(width: 4),
                                     Icon(
@@ -288,6 +299,12 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                             fontWeight: FontWeight.bold,
                             color: themeColor,
                         ),
+                    ),
+                    FlashDotIndicator(
+                        value: "$modeBadge-$barCount",
+                        dotColor: themeColor,
+                        size: 3,
+                        padding: const EdgeInsets.only(left: 2),
                     ),
                 ],
             ),

@@ -1,6 +1,6 @@
 name: fs050w_signal_display
 description: "FS050W 5G/4G Signal Display and Engineering App"
-version: 2.2.0+24
+version: 2.2.1+25
 publish_to: "none"
 
 environment:

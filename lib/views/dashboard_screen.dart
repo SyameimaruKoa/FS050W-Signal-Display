@@ -114,6 +114,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             color: isDark ? statusColor : (isConnected ? const Color(0xFF2E7D32) : Colors.red.shade700),
                                         ),
                                     ),
+                                    FlashDotIndicator(
+                                        value: statusText,
+                                        dotColor: statusColor,
+                                        size: 4,
+                                        padding: const EdgeInsets.only(left: 3),
+                                    ),
                                     if (isConnected && signal?.routerLatencyMs != null) ...[
                                         const SizedBox(width: 6),
                                         Container(
@@ -177,54 +183,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                            color: isDark ? Colors.blueGrey.withOpacity(0.2) : Colors.blueGrey.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                                Row(
-                                    children: [
-                                        Text(
-                                            "ステータス: ",
-                                            style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                            Row(
+                                children: [
+                                    Text(
+                                        "ステータス: ",
+                                        style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                                    ),
+                                    Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                            color: isConnecting
+                                                ? Colors.amber.withOpacity(0.2)
+                                                : (isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15)),
+                                            borderRadius: BorderRadius.circular(4),
                                         ),
-                                        Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                                color: isConnecting
-                                                    ? Colors.amber.withOpacity(0.2)
-                                                    : (isDark ? Colors.cyanAccent.withOpacity(0.25) : const Color(0xFF00ADB5).withOpacity(0.15)),
-                                                borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                    Text(
-                                                        isConnecting ? "接続中..." : uiMode,
-                                                        style: TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: isConnecting
-                                                                ? Colors.amberAccent
-                                                                : (isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
-                                                        ),
+                                        child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                                Text(
+                                                    isConnecting ? "接続中..." : uiMode,
+                                                    style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isConnecting
+                                                            ? Colors.amberAccent
+                                                            : (isDark ? Colors.cyanAccent : const Color(0xFF007A78)),
                                                     ),
-                                                    FlashDotIndicator(
-                                                        value: uiMode,
-                                                        size: 4,
-                                                        padding: const EdgeInsets.only(left: 3),
-                                                    ),
-                                                ],
-                                            ),
+                                                ),
+                                                FlashDotIndicator(
+                                                    value: uiMode,
+                                                    size: 4,
+                                                    padding: const EdgeInsets.only(left: 3),
+                                                ),
+                                            ],
                                         ),
-                                    ],
+                                    ),
+                                ],
+                            ),
+                            if (signal?.preferNetMode != null && signal!.preferNetMode!.isNotEmpty)
+                                Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: isDark ? Colors.white10 : Colors.black12, width: 0.6),
+                                    ),
+                                    child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                            Text(
+                                                signal.is5gDisabledByConfig ? "ルーター設定: 4G優先" : "ルーター設定: 5G優先",
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark ? Colors.white60 : Colors.black54,
+                                                ),
+                                            ),
+                                            FlashDotIndicator(
+                                                value: signal.preferNetMode,
+                                                size: 3.5,
+                                                padding: const EdgeInsets.only(left: 3),
+                                            ),
+                                        ],
+                                    ),
                                 ),
-                            ],
-                        ),
+                        ],
                     ),
                     const SizedBox(height: 6),
                     // Wi-Fi Summary Row
@@ -277,6 +303,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: wifiColor,
                                 ),
                             ),
+                            FlashDotIndicator(
+                                value: "$isWifiOn-$wifiFreq",
+                                size: 3.5,
+                                padding: const EdgeInsets.only(left: 3),
+                            ),
                         ],
                     ),
                     Row(
@@ -297,8 +328,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                             ),
                             FlashDotIndicator(
-                                value: "$isWifiOn-$wifiFreq-$clients",
-                                size: 4,
+                                value: clients,
+                                size: 3.5,
                                 padding: const EdgeInsets.only(left: 3),
                             ),
                         ],
@@ -372,13 +403,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             width: 0.8,
                                         ),
                                     ),
-                                    child: Text(
-                                        isAuthenticated ? "ログイン済" : (isUnauthenticated ? "未ログイン (RSRP基本)" : "待機中"),
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: isAuthenticated ? Colors.greenAccent : (isUnauthenticated ? Colors.amberAccent : Colors.white70),
-                                        ),
+                                    child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                            Text(
+                                                isAuthenticated ? "ログイン済" : (isUnauthenticated ? "未ログイン (RSRP基本)" : "待機中"),
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isAuthenticated ? Colors.greenAccent : (isUnauthenticated ? Colors.amberAccent : Colors.white70),
+                                                ),
+                                            ),
+                                            FlashDotIndicator(
+                                                value: isAuthenticated,
+                                                size: 3.5,
+                                                padding: const EdgeInsets.only(left: 3),
+                                            ),
+                                        ],
                                     ),
                                 ),
                             ],
@@ -557,14 +598,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                             Flexible(
-                                child: Text(
-                                    titleText,
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: accentColor,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Flexible(
+                                            child: Text(
+                                                titleText,
+                                                style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: accentColor,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                            ),
+                                        ),
+                                        FlashDotIndicator(
+                                            value: bandStr ?? title,
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 3),
+                                        ),
+                                    ],
                                 ),
                             ),
                             Container(
@@ -574,13 +627,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(color: color.withOpacity(0.4), width: 0.8),
                                 ),
-                                child: Text(
-                                    statusLabel,
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: color,
-                                    ),
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Text(
+                                            statusLabel,
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: color,
+                                            ),
+                                        ),
+                                        FlashDotIndicator(
+                                            value: statusLabel,
+                                            dotColor: color,
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 2),
+                                        ),
+                                    ],
                                 ),
                             ),
                         ],
@@ -638,9 +702,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const Icon(Icons.swap_horiz, size: 16, color: Colors.amberAccent),
                         const SizedBox(width: 6),
                         Expanded(
-                            child: Text(
-                                "ハンドオーバー検知: $handover",
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+                            child: Row(
+                                children: [
+                                    Expanded(
+                                        child: Text(
+                                            "ハンドオーバー検知: $handover",
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+                                        ),
+                                    ),
+                                    FlashDotIndicator(
+                                        value: handover,
+                                        dotColor: Colors.amberAccent,
+                                        size: 4,
+                                        padding: const EdgeInsets.only(left: 4),
+                                    ),
+                                ],
                             ),
                         ),
                     ],
