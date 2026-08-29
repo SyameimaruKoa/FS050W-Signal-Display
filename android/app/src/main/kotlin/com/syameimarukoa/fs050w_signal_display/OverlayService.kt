@@ -135,6 +135,25 @@ class OverlayService : Service() {
                 else -> Color.parseColor("#9C27B0")
             }
         }
+
+        fun getTempColor(temp: Double?): Int {
+            if (temp == null || temp.isNaN()) return Color.WHITE
+            return when {
+                temp >= 45.0 -> Color.parseColor("#F44336")
+                temp >= 42.0 -> Color.parseColor("#FF9800")
+                temp >= 38.0 -> Color.parseColor("#4CAF50")
+                else -> Color.parseColor("#00E5FF")
+            }
+        }
+
+        fun getLatencyColor(latencyMs: Int?): Int {
+            if (latencyMs == null) return Color.parseColor("#757575")
+            return when {
+                latencyMs <= 50 -> Color.parseColor("#00E676")
+                latencyMs <= 150 -> Color.parseColor("#FFD600")
+                else -> Color.parseColor("#FF5252")
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -704,6 +723,9 @@ class OverlayService : Service() {
         val isCharging = json?.optBoolean("isCharging", false) ?: false
         val tempVal = if (json?.has("batteryTemperature") == true && !json.isNull("batteryTemperature")) json.optDouble("batteryTemperature") else null
         val remainingTimeStr = json?.optString("remainingTimeHHMM", "") ?: ""
+        val latencyMs = if (json?.has("routerLatencyMs") == true && !json.isNull("routerLatencyMs")) json.optInt("routerLatencyMs") else null
+        val is5gDisabled = json?.optBoolean("is5gDisabledByConfig", false) ?: false
+        val isDelayed = latencyMs != null && latencyMs > 150
 
         val batSb = StringBuilder()
         if (batteryPercent != null) {
@@ -745,6 +767,7 @@ class OverlayService : Service() {
             val ssb = SpannableStringBuilder()
             val rpStart = ssb.length
             ssb.append(rpStr)
+            ssb.setSpan(
                 ForegroundColorSpan(rpColor),
                 rpStart,
                 ssb.length,
@@ -752,8 +775,10 @@ class OverlayService : Service() {
             )
             ssb.append(" / ")
             val snrStart = ssb.length
+            ssb.append(snrStr)
             ssb.setSpan(
                 ForegroundColorSpan(snrColor),
+                snrStart,
                 ssb.length,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
@@ -761,10 +786,41 @@ class OverlayService : Service() {
             if (latencyMs != null) {
                 val latStart = ssb.length
                 ssb.append(" ${latencyMs}ms")
+                ssb.setSpan(
+                    ForegroundColorSpan(getLatencyColor(latencyMs)),
+                    latStart,
+                    ssb.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+
+            holder.badgeText.text = ssb
+
             val pillBatSb = SpannableStringBuilder()
             if (batteryPercent != null) {
+                pillBatSb.append("🔋").append(batteryPercent.toString()).append("%")
+                if (isCharging) pillBatSb.append("⚡")
+            }
+            if (tempVal != null && !tempVal.isNaN()) {
+                if (pillBatSb.isNotEmpty()) pillBatSb.append(" ")
+                val tempStart = pillBatSb.length
+                pillBatSb.append("${tempVal.toInt()}℃")
+                pillBatSb.setSpan(
+                    ForegroundColorSpan(getTempColor(tempVal)),
+                    tempStart,
+                    pillBatSb.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+
+            if (pillBatSb.isNotEmpty()) {
+                holder.batteryText.visibility = View.VISIBLE
+                holder.batteryText.text = pillBatSb
+            } else {
+                holder.batteryText.visibility = View.GONE
             }
             holder.pillLayout.alpha = overlayOpacity
+            return
         }
 
         if (overlayStyle == "card") {
@@ -779,19 +835,53 @@ class OverlayService : Service() {
             holder.opView.setTextColor(if (isDelayed) latColor else Color.LTGRAY)
             if (latencyMs != null) {
                 val opBg = GradientDrawable().apply {
+                    setColor(Color.argb(0x33, Color.red(latColor), Color.green(latColor), Color.blue(latColor)))
+                    cornerRadius = dpToPx(3f).toFloat()
+                    setStroke(dpToPx(0.8f), Color.argb(0x88, Color.red(latColor), Color.green(latColor), Color.blue(latColor)))
+                }
+                holder.opView.background = opBg
+                holder.opView.setPadding(dpToPx(4f), dpToPx(1f), dpToPx(4f), dpToPx(1f))
+            } else {
+                holder.opView.background = null
+                holder.opView.setPadding(dpToPx(4f), 0, 0, 0)
+            }
+
+            holder.loginView.visibility = if (!isLoggedIn && !isConnecting) View.VISIBLE else View.GONE
+            if (batterySummary.isNotEmpty()) {
+                holder.batteryView.visibility = View.VISIBLE
+                holder.batteryView.text = batterySummary
+            } else {
+                holder.batteryView.visibility = View.GONE
+            }
+
+            val nrTitle = if (nrBand == "--" && nrPci == "--") {
+                if (modeBadge.contains("+")) "$nrLabel+ (--)" else "$nrLabel (--)"
+            } else {
+                if (modeBadge.contains("+")) "$nrLabel+ ($nrBand/$nrPci)" else "$nrLabel ($nrBand/$nrPci)"
             }
 
             if (is5gDisabled) {
                 holder.nrHeader.text = "$nrLabel (5Gは無効です)"
                 holder.nrHeader.setTextColor(Color.GRAY)
-                holder.nrRsrpCell.container.visibility = View.GONE
-                holder.nrRefCell.container.visibility = View.GONE
+                holder.nrRsrpCell.rootCell.visibility = View.GONE
+                holder.nrRefCell.rootLayout.visibility = View.GONE
             } else {
-                holder.nrRsrpCell.container.visibility = View.VISIBLE
-                holder.nrRefCell.container.visibility = View.VISIBLE
-                }
+                holder.nrRsrpCell.rootCell.visibility = View.VISIBLE
+                holder.nrRefCell.rootLayout.visibility = View.VISIBLE
+                holder.nrHeader.setTextColor(Color.parseColor("#00E5FF"))
                 holder.nrHeader.text = nrTitle
+                holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+                holder.nrRefCell.update(nrRsrq, nrSnr, curveType = smoothGaugeCurve)
+            }
 
+            val lteTitle = if (lteBand == "--" && ltePci == "--") {
+                "$lteLabel (--)"
+            } else {
+                "$lteLabel ($lteBand/$ltePci)"
+            }
+
+            holder.lteHeader.text = lteTitle
+            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
             holder.lteRefCell.update(lteRsrq, lteSinr, curveType = smoothGaugeCurve)
         } else {
             val holder = compactHolder ?: return
@@ -809,7 +899,10 @@ class OverlayService : Service() {
             }
 
             if (is5gDisabled) {
-                holder.nrCell.container.visibility = View.GONE
+                holder.nrCell.rootCell.visibility = View.GONE
+            } else {
+                holder.nrCell.rootCell.visibility = View.VISIBLE
+                val nrTitle = if (modeBadge.contains("+")) {
                     if (nrBand == "--") "$nrLabel+ --" else "$nrLabel+ $nrBand"
                 } else {
                     if (nrBand == "--") "$nrLabel --" else "$nrLabel $nrBand"
@@ -821,9 +914,19 @@ class OverlayService : Service() {
             holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
         }
     }
+
+    private fun createAntennaPictView(): Pair<View, AntennaPictViewHolder> {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(4f), dpToPx(2f), dpToPx(4f), dpToPx(2f))
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#2200E5FF"))
+                cornerRadius = dpToPx(4f).toFloat()
+                setStroke(dpToPx(0.8f), Color.parseColor("#6600E5FF"))
+            }
             background = bg
+        }
 
         val barsLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
