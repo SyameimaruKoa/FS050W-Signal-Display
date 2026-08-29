@@ -16,6 +16,8 @@
         android:label="FS050W Signal Display"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
         android:usesCleartextTraffic="true">
 
         <service

@@ -114,6 +114,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await _save();
     }
 
+    Future<void> _toggleEventLamp(bool enabled) async {
+        if (enabled) {
+            final hasPermission = await OverlayService.checkPermission();
+            if (!hasPermission) {
+                if (!mounted) return;
+                final shouldOpenSettings = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                        title: const Text("権限の許可が必要です"),
+                        content: const Text("最上部イベントLEDランプ（通知用オーバーレイ）を表示するには、「他のアプリの上に重ねて表示」の権限を許可してください。"),
+                        actions: [
+                            TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text("キャンセル"),
+                            ),
+                            ElevatedButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text("設定を開く"),
+                            ),
+                        ],
+                    ),
+                );
+
+                if (shouldOpenSettings == true) {
+                    await OverlayService.requestPermission();
+                }
+                return;
+            }
+        }
+
+        setState(() {
+            _settings.eventLampEnabled = enabled;
+        });
+        await _save();
+    }
+
+    Future<void> _testEventLamp() async {
+        final hasPermission = await OverlayService.checkPermission();
+        if (!hasPermission) {
+            if (!mounted) return;
+            final shouldOpenSettings = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                    title: const Text("権限の許可が必要です"),
+                    content: const Text("最上部イベントLEDランプを点灯テストするには、「他のアプリの上に重ねて表示」の権限を許可してください。"),
+                    actions: [
+                        TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text("キャンセル"),
+                        ),
+                        ElevatedButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text("設定を開く"),
+                        ),
+                    ],
+                ),
+            );
+
+            if (shouldOpenSettings == true) {
+                await OverlayService.requestPermission();
+            }
+            return;
+        }
+        await OverlayService.triggerLamp("5g", _settings);
+    }
+
     @override
     Widget build(BuildContext context) {
         return PopScope(
@@ -258,10 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: const Text("最上部イベント LED ランプ"),
                             subtitle: const Text("5G突入・ハンドオーバー時に最上部にパルス点灯"),
                             value: _settings.eventLampEnabled,
-                            onChanged: (val) {
-                                setState(() => _settings.eventLampEnabled = val);
-                                _save();
-                            },
+                            onChanged: (val) => _toggleEventLamp(val),
                         ),
                         if (_settings.eventLampEnabled) ...[
                             ListTile(
@@ -304,9 +367,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: OutlinedButton.icon(
                                     icon: const Icon(Icons.flash_on, size: 16, color: Color(0xFF00E5FF)),
                                     label: const Text("LEDランプ点灯テスト"),
-                                    onPressed: () {
-                                        OverlayService.triggerLamp("5g", _settings);
-                                    },
+                                    onPressed: () => _testEventLamp(),
                                 ),
                             ),
                         ],
