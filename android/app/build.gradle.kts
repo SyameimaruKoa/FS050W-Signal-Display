@@ -4,6 +4,22 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+fun getPubspecVersion(): Pair<String, Int> {
+    val pubspecFile = rootProject.file("../pubspec.yaml")
+    if (pubspecFile.exists()) {
+        val content = pubspecFile.readText()
+        val match = Regex("""version:\s*([0-9\.]+)\+?([0-9]*)""").find(content)
+        if (match != null) {
+            val name = match.groupValues[1]
+            val code = match.groupValues[2].toIntOrNull() ?: 1
+            return Pair(name, code)
+        }
+    }
+    return Pair("2.2.5", 29)
+}
+
+val (pubspecVersionName, pubspecVersionCode) = getPubspecVersion()
+
 android {
     namespace = "com.syameimarukoa.fs050w_signal_display"
     compileSdk = flutter.compileSdkVersion
@@ -19,8 +35,8 @@ android {
         applicationId = "com.syameimarukoa.fs050w_signal_display"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = if (flutter.versionCode != null && flutter.versionCode != 1) flutter.versionCode else pubspecVersionCode
+        versionName = if (flutter.versionName != null && flutter.versionName != "1.0") flutter.versionName else pubspecVersionName
     }
 
     buildTypes {
