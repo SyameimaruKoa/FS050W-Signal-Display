@@ -1048,6 +1048,8 @@ class OverlayService : Service() {
             textSize = 10f
             setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
             val bg = GradientDrawable().apply {
                 setColor(Color.parseColor("#2200E5FF"))
                 cornerRadius = dpToPx(4f).toFloat()
@@ -1061,6 +1063,16 @@ class OverlayService : Service() {
             textSize = 10f
             setTextColor(Color.LTGRAY)
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            ).apply {
+                setMargins(dpToPx(3f), 0, dpToPx(3f), 0)
+            }
         }
 
         val loginView = TextView(this).apply {
@@ -1068,6 +1080,8 @@ class OverlayService : Service() {
             textSize = 8.5f
             setTextColor(Color.parseColor("#FFB300"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
             val bg = GradientDrawable().apply {
                 setColor(Color.parseColor("#22FFB300"))
                 cornerRadius = dpToPx(3f).toFloat()
@@ -1079,7 +1093,7 @@ class OverlayService : Service() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(dpToPx(4f), 0, 0, 0)
+                setMargins(0, 0, dpToPx(4f), 0)
             }
         }
 
@@ -1088,11 +1102,13 @@ class OverlayService : Service() {
             textSize = 9.5f
             setTextColor(Color.WHITE)
             typeface = Typeface.MONOSPACE
-            gravity = Gravity.END
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
-                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
         }
 
@@ -1108,6 +1124,9 @@ class OverlayService : Service() {
             textSize = 9.5f
             setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(0, dpToPx(4f), 0, dpToPx(2f))
         }
         root.addView(nrHeader)
@@ -1124,6 +1143,9 @@ class OverlayService : Service() {
             textSize = 9.5f
             setTextColor(Color.parseColor("#64B5F6"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(0, dpToPx(4f), 0, dpToPx(2f))
         }
         root.addView(lteHeader)
@@ -1173,6 +1195,16 @@ class OverlayService : Service() {
             textSize = 9.5f
             setTextColor(Color.parseColor("#00E5FF"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            ).apply {
+                setMargins(0, 0, dpToPx(4f), 0)
+            }
         }
 
         val loginView = TextView(this).apply {
@@ -1180,6 +1212,8 @@ class OverlayService : Service() {
             textSize = 8.5f
             setTextColor(Color.parseColor("#FFB300"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
             val bg = GradientDrawable().apply {
                 setColor(Color.parseColor("#22FFB300"))
                 cornerRadius = dpToPx(3f).toFloat()
@@ -1191,7 +1225,7 @@ class OverlayService : Service() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(dpToPx(4f), 0, 0, 0)
+                setMargins(0, 0, dpToPx(4f), 0)
             }
         }
 
@@ -1200,11 +1234,13 @@ class OverlayService : Service() {
             textSize = 9f
             setTextColor(Color.WHITE)
             typeface = Typeface.MONOSPACE
-            gravity = Gravity.END
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
-                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
         }
 
@@ -1280,13 +1316,18 @@ class OverlayService : Service() {
             textSize = 7.5f
             setTextColor(Color.parseColor("#88FFFFFF"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
         }
         val valView1 = TextView(this).apply {
             text = "--"
             textSize = 8.5f
             setTextColor(Color.parseColor("#757575"))
             typeface = Typeface.MONOSPACE
-            gravity = Gravity.END
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         content1.addView(labelView1)
@@ -1322,13 +1363,18 @@ class OverlayService : Service() {
             textSize = 7.5f
             setTextColor(Color.parseColor("#88FFFFFF"))
             typeface = Typeface.DEFAULT_BOLD
+            isSingleLine = true
+            maxLines = 1
         }
         val valView2 = TextView(this).apply {
             text = "--"
             textSize = 8.5f
             setTextColor(Color.parseColor("#757575"))
             typeface = Typeface.MONOSPACE
-            gravity = Gravity.END
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         content2.addView(labelView2)
@@ -1393,7 +1439,10 @@ class OverlayService : Service() {
             textSize = 8.5f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            setPadding(dpToPx(4f), 0, 0, 0)
+            isSingleLine = true
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dpToPx(4f), 0, dpToPx(4f), 0)
         }
         cell.addView(labelView)
 
@@ -1501,7 +1550,7 @@ class OverlayService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     if (isResizing) {
                         val dx = (event.rawX - initialTouchX).toInt()
-                        val newWidth = max(dpToPx(160f), min(screenWidth - dpToPx(20f), initialWidth + dx))
+                        val newWidth = max(dpToPx(180f), min(screenWidth - dpToPx(20f), initialWidth + dx))
 
                         val cardParams = cardView.layoutParams
                         cardParams.width = newWidth
@@ -1509,7 +1558,7 @@ class OverlayService : Service() {
                         cardView.layoutParams = cardParams
 
                         userCustomWidthPx = newWidth
-                        overlayScale = (newWidth.toFloat() / dpToPx(280f)).coerceIn(0.7f, 2.0f)
+                        overlayScale = (newWidth.toFloat() / dpToPx(280f)).coerceIn(0.6f, 2.0f)
 
                         // リアルタイムに各セルのバー幅を更新
                         updateFloatingViewContent()
