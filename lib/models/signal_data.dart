@@ -268,8 +268,8 @@ class SignalData {
         final now = DateTime.now();
         final sysmode = (rawMap['mnet_sysmode'] ?? previousData?.sysmode ?? 'lte').toString().toLowerCase();
         final isSa = sysmode == 'nr5g';
-        final rawOp = (rawMap['mnet_operator_name'] ?? previousData?.operatorName ?? '--').toString();
-        final operatorName = normalizeOperatorName(rawOp);
+        final rawOp = (rawMap['mnet_operator_name'] ?? rawMap['operator_name'] ?? rawMap['sim_spn'] ?? previousData?.operatorName ?? '--').toString();
+        final operatorName = normalizeOperatorName(rawOp == '--' && previousData != null && previousData.operatorName != '--' ? previousData.operatorName : rawOp);
 
         // 4G LTE & 5G NR Parsing
         final rawLteRsrp = _parseInt(rawMap['mnet_rsrp']);

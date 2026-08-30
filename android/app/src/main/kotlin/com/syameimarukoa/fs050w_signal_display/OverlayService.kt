@@ -690,7 +690,11 @@ class OverlayService : Service() {
 
         val json = lastSignalJson
         val opNameRaw = json?.optString("operatorName", "Rakuten") ?: "Rakuten"
-        val opName = if (opNameRaw == "null" || opNameRaw.isBlank()) "Rakuten" else opNameRaw
+        val opName = if (opNameRaw == "null" || opNameRaw.isBlank() || opNameRaw == "--") {
+            if (json?.optBoolean("isConnecting", false) == true) "--" else "Rakuten"
+        } else {
+            opNameRaw
+        }
         val modeBadgeRaw = json?.optString("modeBadge", json.optString("connectionModeBadge", "5G+")) ?: "5G+"
         val modeBadge = if (modeBadgeRaw == "null" || modeBadgeRaw.isBlank()) "5G+" else modeBadgeRaw
         val isConnecting = json?.optBoolean("isConnecting", false) ?: false
@@ -860,7 +864,7 @@ class OverlayService : Service() {
             val latColor = getLatencyColor(latencyMs)
             holder.opView.text = opText
             holder.opView.setTextColor(if (isDelayed) latColor else Color.LTGRAY)
-            if (latencyMs != null) {
+            if (latencyMs != null && opText.isNotBlank() && opText != "--") {
                 val opBg = GradientDrawable().apply {
                     setColor(Color.argb(0x33, Color.red(latColor), Color.green(latColor), Color.blue(latColor)))
                     cornerRadius = dpToPx(3f).toFloat()
@@ -870,7 +874,7 @@ class OverlayService : Service() {
                 holder.opView.setPadding(dpToPx(4f), dpToPx(1f), dpToPx(4f), dpToPx(1f))
             } else {
                 holder.opView.background = null
-                holder.opView.setPadding(dpToPx(4f), 0, 0, 0)
+                holder.opView.setPadding(0, 0, 0, 0)
             }
 
             holder.loginView.visibility = if (!isLoggedIn && !isConnecting) View.VISIBLE else View.GONE
@@ -1056,22 +1060,24 @@ class OverlayService : Service() {
             }
             background = bg
             setPadding(dpToPx(4f), dpToPx(1f), dpToPx(4f), dpToPx(1f))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
         val opView = TextView(this).apply {
-            text = "  Rakuten"
+            text = "Rakuten"
             textSize = 10f
             setTextColor(Color.LTGRAY)
             typeface = Typeface.DEFAULT_BOLD
             isSingleLine = true
             maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
-                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(dpToPx(3f), 0, dpToPx(3f), 0)
+                setMargins(dpToPx(4f), 0, 0, 0)
             }
         }
 
@@ -1093,8 +1099,16 @@ class OverlayService : Service() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, dpToPx(4f), 0)
+                setMargins(dpToPx(4f), 0, 0, 0)
             }
+        }
+
+        val spacer = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                0,
+                1f
+            )
         }
 
         val batteryView = TextView(this).apply {
@@ -1105,16 +1119,18 @@ class OverlayService : Service() {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isSingleLine = true
             maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                setMargins(dpToPx(4f), 0, 0, 0)
+            }
         }
 
         header.addView(badgeView)
         header.addView(opView)
         header.addView(loginView)
+        header.addView(spacer)
         header.addView(batteryView)
         root.addView(header)
 
@@ -1197,14 +1213,10 @@ class OverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
             isSingleLine = true
             maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
-                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(0, 0, dpToPx(4f), 0)
-            }
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
         val loginView = TextView(this).apply {
@@ -1225,8 +1237,16 @@ class OverlayService : Service() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, dpToPx(4f), 0)
+                setMargins(dpToPx(4f), 0, 0, 0)
             }
+        }
+
+        val spacer = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                0,
+                1f
+            )
         }
 
         val batteryView = TextView(this).apply {
@@ -1237,15 +1257,17 @@ class OverlayService : Service() {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isSingleLine = true
             maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                setMargins(dpToPx(4f), 0, 0, 0)
+            }
         }
 
         header.addView(statusView)
         header.addView(loginView)
+        header.addView(spacer)
         header.addView(batteryView)
         root.addView(header)
 
@@ -1550,7 +1572,7 @@ class OverlayService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     if (isResizing) {
                         val dx = (event.rawX - initialTouchX).toInt()
-                        val newWidth = max(dpToPx(180f), min(screenWidth - dpToPx(20f), initialWidth + dx))
+                        val newWidth = max(dpToPx(190f), min(screenWidth - dpToPx(20f), initialWidth + dx))
 
                         val cardParams = cardView.layoutParams
                         cardParams.width = newWidth
