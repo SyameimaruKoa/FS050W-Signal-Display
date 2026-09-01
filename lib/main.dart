@@ -94,7 +94,12 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
             api.startPolling();
             PipService.setAutoEnterPip(api.settings.autoPipOnHome, api.settings.pipAspectRatio);
         } else if (state == AppLifecycleState.paused) {
-            api.stopPolling();
+            // オーバーレイ有効中、またはPiPモード中はバックグラウンドでもポーリングを継続する
+            final isOverlayActive = api.settings.overlayEnabled;
+            final isPip = PipService.isPipModeNotifier.value;
+            if (!isOverlayActive && !isPip) {
+                api.stopPolling();
+            }
         }
     }
 
