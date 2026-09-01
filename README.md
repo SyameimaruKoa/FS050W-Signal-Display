@@ -3,7 +3,6 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue.svg)](https://flutter.dev)
 [![Android](<https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-green.svg>)](https://www.android.com)
 [![Version](https://img.shields.io/badge/Version-2.1.2-blue.svg)](https://github.com/SyameimaruKoa/FS050W-Signal-Display/releases)
-[![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 富士ソフト製 5G/4G モバイルルーター **「+F FS050W」** の電波状態・セル情報・バッテリー詳細・ハードウェア統計をリアルタイムに取得・可視化・常駐監視する Android アプリケーションです。
 
@@ -13,11 +12,13 @@
 
 |                 機能                 |                       スクリーンショット                       |
 | :----------------------------------: | :------------------------------------------------------------: |
-|   **ダッシュボード & 共通AppBar**    |   <img src="assets/screenshots/dashboard.png" width="220" />   |
-| **バッテリー・システム詳細モーダル** | <img src="assets/screenshots/battery_modal.png" width="220" /> |
-|            **同期グラフ**            |  <img src="assets/screenshots/sync_graph.png" width="220" />   |
-|         **HUD / PiP (小窓)**         |   <img src="assets/screenshots/hud_mode.png" width="220" />    |
-|           **設定・その他**           |   <img src="assets/screenshots/settings.png" width="220" />    |
+|   **ダッシュボード & 共通AppBar**    |   <img src="assets/screenshots/dashboard.jpg" width="220" />   |
+| **バッテリー・システム詳細モーダル** | <img src="assets/screenshots/battery_modal.jpg" width="220" /> |
+|            **同期グラフ**            |  <img src="assets/screenshots/sync_graph.jpg" width="220" />   |
+|               **PiP**                |   <img src="assets/screenshots/pip_mode.jpg" width="220" />    |
+|            **HUD mode 1**            |  <img src="assets/screenshots/hud_mode_1.jpg" width="220" />   |
+|            **HUD mode 2**            |  <img src="assets/screenshots/hud_mode_2.jpg" width="220" />   |
+|          **HUD mode mini**           | <img src="assets/screenshots/hud_mode_mini.jpg" width="220" /> |
 
 ---
 
@@ -99,6 +100,12 @@
 
 ---
 
+## 既存の不具合
+
+- PiPとオーバーレイを併用する際、オーバーレイがPiPサイズ以上表示されない問題
+
+---
+
 ## 🔒 ログイン情報・バックアップ仕様について
 
 ### 全設定の自動バックアップ対応（Auto Backup & Device Transfer）
@@ -120,9 +127,11 @@
 **ターゲットOS:** Android 8.0 以上 (API 26+)  
 **対応アーキテクチャ:** arm64-v8a, armeabi-v7a, x86_64
 
-- Android 14 / 15 / 16 / 17 (Samsung One UI, Google Pixel, AOSP) 動作確認済み
+- Android 15 / 16 (One UI 7 / 8) 動作確認済み
 - **対応ルーター**: 富士ソフト +F FS050W (Wi-Fi接続)
 - **開発フレームワーク**: Flutter 3.0+ / Dart 3.0+
+
+本開発で解析した通信方法はdocs内にあるGistリポジトリにあります。
 
 ---
 
@@ -159,10 +168,3 @@ flutter build apk --release --split-per-abi
 ## 📝 更新履歴
 
 詳細な全バージョンの更新履歴は [CHANGELOG.md](CHANGELOG.md) をご覧ください。
-
----
-
-## 📄 ライセンス
-
-本プロジェクトは MIT License の下で公開されています。
-
