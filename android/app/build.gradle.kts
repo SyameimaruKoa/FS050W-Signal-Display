@@ -15,7 +15,7 @@ fun getPubspecVersion(): Pair<String, Int> {
             return Pair(name, code)
         }
     }
-    return Pair("2.2.5", 29)
+    return Pair("2.2.6", 30)
 }
 
 val (pubspecVersionName, pubspecVersionCode) = getPubspecVersion()
@@ -35,6 +35,8 @@ android {
         applicationId = "com.syameimarukoa.fs050w_signal_display"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
         versionCode = if (flutter.versionCode != null && flutter.versionCode != 1) flutter.versionCode else pubspecVersionCode
         versionName = if (flutter.versionName != null && flutter.versionName != "1.0") flutter.versionName else pubspecVersionName
     }
