@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.GradientDrawable
@@ -166,9 +167,43 @@ class OverlayService : Service() {
     }
 
     private fun updateScreenDimensions() {
-        val dm = Resources.getSystem().displayMetrics
-        screenWidth = dm.widthPixels
-        screenHeight = dm.heightPixels
+        val wm = windowManager ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // A service's current metrics can describe the small overlay window itself.
+            val metrics = wm.maximumWindowMetrics
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+            )
+            screenWidth = max(1, metrics.bounds.width() - insets.left - insets.right)
+            screenHeight = max(1, metrics.bounds.height() - insets.top - insets.bottom)
+        } else {
+            @Suppress("DEPRECATION")
+            val size = Point()
+            @Suppress("DEPRECATION")
+            wm.defaultDisplay.getSize(size)
+            screenWidth = max(1, size.x)
+            screenHeight = max(1, size.y)
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updateScreenDimensions()
+        constrainOverlayPosition()
+    }
+
+    private fun constrainOverlayPosition() {
+        val container = overlayContainer ?: return
+        val params = overlayLayoutParams ?: return
+        if (container.width == 0 || container.height == 0) return
+        val x = params.x.coerceIn(0, max(0, screenWidth - container.width))
+        val y = params.y.coerceIn(0, max(0, screenHeight - container.height))
+        if (x != params.x || y != params.y) {
+            snapAnimator?.cancel()
+            params.x = x
+            params.y = y
+            if (container.isAttachedToWindow) windowManager?.updateViewLayout(container, params)
+        }
     }
 
     private fun startForegroundIfNeeded() {
@@ -573,8 +608,7 @@ class OverlayService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -582,9 +616,14 @@ class OverlayService : Service() {
             y = (screenHeight * 0.15).toInt()
         }
 
-        updateScreenDimensions()
         val container = FrameLayout(this)
         overlayContainer = container
+        container.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                updateScreenDimensions()
+                constrainOverlayPosition()
+            }
+        }
 
         buildOverlayView()
 
@@ -1531,6 +1570,7 @@ class OverlayService : Service() {
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    updateScreenDimensions()
                     initialX = params.x
                     initialY = params.y
                     initialTouchX = event.rawX
@@ -1541,8 +1581,9 @@ class OverlayService : Service() {
                     val dx = (event.rawX - initialTouchX).toInt()
                     val dy = (event.rawY - initialTouchY).toInt()
                     val overlayH = overlayContainer?.height ?: dpToPx(120f)
-                    val maxY = max(0, screenHeight - overlayH - dpToPx(10f))
-                    params.x = initialX + dx
+                    val overlayW = overlayContainer?.width ?: dpToPx(280f)
+                    val maxY = max(0, screenHeight - overlayH)
+                    params.x = (initialX + dx).coerceIn(0, max(0, screenWidth - overlayW))
                     params.y = (initialY + dy).coerceIn(0, maxY)
                     try {
                         windowManager?.updateViewLayout(overlayContainer, params)
@@ -1598,16 +1639,18 @@ class OverlayService : Service() {
     }
 
     private fun snapToNearestEdge() {
+        updateScreenDimensions()
         val params = overlayLayoutParams ?: return
         val currentX = params.x
+        val maxX = max(0, screenWidth - (overlayContainer?.width ?: 0))
         val targetX = if (currentX + (overlayContainer?.width ?: 0) / 2 < screenWidth / 2) {
-            dpToPx(8f) // Snap Left
+            min(dpToPx(8f), maxX) // Snap Left
         } else {
-            screenWidth - (overlayContainer?.width ?: 0) - dpToPx(8f) // Snap Right
+            max(0, maxX - dpToPx(8f)) // Snap Right
         }
 
         val overlayH = overlayContainer?.height ?: dpToPx(120f)
-        val maxY = max(0, screenHeight - overlayH - dpToPx(10f))
+        val maxY = max(0, screenHeight - overlayH)
         params.y = params.y.coerceIn(0, maxY)
 
         snapAnimator?.cancel()
