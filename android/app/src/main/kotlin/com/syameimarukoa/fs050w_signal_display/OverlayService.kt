@@ -169,7 +169,8 @@ class OverlayService : Service() {
     private fun updateScreenDimensions() {
         val wm = windowManager ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val metrics = wm.currentWindowMetrics
+            // A service's current metrics can describe the small overlay window itself.
+            val metrics = wm.maximumWindowMetrics
             val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
                 WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
             )
