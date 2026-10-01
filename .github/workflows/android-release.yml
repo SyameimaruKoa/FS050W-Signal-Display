@@ -34,34 +34,26 @@ jobs:
             -   uses: ./.github/actions/setup-flutter
             -   name: Run tests
                 run: flutter test
-            -   name: Restore release keystore
+            -   name: Restore existing debug keystore
                 shell: bash
                 env:
-                    KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-                    STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-                    KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-                    KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+                    KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
                 run: |
-                    for name in KEYSTORE_BASE64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
-                        if [[ -z "${!name}" ]]; then
-                            echo "Missing signing secret: $name" >&2
-                            exit 1
-                        fi
-                    done
+                    if [[ -z "$KEYSTORE_BASE64" ]]; then
+                        echo 'Missing signing secret: ANDROID_DEBUG_KEYSTORE_BASE64' >&2
+                        exit 1
+                    fi
                     umask 077
-                    printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
-            -   name: Build signed release APKs
+                    mkdir -p "$HOME/.android"
+                    printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+            -   name: Build release APKs with debug signing
                 env:
-                    ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
-                    ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-                    ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-                    ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
                     VERSION_NAME: ${{ steps.version.outputs.name }}
                 # Existing manually published builds use versionCode values below 1000.
                 run: flutter build apk --release --split-per-abi --build-name="$VERSION_NAME" --build-number="$((1000 + ${{ github.run_number }}))"
-            -   name: Remove release keystore
+            -   name: Remove restored debug keystore
                 if: always()
-                run: rm -f "$RUNNER_TEMP/release.jks"
+                run: rm -f "$HOME/.android/debug.keystore"
             -   name: Add checksums
                 working-directory: build/app/outputs/flutter-apk
                 run: sha256sum *-release.apk > SHA256SUMS.txt

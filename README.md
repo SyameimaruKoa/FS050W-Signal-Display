@@ -182,70 +182,25 @@ APKと `SHA256SUMS.txt` を添付したGitHub Releaseを公開します。既存
 `1000 + Android Releaseのrun_number` になります。同じ実行の再実行ではversionCodeも同じです。
 ワークフローを作り直す場合は、公開済みversionCodeを上回るようにオフセットを調整してください。
 
-### 署名キーの新規作成（Windows PowerShell）
+### 従来のデバッグキーで署名
 
-既存の公開APKと同じ鍵で更新する場合は、新規作成せず、そのAPKに使用したキーストアを使用してください。
-新しい署名キーを作る場合は、Java JDKまたはAndroid Studioに付属する `keytool` を使います。
-以下は [Flutter公式のキーストア作成手順](https://docs.flutter.dev/deployment/android#create-an-upload-keystore) に沿った例です。
+ローカルビルドとGitHub ReleaseのAPKは、従来どおり `debug` の署名設定を使用します。
+新しいリリースキーの作成や、署名パスワード4項目の登録は不要です。
+GitHub Actionsでは開発環境の既存 `debug.keystore` を復元して使うため、実行ごとに署名キーは変わりません。
 
-まず、リポジトリの外に保存用フォルダーを作成します。
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\fs050w-signing"
-```
-
-次のコマンドで `release.jks` を作成します。すでに同名のファイルがある場合は再作成せず、既存の鍵を確認してください。
+既存キーはリポジトリのSecret `ANDROID_DEBUG_KEYSTORE_BASE64` に登録済みです。
+別のリポジトリに移す場合など、再登録が必要なときは、これまでのAPKに使用した開発環境で次を実行し、
+**Settings → Secrets and variables → Actions → New repository secret** の値に貼り付けてください。
 
 ```powershell
-keytool -genkeypair -v -keystore "$env:USERPROFILE\fs050w-signing\release.jks" -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias fs050w-release
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.android\debug.keystore")) | Set-Clipboard
 ```
 
-`keytool` が見つからない場合は、Android Studio付属の実行ファイルを指定します。
-インストール先が異なる場合はパスを変更してください。
-
-```powershell
-& 'C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe' -genkeypair -v -keystore "$env:USERPROFILE\fs050w-signing\release.jks" -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias fs050w-release
-```
-
-実行すると、キーストアのパスワード、証明書の名前・組織・国コードなど、最後に鍵のパスワードが対話形式で求められます。
-パスワード入力中は文字が表示されません。キーストアと鍵のパスワードは6文字以上にし、パスワード管理ツールなどに保存してください。
-鍵のパスワードでEnterを押すと、キーストアと同じパスワードになります。
-証明書の情報を確認して承認すると作成されます。エイリアスはこの例では `fs050w-release` です。
-
-`release.jks` とパスワードは、今後の更新でも同じものを使うため、安全な場所にバックアップしてください。
-キーストアやパスワードをリポジトリにコミットしないでください。
-
-### GitHub Secretsへの登録
-
-公開前に、リポジトリの **Settings → Secrets and variables → Actions → New repository secret** で以下を1項目ずつ登録します。
-
-| Secret | 内容 |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | 署名キーストアのBase64文字列 |
-| `ANDROID_KEYSTORE_PASSWORD` | キーストアのパスワード |
-| `ANDROID_KEY_ALIAS` | 署名鍵のエイリアス |
-| `ANDROID_KEY_PASSWORD` | 署名鍵のパスワード |
-
-上記のコマンドで新規作成した場合、`ANDROID_KEY_ALIAS` は `fs050w-release`、
-`ANDROID_KEYSTORE_PASSWORD` は作成時のキーストアパスワード、`ANDROID_KEY_PASSWORD` は鍵のパスワードです。
-鍵のパスワード入力をEnterで省略した場合は、両方のパスワードSecretに同じ値を登録します。
-`ANDROID_KEYSTORE_BASE64` は、次のコマンドでコピーした文字列をそのままSecretの値に貼り付けます。
-
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\fs050w-signing\release.jks")) | Set-Clipboard
-```
-
-Windows PowerShellでキーストアをBase64に変換する例:
-
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\secure\release.jks')) | Set-Clipboard
-```
-
-既存APKから上書き更新できるように、これまでの公開APKと同じ署名鍵を使用してください。
-従来のローカルビルドはデバッグ鍵で署名しているため、そのAPKの利用者が更新するには
-元の開発環境のデバッグキーストアを登録するか、新しい鍵へ移行する際に再インストールが必要です。
-Secretsが未設定なら公開ビルドは失敗し、Releaseは作成されません。
-署名鍵はPRのビルドには渡されません。
+Secret名は `ANDROID_DEBUG_KEYSTORE_BASE64` です。未登録なら公開ビルドは停止します。
+開発環境の `debug.keystore` は今後も同じものを使用し、バックアップしてください。
+異なる開発環境の鍵で署名した既存APKは、今回のキーと一致しない場合に再インストールが必要です。
+PRのCIにはこのSecretを渡さず、ランナー側のデバッグキーを使用します。
+そのため、PRの検証用APKと公開APKの間で上書き更新できない場合があります。
 
 公開例（ワークフローを含む変更がGitHubに反映された後に実行）:
 
@@ -253,10 +208,6 @@ Secretsが未設定なら公開ビルドは失敗し、Releaseは作成されま
 git tag v2.2.8
 git push origin v2.2.8
 ```
-
-ローカルのリリースビルドでも `ANDROID_KEYSTORE_PATH`（絶対パス）、
-`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` を設定すると
-同じ鍵で署名できます。未設定時は従来どおりデバッグ署名を使用します。
 
 ## 📝 更新履歴
 
