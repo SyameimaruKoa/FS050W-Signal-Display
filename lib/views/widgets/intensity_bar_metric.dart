@@ -40,14 +40,14 @@ class IntensityBarMetric extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
-        final double rawRatio = (value != null && !value!.isNaN)
+        final double rawRatio = (value != null && value!.isFinite && value! > -200)
             ? ((value! - minVal) / (maxVal - minVal)).clamp(0.0, 1.0)
             : 0.0;
         final double ratio = ColorGauge.applyCurve(rawRatio, smoothGaugeCurve);
         final Color activeColor = smoothGaugeColor
-            ? (value != null && !value!.isNaN ? ColorGauge.getSmoothColor(rawRatio, curve: smoothGaugeCurve) : barColor)
+            ? (value != null && value!.isFinite && value! > -200 ? ColorGauge.getSmoothColor(rawRatio, curve: smoothGaugeCurve) : barColor)
             : barColor;
-        final String textValue = (value != null && !value!.isNaN)
+        final String textValue = (value != null && value!.isFinite && value! > -200)
             ? "${value!.toStringAsFixed(1)} $unit"
             : "-- $unit";
 

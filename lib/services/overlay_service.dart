@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/signal_data.dart';
 import '../models/connection_state.dart';
+import '../utils/color_gauge.dart';
 
 class OverlayService {
     static const MethodChannel _channel = MethodChannel('com.syameimarukoa.fs050w_signal_display/overlay');
@@ -65,6 +66,12 @@ class OverlayService {
                 'operatorName': signal?.operatorName ?? '--',
                 'lteBand': isLoggedIn && (signal?.lteBand != null && signal!.lteBand! > 0) ? 'B${signal!.lteBand}' : '--',
                 'ltePci': isLoggedIn && (signal?.ltePci != null && signal!.ltePci! > 0) ? '${signal!.ltePci}' : '--',
+                'lteRsrpColor': ColorGauge.metricColor(signal?.lteRsrp, ColorGauge.rateRsrp(signal?.lteRsrp), ColorGauge.rsrpMin, ColorGauge.rsrpMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve).toARGB32(),
+                'lteRsrqColor': ColorGauge.metricColor((isLoggedIn ? signal?.lteRsrq : null), ColorGauge.rateRsrq((isLoggedIn ? signal?.lteRsrq : null)), ColorGauge.rsrqMin, ColorGauge.rsrqMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve).toARGB32(),
+                'lteSinrColor': ColorGauge.metricColor((isLoggedIn ? signal?.lteSinr : null), ColorGauge.rateSinr((isLoggedIn ? signal?.lteSinr : null)), ColorGauge.sinrMin, ColorGauge.sinrMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve).toARGB32(),
+                'nrRsrpColor': ColorGauge.metricColor(signal?.nrRsrp, ColorGauge.rateRsrp(signal?.nrRsrp), ColorGauge.rsrpMin, ColorGauge.rsrpMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve).toARGB32(),
+                'nrRsrqColor': ColorGauge.metricColor((isLoggedIn ? signal?.nrRsrq : null), ColorGauge.rateRsrq((isLoggedIn ? signal?.nrRsrq : null)), ColorGauge.rsrqMin, ColorGauge.rsrqMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve).toARGB32(),
+                'nrSnrColor': ColorGauge.metricColor((isLoggedIn ? signal?.nrSnr : null), ColorGauge.rateSinr((isLoggedIn ? signal?.nrSnr : null)), ColorGauge.sinrMin, ColorGauge.sinrMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve).toARGB32(),
                 'lteRsrp': signal?.lteRsrp,
                 'lteRsrq': isLoggedIn ? signal?.lteRsrq : null,
                 'lteSinr': isLoggedIn ? signal?.lteSinr : null,
@@ -78,6 +85,7 @@ class OverlayService {
                 'isCharging': signal?.isCharging ?? false,
                 'isBatteryPresent': signal?.isBatteryPresent ?? true,
                 'batteryTemperature': signal?.batteryTemperature,
+                'batteryTemperatureColor': ColorGauge.temperatureColor(signal?.batteryTemperature, threshold: settings.batteryTempWarningThreshold).toARGB32(),
                 'remainingTimeHHMM': signal?.remainingTimeHHMM,
                 'isTempWarning': settings.batteryTempWarningEnabled && ((signal?.batteryTemperature ?? 0) >= settings.batteryTempWarningThreshold),
                 'routerLatencyMs': signal?.routerLatencyMs,

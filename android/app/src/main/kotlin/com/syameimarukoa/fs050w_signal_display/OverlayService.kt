@@ -334,7 +334,8 @@ class OverlayService : Service() {
             value: Double?,
             customPrefix: String? = null,
             smoothColor: Boolean = false,
-            curveType: String = "easeOut"
+            curveType: String = "easeOut",
+            metricColor: Int? = null
         ) {
             val displayLabel = if (customPrefix != null) "$customPrefix $label" else label
             val textValue = if (value != null && !value.isNaN() && value > -200) {
@@ -352,11 +353,15 @@ class OverlayService : Service() {
             }
             val normalized = applyCurve(rawRatio, curveType).toFloat()
 
-            if (smoothColor && value != null && !value.isNaN() && value > -200) {
+            if (metricColor != null) {
+                barView.setBackgroundColor(metricColor)
+            } else if (smoothColor && value != null && !value.isNaN() && value > -200) {
                 barView.setBackgroundColor(calculateSmoothColor(rawRatio, curveType))
             } else {
                 barView.setBackgroundColor(defaultBarColor)
             }
+
+            labelView.setTextColor(metricColor ?: getRsrpColor(value))
 
             val totalWidth = rootCell.width
             if (totalWidth > 0) {
@@ -428,10 +433,10 @@ class OverlayService : Service() {
         val min2: Double,
         val max2: Double
     ) {
-        fun update(value1: Double?, value2: Double?, curveType: String = "easeOut") {
+        fun update(value1: Double?, value2: Double?, curveType: String = "easeOut", metricColor1: Int? = null, metricColor2: Int? = null) {
             val hasVal1 = value1 != null && !value1.isNaN() && value1 > -200
             val v1Str = if (hasVal1) String.format("%.1f", value1) else "--"
-            val color1 = if (label1 == "RQ") getRsrqColor(value1) else getSinrColor(value1)
+            val color1 = metricColor1 ?: if (label1 == "RQ") getRsrqColor(value1) else getSinrColor(value1)
 
             valView1.text = v1Str
             valView1.setTextColor(color1)
@@ -454,7 +459,7 @@ class OverlayService : Service() {
             } else {
                 "--"
             }
-            val color2 = if (label2 == "SNR" || label2 == "SINR") getSinrColor(value2) else getRsrqColor(value2)
+            val color2 = metricColor2 ?: if (label2 == "SNR" || label2 == "SINR") getSinrColor(value2) else getRsrqColor(value2)
 
             valView2.text = v2Str
             valView2.setTextColor(color2)
@@ -779,7 +784,7 @@ class OverlayService : Service() {
         if (!isBatteryPresent) {
             batSb.append("AC給電")
             if (tempVal != null && !tempVal.isNaN()) {
-                batSb.append(" ").append(tempVal.toInt()).append("℃")
+                batSb.append(" ").append(Math.round(tempVal)).append("℃")
             }
         } else {
             if (batteryPercent != null) {
@@ -788,7 +793,7 @@ class OverlayService : Service() {
             }
             if (tempVal != null && !tempVal.isNaN()) {
                 if (batSb.isNotEmpty()) batSb.append(" ")
-                batSb.append(tempVal.toInt()).append("℃")
+                batSb.append(Math.round(tempVal)).append("℃")
             }
             if (remainingTimeStr.isNotEmpty()) {
                 if (batSb.isNotEmpty()) batSb.append(" ")
@@ -814,8 +819,8 @@ class OverlayService : Service() {
             val rpStr = if (mainRsrp != null && !mainRsrp.isNaN() && mainRsrp > -150) "${mainRsrp.toInt()}" else "--"
             val snrStr = if (mainSnr != null && !mainSnr.isNaN()) String.format("%.0f", mainSnr) else "--"
 
-            val rpColor = getRsrpColor(mainRsrp)
-            val snrColor = getSinrColor(mainSnr)
+            val rpColor = json?.optLong(if (mainRsrp == nrRsrp) "nrRsrpColor" else "lteRsrpColor")?.toInt() ?: getRsrpColor(mainRsrp)
+            val snrColor = json?.optLong(if (mainSnr == nrSnr) "nrSnrColor" else "lteSinrColor")?.toInt() ?: getSinrColor(mainSnr)
 
             holder.pictHolder.update(barCount, if (isConnecting) "..." else badge, themeColor)
 
@@ -857,9 +862,9 @@ class OverlayService : Service() {
                 if (tempVal != null && !tempVal.isNaN()) {
                     pillBatSb.append(" ")
                     val tempStart = pillBatSb.length
-                    pillBatSb.append("${tempVal.toInt()}℃")
+                    pillBatSb.append("${Math.round(tempVal)}℃")
                     pillBatSb.setSpan(
-                        ForegroundColorSpan(getTempColor(tempVal)),
+                        ForegroundColorSpan(json?.optLong("batteryTemperatureColor")?.toInt() ?: getTempColor(tempVal)),
                         tempStart,
                         pillBatSb.length,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -873,9 +878,9 @@ class OverlayService : Service() {
                 if (tempVal != null && !tempVal.isNaN()) {
                     if (pillBatSb.isNotEmpty()) pillBatSb.append(" ")
                     val tempStart = pillBatSb.length
-                    pillBatSb.append("${tempVal.toInt()}℃")
+                    pillBatSb.append("${Math.round(tempVal)}℃")
                     pillBatSb.setSpan(
-                        ForegroundColorSpan(getTempColor(tempVal)),
+                        ForegroundColorSpan(json?.optLong("batteryTemperatureColor")?.toInt() ?: getTempColor(tempVal)),
                         tempStart,
                         pillBatSb.length,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -940,8 +945,8 @@ class OverlayService : Service() {
                 holder.nrRefCell.rootLayout.visibility = View.VISIBLE
                 holder.nrHeader.setTextColor(Color.parseColor("#00E5FF"))
                 holder.nrHeader.text = nrTitle
-                holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-                holder.nrRefCell.update(nrRsrq, nrSnr, curveType = smoothGaugeCurve)
+                holder.nrRsrpCell.update(nrRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve, metricColor = json?.optLong("nrRsrpColor")?.toInt())
+                holder.nrRefCell.update(nrRsrq, nrSnr, curveType = smoothGaugeCurve, metricColor1 = json?.optLong("nrRsrqColor")?.toInt(), metricColor2 = json?.optLong("nrSnrColor")?.toInt())
             }
 
             val lteTitle = if (lteBand == "--" && ltePci == "--") {
@@ -951,8 +956,8 @@ class OverlayService : Service() {
             }
 
             holder.lteHeader.text = lteTitle
-            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve)
-            holder.lteRefCell.update(lteRsrq, lteSinr, curveType = smoothGaugeCurve)
+            holder.lteRsrpCell.update(lteRsrp, smoothColor = smoothColor, curveType = smoothGaugeCurve, metricColor = json?.optLong("lteRsrpColor")?.toInt())
+            holder.lteRefCell.update(lteRsrq, lteSinr, curveType = smoothGaugeCurve, metricColor1 = json?.optLong("lteRsrqColor")?.toInt(), metricColor2 = json?.optLong("lteSinrColor")?.toInt())
         } else {
             val holder = compactHolder ?: return
             holder.mainCard.alpha = overlayOpacity
@@ -977,11 +982,11 @@ class OverlayService : Service() {
                 } else {
                     if (nrBand == "--") "$nrLabel --" else "$nrLabel $nrBand"
                 }
-                holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+                holder.nrCell.update(nrRsrp, customPrefix = nrTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve, metricColor = json?.optLong("nrRsrpColor")?.toInt())
             }
 
             val lteTitle = if (lteBand == "--") "$lteLabel --" else "$lteLabel $lteBand"
-            holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve)
+            holder.lteCell.update(lteRsrp, customPrefix = lteTitle, smoothColor = smoothColor, curveType = smoothGaugeCurve, metricColor = json?.optLong("lteRsrpColor")?.toInt())
         }
     }
 

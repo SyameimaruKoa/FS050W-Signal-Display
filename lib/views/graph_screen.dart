@@ -62,8 +62,8 @@ class _GraphScreenState extends State<GraphScreen> {
                             : LayoutBuilder(
                                 builder: (context, constraints) {
                                     final availHeight = constraints.maxHeight;
-                                    // 3カード分の隙間とパディングを考慮 (padding 16 + gaps 16 = 32)
-                                    final idealCardHeight = (availHeight - 36) / 3.0;
+                                    // 4カード分の隙間とパディングを考慮
+                                    final idealCardHeight = (availHeight - 26) / 4.0;
                                     final bool canFitWithoutScroll = idealCardHeight >= 140.0;
                                     final cardHeight = canFitWithoutScroll ? idealCardHeight : 150.0;
                                     final physics = canFitWithoutScroll
@@ -124,6 +124,23 @@ class _GraphScreenState extends State<GraphScreen> {
                                                 isDark: isDark,
                                                 notation: notation,
                                                 thresholds: ColorGauge.sinrThresholds,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            _buildTierChart(
+                                                title: "4. ルーター ping",
+                                                unit: "ms",
+                                                minY: 0,
+                                                maxY: 100,
+                                                cardHeight: cardHeight,
+                                                data: chartData,
+                                                cutoffTime: cutoffTime,
+                                                totalSpanSeconds: _selectedSpanMinutes * 60.0,
+                                                intervalSeconds: settings.foregroundIntervalSeconds,
+                                                getY4g: (d) => d.routerLatencyMs?.toDouble(),
+                                                getY5g: (d) => null,
+                                                isDark: isDark,
+                                                notation: notation,
+                                                isRouterLatency: true,
                                             ),
                                         ],
                                     );
@@ -217,10 +234,11 @@ class _GraphScreenState extends State<GraphScreen> {
         required String notation,
         List<MetricThreshold>? thresholds,
         bool hasZeroLine = false,
+        bool isRouterLatency = false,
     }) {
         if (data.isEmpty) return const SizedBox.shrink();
 
-        final label4g = ConnectionModeHelper.getGenerationName(false, notation: notation);
+        final label4g = isRouterLatency ? "ルーター" : ConnectionModeHelper.getGenerationName(false, notation: notation);
         final label5g = ConnectionModeHelper.getGenerationName(true, notation: notation);
 
         // 圏外やスリープ空白で線が繋がらないようセグメント（List<List<FlSpot>>）に分割
@@ -259,7 +277,7 @@ class _GraphScreenState extends State<GraphScreen> {
             }
 
             // Handover marker: vertical dashed line only
-            if (sample.handoverDescription != null) {
+            if (!isRouterLatency && sample.handoverDescription != null) {
                 handoverLines.add(
                     VerticalLine(
                         x: x,
@@ -392,8 +410,10 @@ class _GraphScreenState extends State<GraphScreen> {
                                 Row(
                                     children: [
                                         _buildLegendDot(const Color(0xFF2196F3), label4g, isDark),
-                                        const SizedBox(width: 8),
-                                        _buildLegendDot(const Color(0xFF00ADB5), label5g, isDark),
+                                        if (!isRouterLatency) ...[
+                                            const SizedBox(width: 8),
+                                            _buildLegendDot(const Color(0xFF00ADB5), label5g, isDark),
+                                        ],
                                     ],
                                 ),
                             ],
@@ -469,7 +489,7 @@ class _GraphScreenState extends State<GraphScreen> {
                                             sideTitles: SideTitles(
                                                 showTitles: true,
                                                 reservedSize: 32,
-                                                interval: 1.0,
+                                                interval: isRouterLatency ? max(1.0, (effectiveMaxY / 4).ceilToDouble()) : 1.0,
                                                 getTitlesWidget: (value, meta) {
                                                     if (thresholds != null) {
                                                         MetricThreshold? matched;

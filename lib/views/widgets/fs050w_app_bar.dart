@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/pip_service.dart';
 import '../../models/signal_data.dart';
 import '../../models/connection_state.dart';
+import '../../utils/color_gauge.dart';
 import '../hud_screen.dart';
 import '../settings_screen.dart';
 import 'log_viewer_dialog.dart';
@@ -57,7 +58,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
             signal!.batteryTemperature! >= apiService.settings.batteryTempWarningThreshold;
 
         final hasBattery = signal?.isBatteryPresent ?? true;
-        final batPercent = signal?.scaledBatteryPercent ?? signal?.batteryPercent;
+        final batPercent = signal?.batteryPercent;
         final isCharging = signal?.isCharging ?? false;
         final temp = signal?.batteryTemperature;
         final curr = signal?.batteryCurrent;
@@ -100,97 +101,101 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                            Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                    Icon(
-                                        !hasBattery
-                                            ? Icons.power
-                                            : isCharging
-                                                ? Icons.battery_charging_full
-                                                : _getBatteryIcon(batPercent),
-                                        size: 14,
-                                        color: !hasBattery
-                                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
-                                            : isCharging
-                                                ? chargeIconColor
-                                                : _getBatteryColor(batPercent),
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                        batText,
-                                        style: TextStyle(
-                                            fontSize: !hasBattery ? 12 : 13,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: !hasBattery ? null : 'monospace',
+                            FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Icon(
+                                            !hasBattery
+                                                ? Icons.power
+                                                : isCharging
+                                                    ? Icons.battery_charging_full
+                                                    : _getBatteryIcon(batPercent),
+                                            size: 14,
+                                            color: !hasBattery
+                                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
+                                                : isCharging
+                                                    ? chargeIconColor
+                                                    : _getBatteryColor(batPercent),
                                         ),
-                                    ),
-                                    FlashDotIndicator(
-                                        value: batPercent,
-                                        size: 3.5,
-                                        padding: const EdgeInsets.only(left: 2),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    if (hasBattery && temp != null) ...[
-                                        Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                            decoration: BoxDecoration(
-                                                color: isTempWarning
-                                                    ? Colors.red.withOpacity(0.25)
-                                                    : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
-                                                borderRadius: BorderRadius.circular(4),
-                                                border: Border.all(
+                                        const SizedBox(width: 3),
+                                        Text(
+                                            batText,
+                                            style: TextStyle(
+                                                fontSize: !hasBattery ? 12 : 13,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: !hasBattery ? null : 'monospace',
+                                            ),
+                                        ),
+                                        FlashDotIndicator(
+                                            value: batPercent,
+                                            size: 3.5,
+                                            padding: const EdgeInsets.only(left: 2),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        if (hasBattery && temp != null) ...[
+                                            Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                                decoration: BoxDecoration(
                                                     color: isTempWarning
-                                                        ? Colors.redAccent
-                                                        : Colors.transparent,
-                                                    width: 0.8,
+                                                        ? Colors.red.withOpacity(0.25)
+                                                        : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                    border: Border.all(
+                                                        color: isTempWarning
+                                                            ? Colors.redAccent
+                                                            : Colors.transparent,
+                                                        width: 0.8,
+                                                    ),
+                                                ),
+                                                child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                        if (isTempWarning)
+                                                            const Padding(
+                                                                padding: EdgeInsets.only(right: 2),
+                                                                child: Icon(Icons.warning_amber_rounded, size: 11, color: Colors.redAccent),
+                                                            ),
+                                                        Text(
+                                                            tempText,
+                                                            style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: tempColor,
+                                                                fontFamily: 'monospace',
+                                                            ),
+                                                        ),
+                                                    ],
                                                 ),
                                             ),
-                                            child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                    if (isTempWarning)
-                                                        const Padding(
-                                                            padding: EdgeInsets.only(right: 2),
-                                                            child: Icon(Icons.warning_amber_rounded, size: 11, color: Colors.redAccent),
-                                                        ),
-                                                    Text(
-                                                        tempText,
-                                                        style: TextStyle(
-                                                            fontSize: 11,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: tempColor,
-                                                            fontFamily: 'monospace',
-                                                        ),
-                                                    ),
-                                                ],
+                                            FlashDotIndicator(
+                                                value: temp,
+                                                dotColor: tempColor,
+                                                size: 3.5,
+                                                padding: const EdgeInsets.only(left: 2),
                                             ),
-                                        ),
-                                        FlashDotIndicator(
-                                            value: temp,
-                                            dotColor: tempColor,
-                                            size: 3.5,
-                                            padding: const EdgeInsets.only(left: 2),
-                                        ),
-                                    ],
-                                    if (hasBattery && currText.isNotEmpty) ...[
-                                        const SizedBox(width: 4),
-                                        Text(
-                                            currText,
-                                            style: TextStyle(
-                                                fontSize: 10.5,
-                                                color: currColor,
-                                                fontFamily: 'monospace',
+                                        ],
+                                        if (hasBattery && currText.isNotEmpty) ...[
+                                            const SizedBox(width: 4),
+                                            Text(
+                                                currText,
+                                                style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    color: currColor,
+                                                    fontFamily: 'monospace',
+                                                ),
                                             ),
-                                        ),
-                                        FlashDotIndicator(
-                                            value: curr,
-                                            dotColor: currColor,
-                                            size: 3.5,
-                                            padding: const EdgeInsets.only(left: 2),
-                                        ),
+                                            FlashDotIndicator(
+                                                value: curr,
+                                                dotColor: currColor,
+                                                size: 3.5,
+                                                padding: const EdgeInsets.only(left: 2),
+                                            ),
+                                        ],
                                     ],
-                                ],
+                                ),
                             ),
                             const SizedBox(height: 1),
                             Row(
@@ -325,17 +330,11 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     Color _getTempColor(double? temp, [double threshold = 45.0]) {
-        if (temp == null) return Colors.white70;
-        if (temp >= threshold) return Colors.redAccent;
-        if (temp >= threshold - 5.0) return Colors.amberAccent;
-        return const Color(0xFF00E5FF);
+        return ColorGauge.temperatureColor(temp, threshold: threshold);
     }
 
     Color _getLightTempColor(double? temp, [double threshold = 45.0]) {
-        if (temp == null) return Colors.black54;
-        if (temp >= threshold) return Colors.red.shade800;
-        if (temp >= threshold - 5.0) return Colors.orange.shade900;
-        return const Color(0xFF00838F);
+        return ColorGauge.temperatureColor(temp, threshold: threshold);
     }
 
     List<Widget> _buildDefaultActions(BuildContext context, ApiService apiService, bool isDark) {
@@ -429,19 +428,23 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                 child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                        Row(
-                                            children: [
-                                                const Icon(Icons.analytics_outlined, color: Color(0xFF00ADB5)),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                    "ルーター詳細統計・バッテリー情報",
-                                                    style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: isDark ? Colors.white : Colors.black87,
+                                        Expanded(
+                                            child: Row(
+                                                children: [
+                                                    const Icon(Icons.analytics_outlined, color: Color(0xFF00ADB5)),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                        child: Text(
+                                                            "ルーター詳細統計・バッテリー情報",
+                                                            style: TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: isDark ? Colors.white : Colors.black87,
+                                                            ),
+                                                        ),
                                                     ),
-                                                ),
-                                            ],
+                                                ],
+                                            ),
                                         ),
                                         IconButton(
                                             icon: const Icon(Icons.close),
@@ -463,7 +466,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         const SizedBox(height: 12),
 
                                         // 2. Battery Detailed Metrics
-                                        _buildBatteryCard(signal, isDark),
+                                        _buildBatteryCard(context, signal, isDark),
                                         const SizedBox(height: 12),
 
                                         // 3. System Hardware State (/action/get_device_state)
@@ -562,7 +565,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
         );
     }
 
-    Widget _buildBatteryCard(SignalData? signal, bool isDark) {
+    Widget _buildBatteryCard(BuildContext context, SignalData? signal, bool isDark) {
         final hasBattery = signal?.isBatteryPresent ?? true;
         final rawPercent = signal?.batteryPercent;
         final scaledPercent = signal?.scaledBatteryPercent;
@@ -588,10 +591,13 @@ class BatterySystemDetailSheet extends StatelessWidget {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                                 const Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                         Icon(Icons.battery_std, size: 18, color: Color(0xFF4CAF50)),
                                         SizedBox(width: 6),
@@ -668,7 +674,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                             label: "温度",
                                             value: temp != null ? "${temp.toStringAsFixed(1)} °C" : "--",
                                             dynamicValue: temp,
-                                            color: _getTemperatureColor(temp, isDark),
+                                            color: _getTemperatureColor(temp, isDark, context.read<ApiService>().settings.batteryTempWarningThreshold),
                                             icon: Icons.thermostat,
                                             isDark: isDark,
                                         ),
@@ -745,9 +751,11 @@ class BatterySystemDetailSheet extends StatelessWidget {
                             children: [
                                 Icon(Icons.memory, size: 18, color: Color(0xFF2196F3)),
                                 SizedBox(width: 6),
-                                Text(
-                                    "ルーターハードウェア & システム状態",
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                Expanded(
+                                    child: Text(
+                                        "ルーターハードウェア & システム状態",
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                    ),
                                 ),
                             ],
                         ),
@@ -951,11 +959,8 @@ class BatterySystemDetailSheet extends StatelessWidget {
         return Colors.redAccent;
     }
 
-    Color _getTemperatureColor(double? temp, bool isDark) {
-        if (temp == null) return Colors.grey;
-        if (temp >= 45) return Colors.redAccent;
-        if (temp >= 40) return isDark ? Colors.amberAccent : Colors.orange.shade800;
-        return isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F);
+    Color _getTemperatureColor(double? temp, bool isDark, [double threshold = 45.0]) {
+        return ColorGauge.temperatureColor(temp, threshold: threshold);
     }
 
     Color _getCpuColor(int? cpu) {
