@@ -213,7 +213,6 @@ class CellCard extends StatelessWidget {
                                     Text(
                                         (signal.nrPci != null && signal.nrPci! > 0) ? "${signal.nrPci}" : "--",
                                         style: TextStyle(
-                                            fontFamily: 'monospace',
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: isDark ? Colors.white : Colors.black87,
@@ -230,7 +229,6 @@ class CellCard extends StatelessWidget {
                                             child: Text(
                                                 nrBandName,
                                                 style: TextStyle(
-                                                    fontFamily: 'monospace',
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                     color: isDark ? Colors.white : Colors.black87,
@@ -397,7 +395,6 @@ class CellCard extends StatelessWidget {
                                     Text(
                                         (signal.ltePci != null && signal.ltePci! > 0) ? "${signal.ltePci}" : "--",
                                         style: TextStyle(
-                                            fontFamily: 'monospace',
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: isDark ? Colors.white : Colors.black87,
@@ -414,7 +411,6 @@ class CellCard extends StatelessWidget {
                                             child: Text(
                                                 bandName,
                                                 style: TextStyle(
-                                                    fontFamily: 'monospace',
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                     color: isDark ? Colors.white : Colors.black87,
@@ -581,7 +577,6 @@ class CellCard extends StatelessWidget {
                                                 Text(
                                                     valText,
                                                     style: TextStyle(
-                                                        fontFamily: 'monospace',
                                                         fontSize: 11,
                                                         fontWeight: FontWeight.bold,
                                                         color: (value != null && !value.isNaN && value > -200) ? color : (isDark ? Colors.white38 : Colors.black38),

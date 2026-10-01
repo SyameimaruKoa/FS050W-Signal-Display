@@ -48,6 +48,19 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "com.syameimarukoa.fs050w_signal_display/system_font").setMethodCallHandler { call, result ->
+            if (call.method == "getSystemFonts") {
+                try {
+                    result.success(SystemFontProvider.read(this, call.argument<String>("signature")))
+                } catch (e: Exception) {
+                    result.error("SYSTEM_FONT_UNAVAILABLE", e.message, null)
+                }
+            } else {
+                result.notImplemented()
+            }
+        }
+
         pipMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PIP_CHANNEL).apply {
             setMethodCallHandler { call, result ->
                 when (call.method) {

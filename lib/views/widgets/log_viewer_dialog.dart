@@ -57,7 +57,6 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                     child: Text(
                                         "アプリ診断ログ (${logs.length}件)",
                                         style: TextStyle(
-                                            fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
                                             color: isDark ? Colors.white : Colors.black87,
@@ -187,7 +186,6 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                         Text(
                                                             "${entry.timestamp.hour.toString().padLeft(2, '0')}:${entry.timestamp.minute.toString().padLeft(2, '0')}:${entry.timestamp.second.toString().padLeft(2, '0')}.${entry.timestamp.millisecond.toString().padLeft(3, '0')}",
                                                             style: const TextStyle(
-                                                                fontFamily: 'monospace',
                                                                 fontSize: 11,
                                                                 color: Colors.grey,
                                                             ),
@@ -198,7 +196,6 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                 SelectableText(
                                                     entry.message,
                                                     style: TextStyle(
-                                                        fontFamily: 'monospace',
                                                         fontSize: 12,
                                                         color: isDark ? Colors.white : Colors.black87,
                                                     ),
@@ -208,7 +205,6 @@ class _LogViewerDialogState extends State<LogViewerDialog> {
                                                     SelectableText(
                                                         entry.details!,
                                                         style: TextStyle(
-                                                            fontFamily: 'monospace',
                                                             fontSize: 11,
                                                             color: isDark ? Colors.white60 : Colors.black54,
                                                         ),

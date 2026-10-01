@@ -72,7 +72,6 @@ class _HudScreenState extends State<HudScreen> {
                                                         Text(
                                                             "[ $modeBadge ] $uiMode",
                                                             style: const TextStyle(
-                                                                fontFamilyFallback: ['Noto Sans JP', 'sans-serif'],
                                                                 fontSize: 14,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: Color(0xFF00E5FF),
@@ -206,7 +205,6 @@ class _HudScreenState extends State<HudScreen> {
                             Text(
                                 "PCI: $pciStr",
                                 style: const TextStyle(
-                                    fontFamily: 'monospace',
                                     fontSize: 12,
                                     color: Colors.white60,
                                 ),
@@ -241,7 +239,6 @@ class _HudScreenState extends State<HudScreen> {
                 Text(
                     valStr,
                     style: TextStyle(
-                        fontFamily: 'monospace',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: color,

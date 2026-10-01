@@ -188,6 +188,7 @@ class OverlayService : Service() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        if (overlayContainer != null) buildOverlayView()
         updateScreenDimensions()
         constrainOverlayPosition()
     }
@@ -1025,7 +1026,7 @@ class OverlayService : Service() {
             text = "5G"
             textSize = 9f
             setTextColor(Color.parseColor("#00E5FF"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             setPadding(dpToPx(3f), 0, 0, 0)
         }
 
@@ -1055,7 +1056,7 @@ class OverlayService : Service() {
             text = "RP:-- SNR:--"
             textSize = 10f
             setTextColor(Color.WHITE)
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             setPadding(dpToPx(4f), 0, 0, 0)
         }
 
@@ -1063,7 +1064,7 @@ class OverlayService : Service() {
             text = "🔋--%"
             textSize = 9.5f
             setTextColor(Color.LTGRAY)
-            typeface = Typeface.MONOSPACE
+            setTypeface(typeface, Typeface.NORMAL)
             setPadding(dpToPx(4f), 0, 0, 0)
         }
 
@@ -1095,7 +1096,7 @@ class OverlayService : Service() {
             text = "[ 5G+ ]"
             textSize = 10f
             setTextColor(Color.parseColor("#00E5FF"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             val bg = GradientDrawable().apply {
@@ -1114,7 +1115,7 @@ class OverlayService : Service() {
             text = "Rakuten"
             textSize = 10f
             setTextColor(Color.LTGRAY)
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             layoutParams = LinearLayout.LayoutParams(
@@ -1129,7 +1130,7 @@ class OverlayService : Service() {
             text = "要ログイン"
             textSize = 8.5f
             setTextColor(Color.parseColor("#FFB300"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             val bg = GradientDrawable().apply {
@@ -1159,7 +1160,7 @@ class OverlayService : Service() {
             text = "🔋--%"
             textSize = 9.5f
             setTextColor(Color.WHITE)
-            typeface = Typeface.MONOSPACE
+            setTypeface(typeface, Typeface.NORMAL)
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isSingleLine = true
             maxLines = 1
@@ -1183,7 +1184,7 @@ class OverlayService : Service() {
             text = "5G (n77/--)"
             textSize = 9.5f
             setTextColor(Color.parseColor("#00E5FF"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
@@ -1202,7 +1203,7 @@ class OverlayService : Service() {
             text = "4G (B3/--)"
             textSize = 9.5f
             setTextColor(Color.parseColor("#64B5F6"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
@@ -1254,7 +1255,7 @@ class OverlayService : Service() {
             text = "[5G+] Rakuten"
             textSize = 9.5f
             setTextColor(Color.parseColor("#00E5FF"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             layoutParams = LinearLayout.LayoutParams(
@@ -1267,7 +1268,7 @@ class OverlayService : Service() {
             text = "要ログイン"
             textSize = 8.5f
             setTextColor(Color.parseColor("#FFB300"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
             val bg = GradientDrawable().apply {
@@ -1297,7 +1298,7 @@ class OverlayService : Service() {
             text = "🔋--%"
             textSize = 9f
             setTextColor(Color.WHITE)
-            typeface = Typeface.MONOSPACE
+            setTypeface(typeface, Typeface.NORMAL)
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isSingleLine = true
             maxLines = 1
@@ -1381,7 +1382,7 @@ class OverlayService : Service() {
             text = label1
             textSize = 7.5f
             setTextColor(Color.parseColor("#88FFFFFF"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
         }
@@ -1389,7 +1390,7 @@ class OverlayService : Service() {
             text = "--"
             textSize = 8.5f
             setTextColor(Color.parseColor("#757575"))
-            typeface = Typeface.MONOSPACE
+            setTypeface(typeface, Typeface.NORMAL)
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isSingleLine = true
             maxLines = 1
@@ -1428,7 +1429,7 @@ class OverlayService : Service() {
             text = label2
             textSize = 7.5f
             setTextColor(Color.parseColor("#88FFFFFF"))
-            typeface = Typeface.DEFAULT_BOLD
+            setTypeface(typeface, Typeface.BOLD)
             isSingleLine = true
             maxLines = 1
         }
@@ -1436,7 +1437,7 @@ class OverlayService : Service() {
             text = "--"
             textSize = 8.5f
             setTextColor(Color.parseColor("#757575"))
-            typeface = Typeface.MONOSPACE
+            setTypeface(typeface, Typeface.NORMAL)
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isSingleLine = true
             maxLines = 1

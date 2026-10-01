@@ -90,7 +90,6 @@ class IntensityBarMetric extends StatelessWidget {
                                                 child: Text(
                                                     label,
                                                     style: TextStyle(
-                                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                         fontSize: fontSize,
                                                         fontWeight: FontWeight.w600,
                                                         color: Colors.white70,
@@ -110,7 +109,6 @@ class IntensityBarMetric extends StatelessWidget {
                                                 child: Text(
                                                     textValue,
                                                     style: TextStyle(
-                                                        fontFamily: 'monospace',
                                                         fontSize: fontSize,
                                                         fontWeight: FontWeight.bold,
                                                         color: Colors.white,

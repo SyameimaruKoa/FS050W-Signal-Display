@@ -10,6 +10,7 @@ import 'services/notification_service.dart';
 import 'services/pip_service.dart';
 import 'services/overlay_service.dart';
 import 'services/storage_service.dart';
+import 'services/system_font_service.dart';
 import 'views/dashboard_screen.dart';
 import 'views/graph_screen.dart';
 import 'views/settings_screen.dart';
@@ -18,6 +19,7 @@ import 'views/pip_screen.dart';
 
 void main() async {
     WidgetsFlutterBinding.ensureInitialized();
+    await SystemFontService.instance.refresh();
 
     // Lock orientation to portrait Up
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -64,13 +66,24 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
     void initState() {
         super.initState();
         WidgetsBinding.instance.addObserver(this);
+        SystemFontService.instance.addListener(_onSystemFontChanged);
         _lifecycleChannel.setMethodCallHandler(_handleLifecycleCall);
     }
 
     @override
     void dispose() {
+        SystemFontService.instance.removeListener(_onSystemFontChanged);
         WidgetsBinding.instance.removeObserver(this);
         super.dispose();
+    }
+
+    void _onSystemFontChanged() {
+        if (mounted) setState(() {});
+    }
+
+    @override
+    void didChangeMetrics() {
+        SystemFontService.instance.refresh();
     }
 
     Future<dynamic> _handleLifecycleCall(MethodCall call) async {
@@ -91,6 +104,7 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
     void didChangeAppLifecycleState(AppLifecycleState state) {
         final api = context.read<ApiService>();
         if (state == AppLifecycleState.resumed) {
+            SystemFontService.instance.refresh();
             api.startPolling();
             PipService.setAutoEnterPip(api.settings.autoPipOnHome, api.settings.pipAspectRatio);
         } else if (state == AppLifecycleState.paused) {
@@ -143,7 +157,8 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                         foregroundColor: Colors.white,
                         elevation: 0,
                     ),
-                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                    fontFamily: SystemFontService.instance.fontFamily,
+                    fontFamilyFallback: SystemFontService.instance.fontFamilyFallback,
                     colorScheme: const ColorScheme.dark(
                         primary: Color(0xFF00ADB5),
                         secondary: Color(0xFF00E5FF),
@@ -160,7 +175,8 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                         foregroundColor: Colors.white,
                         elevation: 0,
                     ),
-                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                    fontFamily: SystemFontService.instance.fontFamily,
+                    fontFamilyFallback: SystemFontService.instance.fontFamilyFallback,
                     colorScheme: const ColorScheme.dark(
                         primary: Color(0xFF00ADB5),
                         secondary: Color(0xFF00E5FF),
@@ -177,7 +193,8 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
                         foregroundColor: Colors.black87,
                         elevation: 1,
                     ),
-                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
+                    fontFamily: SystemFontService.instance.fontFamily,
+                    fontFamilyFallback: SystemFontService.instance.fontFamilyFallback,
                     colorScheme: const ColorScheme.light(
                         primary: Color(0xFF00ADB5),
                         secondary: Color(0xFF007A78),

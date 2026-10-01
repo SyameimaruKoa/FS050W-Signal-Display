@@ -126,7 +126,6 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                             style: TextStyle(
                                                 fontSize: !hasBattery ? 12 : 13,
                                                 fontWeight: FontWeight.bold,
-                                                fontFamily: !hasBattery ? null : 'monospace',
                                             ),
                                         ),
                                         FlashDotIndicator(
@@ -164,7 +163,6 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                                                 fontSize: 11,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: tempColor,
-                                                                fontFamily: 'monospace',
                                                             ),
                                                         ),
                                                     ],
@@ -184,7 +182,6 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
                                                 style: TextStyle(
                                                     fontSize: 10.5,
                                                     color: currColor,
-                                                    fontFamily: 'monospace',
                                                 ),
                                             ),
                                             FlashDotIndicator(
@@ -873,7 +870,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                         ),
                         Text(
                             valueText,
-                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                         ),
                     ],
                 ),
@@ -931,7 +928,6 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
                                     color: color ?? (isDark ? Colors.white : Colors.black87),
-                                    fontFamily: 'monospace',
                                 ),
                             ),
                             if (subtitle != null) ...[
@@ -941,7 +937,6 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                     style: TextStyle(
                                         fontSize: 10,
                                         color: isDark ? Colors.white54 : Colors.black54,
-                                        fontFamily: 'monospace',
                                     ),
                                 ),
                             ],
