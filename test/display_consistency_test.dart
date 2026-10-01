@@ -27,6 +27,32 @@ class DisplayApiService extends ApiService {
 
 void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    for (final width in [320.0, 384.0]) {
+        testWidgets('Battery header and details fit a $width pixel screen', (tester) async {
+            tester.view.physicalSize = Size(width, 823);
+            tester.view.devicePixelRatio = 1;
+            addTearDown(tester.view.resetPhysicalSize);
+            addTearDown(tester.view.resetDevicePixelRatio);
+            final signal = SignalData.fromApiResponse({
+                'device_battery_exist': 'present',
+                'device_battery_level_percent': '70',
+                'device_charge_long_life': 'enable',
+                'device_battery_temperature': '45',
+                'device_battery_current': '1500',
+            });
+            await tester.pumpWidget(ChangeNotifierProvider<ApiService>(
+                create: (_) => DisplayApiService([signal]),
+                child: const MaterialApp(home: Scaffold(appBar: Fs050wAppBar())),
+            ));
+            expect(tester.takeException(), isNull);
+            await tester.tap(find.descendant(
+                of: find.byType(Fs050wAppBar), matching: find.byType(InkWell)).first);
+            await tester.pumpAndSettle();
+            expect(find.text('バッテリー詳細ステータス'), findsOneWidget);
+            expect(find.text('いたわり充電 (70%制限)'), findsOneWidget);
+            expect(tester.takeException(), isNull);
+        });
+    }
     test('Overlay receives shared colors and actual battery level', () async {
         const channel = MethodChannel('com.syameimarukoa.fs050w_signal_display/overlay');
         Map<String, dynamic>? payload;
