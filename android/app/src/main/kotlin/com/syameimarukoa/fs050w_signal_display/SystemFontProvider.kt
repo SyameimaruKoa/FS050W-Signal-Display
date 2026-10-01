@@ -22,7 +22,7 @@ object SystemFontProvider {
         val glyphs = TextRunShaper.shapeTextRun(
             sample, 0, sample.length, 0, sample.length, 0f, 0f, false, paint
         )
-        val fonts = (0 until glyphs.glyphCount).map { glyphs.getFont(it) }.distinct()
+        val fonts = (0 until glyphs.glyphCount()).map { glyphs.getFont(it) }.distinct()
         val digest = MessageDigest.getInstance("SHA-256")
         val entries = fonts.map { font ->
             val buffer = font.buffer.duplicate().apply { clear() }
