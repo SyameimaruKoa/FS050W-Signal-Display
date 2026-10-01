@@ -134,7 +134,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                         style: TextStyle(
                                                             fontSize: 10.5,
                                                             fontWeight: FontWeight.bold,
-                                                            fontFamily: 'monospace',
                                                             color: _getLatencyColor(signal.routerLatencyMs!, isDark),
                                                         ),
                                                     ),
@@ -275,7 +274,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 "$clients台 接続中",
                                 style: TextStyle(
                                     fontSize: 11.5,
-                                    fontFamily: 'monospace',
                                     fontWeight: FontWeight.w600,
                                     color: isDark ? Colors.white70 : Colors.black87,
                                 ),
@@ -335,7 +333,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         child: Text(
                                             "電波強度 (RSRP)",
                                             style: TextStyle(
-                                                fontFamilyFallback: ['Noto Sans JP', 'sans-serif'],
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 15,
                                             ),
@@ -576,7 +573,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Text(
                                 mainValText,
                                 style: TextStyle(
-                                    fontFamily: 'monospace',
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: isValid ? (isDark ? Colors.white : Colors.black87) : (isDark ? Colors.white38 : Colors.black38),
@@ -702,7 +698,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: Text(
                                     "詳細セル情報はログイン時のみ表示されます",
                                     style: TextStyle(
-                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                         fontSize: 12,
                                         color: isDark ? Colors.white38 : Colors.black38,
                                     ),

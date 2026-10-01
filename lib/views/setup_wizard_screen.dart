@@ -128,7 +128,6 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                 "+F FS050W Signal Display",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? Colors.white : Colors.black87,
@@ -199,7 +198,6 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                             Text(
                                                 "接続設定",
                                                 style: TextStyle(
-                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                 ),

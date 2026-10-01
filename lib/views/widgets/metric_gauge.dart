@@ -80,7 +80,6 @@ class MetricGauge extends StatelessWidget {
                                         valueText,
                                         textAlign: TextAlign.right,
                                         style: TextStyle(
-                                            fontFamily: 'monospace',
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: color,

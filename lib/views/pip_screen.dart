@@ -122,7 +122,6 @@ class PipScreen extends StatelessWidget {
                                             child: Text(
                                                 isConnecting ? "[ 接続中... ]" : "[ $modeBadge ]",
                                                 style: TextStyle(
-                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: is1to1 ? 11.0 : 9.5,
                                                     fontWeight: FontWeight.bold,
                                                     color: isConnecting ? Colors.amberAccent : const Color(0xFF00E5FF),
@@ -156,7 +155,6 @@ class PipScreen extends StatelessWidget {
                                                                      (signal?.batteryTemperature ?? 0) >= apiService.settings.batteryTempWarningThreshold)
                                                                  ? Colors.redAccent
                                                                  : Colors.white70,
-                                                             fontFamily: 'monospace',
                                                          ),
                                                      );
                                                  },
@@ -203,7 +201,6 @@ class PipScreen extends StatelessWidget {
                                                 child: Text(
                                                     isDelayed ? "${latency}ms" : opName,
                                                     style: TextStyle(
-                                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                         fontSize: is1to1 ? 11.0 : 9.5,
                                                         fontWeight: FontWeight.bold,
                                                         color: isDelayed ? latencyColor : Colors.white70,
@@ -364,7 +361,6 @@ class PipScreen extends StatelessWidget {
                                             child: Text(
                                                 isLoggedIn ? "$titlePrefix ($nrBandStr)" : titlePrefix,
                                                 style: TextStyle(
-                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: fontSz + 1.0,
                                                     fontWeight: FontWeight.bold,
                                                     color: const Color(0xFF00E5FF),
@@ -385,7 +381,6 @@ class PipScreen extends StatelessWidget {
                                                 child: Text(
                                                     "PCI: $pciStr",
                                                     style: TextStyle(
-                                                        fontFamily: 'monospace',
                                                         fontSize: fontSz + 0.5,
                                                         color: Colors.white70,
                                                     ),
@@ -487,7 +482,6 @@ class PipScreen extends StatelessWidget {
                                             child: Text(
                                                 isLoggedIn ? "$genName ($lteBandStr)" : genName,
                                                 style: TextStyle(
-                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: fontSz + 1.0,
                                                     fontWeight: FontWeight.bold,
                                                     color: const Color(0xFF64B5F6),
@@ -508,7 +502,6 @@ class PipScreen extends StatelessWidget {
                                                 child: Text(
                                                     "PCI: $pciStr",
                                                     style: TextStyle(
-                                                        fontFamily: 'monospace',
                                                         fontSize: fontSz + 0.5,
                                                         color: Colors.white70,
                                                     ),
@@ -703,7 +696,6 @@ class PipScreen extends StatelessWidget {
                                             TextSpan(
                                                 text: "$label ",
                                                 style: TextStyle(
-                                                    fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                     fontSize: fontSize,
                                                     color: Colors.white60,
                                                     fontWeight: FontWeight.w600,
@@ -712,7 +704,6 @@ class PipScreen extends StatelessWidget {
                                             TextSpan(
                                                 text: valStr,
                                                 style: TextStyle(
-                                                    fontFamily: 'monospace',
                                                     fontSize: fontSize + 0.5,
                                                     color: color,
                                                     fontWeight: FontWeight.bold,
@@ -782,7 +773,6 @@ class PipScreen extends StatelessWidget {
                                 child: Text(
                                     "$typeLabel (タップで切替)",
                                     style: TextStyle(
-                                        fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                         fontSize: 7.0,
                                         color: Colors.white70,
                                     ),

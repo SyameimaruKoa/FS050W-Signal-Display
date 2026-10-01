@@ -506,7 +506,6 @@ class _GraphScreenState extends State<GraphScreen> {
                                                                 child: Text(
                                                                     "${matched.value.toInt()}",
                                                                     style: TextStyle(
-                                                                        fontFamily: 'monospace',
                                                                         fontSize: 9.5,
                                                                         fontWeight: FontWeight.bold,
                                                                         color: matched.color,
@@ -522,7 +521,6 @@ class _GraphScreenState extends State<GraphScreen> {
                                                         child: Text(
                                                             "${value.toInt()}",
                                                             style: TextStyle(
-                                                                fontFamily: 'monospace',
                                                                 fontSize: 9,
                                                                 color: isDark ? Colors.white54 : Colors.black54,
                                                             ),
@@ -544,7 +542,6 @@ class _GraphScreenState extends State<GraphScreen> {
                                                         return Text(
                                                             "現在",
                                                             style: TextStyle(
-                                                                fontFamilyFallback: const ['Noto Sans JP', 'sans-serif'],
                                                                 fontSize: 9,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: isDark ? Colors.white70 : Colors.black87,
@@ -564,7 +561,6 @@ class _GraphScreenState extends State<GraphScreen> {
                                                     return Text(
                                                         label,
                                                         style: TextStyle(
-                                                            fontFamily: 'monospace',
                                                             fontSize: 9,
                                                             color: isDark ? Colors.white54 : Colors.black54,
                                                         ),
