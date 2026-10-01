@@ -168,6 +168,10 @@ flutter build apk --release --split-per-abi
 ## GitHub Actionsによるビルド・公開
 
 `Android CI` はPR作成・更新、`main`へのpush、Actions画面からの手動実行に対応します。
+PRと`main`へのpushでは、アプリ本体（`lib/`、`android/`、`assets/icons/`）、テスト、
+依存関係（`pubspec.yaml` / `pubspec.lock`）、解析設定、Android用Actions設定に変更がある場合だけ実行します。
+README・更新履歴・スクリーンショットだけの変更や、Androidの生成済みビルド／Gradleキャッシュの変更では実行しません。
+Actions画面からの手動ビルドと、公開タグpushによる `Android Release` は変更ファイルに関係なく実行します。
 Flutter 3.47.1 / Java 17で依存関係をロックファイルどおりに取得し、`flutter test` 成功後に
 デバッグAPKとABI別リリースAPKを生成します。Actionsの実行結果にある **Artifacts** から
 14日間ダウンロードできます。PRのリリースAPKは動作確認用のデバッグ署名です。

@@ -2,8 +2,36 @@ name: Android CI
 
 on:
     pull_request:
+        paths:
+            -   'lib/**'
+            -   'android/**'
+            -   '!android/.gradle/**'
+            -   '!android/build/**'
+            -   '!android/**/build/**'
+            -   'assets/icons/**'
+            -   '!assets/icons/readme.txt'
+            -   'test/**'
+            -   'pubspec.yaml'
+            -   'pubspec.lock'
+            -   'analysis_options.yaml'
+            -   '.github/actions/setup-flutter/**'
+            -   '.github/workflows/android-*.yml'
     push:
         branches: [main]
+        paths:
+            -   'lib/**'
+            -   'android/**'
+            -   '!android/.gradle/**'
+            -   '!android/build/**'
+            -   '!android/**/build/**'
+            -   'assets/icons/**'
+            -   '!assets/icons/readme.txt'
+            -   'test/**'
+            -   'pubspec.yaml'
+            -   'pubspec.lock'
+            -   'analysis_options.yaml'
+            -   '.github/actions/setup-flutter/**'
+            -   '.github/workflows/android-*.yml'
     workflow_dispatch:
 
 permissions:
