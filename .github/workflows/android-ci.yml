@@ -33,6 +33,15 @@ on:
             -   '.github/actions/setup-flutter/**'
             -   '.github/workflows/android-*.yml'
     workflow_dispatch:
+        inputs:
+            build_name:
+                description: 'Optional APK version name for device testing'
+                required: false
+                type: string
+            build_number:
+                description: 'Optional versionCode, greater than the installed APK'
+                required: false
+                type: string
 
 permissions:
     contents: read
@@ -51,7 +60,19 @@ jobs:
             -   name: Run tests
                 run: flutter test
             -   name: Build debug APK
-                run: flutter build apk --debug
+                env:
+                    BUILD_NAME: ${{ inputs.build_name }}
+                    BUILD_NUMBER: ${{ inputs.build_number }}
+                run: |
+                    build_args=()
+                    if [[ -n "$BUILD_NAME" ]]; then
+                        build_args+=(--build-name="$BUILD_NAME")
+                    fi
+                    if [[ -n "$BUILD_NUMBER" ]]; then
+                        [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'build_number must be a positive integer' >&2; exit 1; }
+                        build_args+=(--build-number="$BUILD_NUMBER")
+                    fi
+                    flutter build apk --debug "${build_args[@]}"
             -   name: Upload debug APK
                 uses: actions/upload-artifact@v4
                 with:
@@ -60,7 +81,19 @@ jobs:
                     if-no-files-found: error
                     retention-days: 14
             -   name: Build release APKs
-                run: flutter build apk --release --split-per-abi
+                env:
+                    BUILD_NAME: ${{ inputs.build_name }}
+                    BUILD_NUMBER: ${{ inputs.build_number }}
+                run: |
+                    build_args=()
+                    if [[ -n "$BUILD_NAME" ]]; then
+                        build_args+=(--build-name="$BUILD_NAME")
+                    fi
+                    if [[ -n "$BUILD_NUMBER" ]]; then
+                        [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'build_number must be a positive integer' >&2; exit 1; }
+                        build_args+=(--build-number="$BUILD_NUMBER")
+                    fi
+                    flutter build apk --release --split-per-abi "${build_args[@]}"
             -   name: Upload release APKs
                 uses: actions/upload-artifact@v4
                 with:
