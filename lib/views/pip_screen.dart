@@ -73,10 +73,7 @@ class PipScreen extends StatelessWidget {
     }
 
     Color _getLatencyColor(int? latencyMs) {
-        if (latencyMs == null) return Colors.transparent;
-        if (latencyMs <= 50) return const Color(0xFF00E676);
-        if (latencyMs <= 150) return Colors.amberAccent;
-        return Colors.redAccent;
+        return ColorGauge.latencyColor(latencyMs);
     }
 
     Widget _buildHeader(
@@ -238,7 +235,7 @@ class PipScreen extends StatelessWidget {
         final notation = apiService.settings.generationNotation;
         final smooth = apiService.settings.smoothGaugeColor;
         final curve = apiService.settings.smoothGaugeCurve;
-        final signalSection = _buildSignalGrid(signal, aspectRatioStr, notation, smooth, curve, height, isLoggedIn, width);
+        final signalSection = _buildSignalGrid(context, signal, aspectRatioStr, notation, smooth, curve, height, isLoggedIn, width);
 
         if (!showGraph) {
             return signalSection;
@@ -256,6 +253,7 @@ class PipScreen extends StatelessWidget {
     }
 
     Widget _buildSignalGrid(
+        BuildContext context,
         SignalData? signal,
         String aspectRatioStr,
         String notation,
@@ -271,9 +269,9 @@ class PipScreen extends StatelessWidget {
         switch (aspectRatioStr) {
             case '1:1':
                 if (is5gActive) {
-                    return _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics);
+                    return _build5gSection(context, signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics);
                 } else {
-                    return _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics);
+                    return _build4gSection(context, signal, notation, smoothGaugeColor, smoothGaugeCurve, isSingleMode: true, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics);
                 }
             case '16:9':
             case '4:3':
@@ -281,9 +279,9 @@ class PipScreen extends StatelessWidget {
                 return Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
+                        Expanded(child: _build5gSection(context, signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                         const SizedBox(width: 3.0),
-                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
+                        Expanded(child: _build4gSection(context, signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                     ],
                 );
             case '9:16':
@@ -293,15 +291,16 @@ class PipScreen extends StatelessWidget {
                 return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                        Expanded(child: _build5gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
+                        Expanded(child: _build5gSection(context, signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                         const SizedBox(height: 2.0),
-                        Expanded(child: _build4gSection(signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
+                        Expanded(child: _build4gSection(context, signal, notation, smoothGaugeColor, smoothGaugeCurve, isLoggedIn: isLoggedIn, compactRefMetrics: compactRefMetrics)),
                     ],
                 );
         }
     }
 
     Widget _build5gSection(
+        BuildContext context,
         SignalData? signal,
         String notation,
         bool smoothGaugeColor,
@@ -407,7 +406,7 @@ class PipScreen extends StatelessWidget {
                             unit: "dBm",
                             minVal: ColorGauge.rsrpMin,
                             maxVal: ColorGauge.rsrpMax,
-                            barColor: const Color(0xFF00ADB5),
+                            barColor: ColorGauge.getColor(ColorGauge.rateRsrp(signal?.nrRsrp)),
                             height: null,
                             fontSize: fontSz + 0.5,
                             smoothGaugeColor: smoothGaugeColor,
@@ -419,7 +418,7 @@ class PipScreen extends StatelessWidget {
                         Expanded(
                             flex: compactRefMetrics ? 3 : 2,
                             child: compactRefMetrics
-                                ? _buildCompactRefMetrics(
+                                ? _buildCompactRefMetrics(context,
                                     label1: "RQ",
                                     value1: signal?.nrRsrq,
                                     unit1: "dB",
@@ -429,7 +428,7 @@ class PipScreen extends StatelessWidget {
                                     fontSize: fontSz,
                                     accentColor: const Color(0xFF00ADB5),
                                 )
-                                : _buildRefMetricsRow(
+                                : _buildRefMetricsRow(context,
                                     label1: "RQ",
                                     value1: signal?.nrRsrq,
                                     unit1: "dB",
@@ -447,6 +446,7 @@ class PipScreen extends StatelessWidget {
     }
 
     Widget _build4gSection(
+        BuildContext context,
         SignalData? signal,
         String notation,
         bool smoothGaugeColor,
@@ -529,7 +529,7 @@ class PipScreen extends StatelessWidget {
                             unit: "dBm",
                             minVal: ColorGauge.rsrpMin,
                             maxVal: ColorGauge.rsrpMax,
-                            barColor: const Color(0xFF2196F3),
+                            barColor: ColorGauge.getColor(ColorGauge.rateRsrp(signal?.lteRsrp)),
                             height: null,
                             fontSize: fontSz + 0.5,
                             smoothGaugeColor: smoothGaugeColor,
@@ -541,7 +541,7 @@ class PipScreen extends StatelessWidget {
                         Expanded(
                             flex: compactRefMetrics ? 3 : 2,
                             child: compactRefMetrics
-                                ? _buildCompactRefMetrics(
+                                ? _buildCompactRefMetrics(context,
                                     label1: "RQ",
                                     value1: signal?.lteRsrq,
                                     unit1: "dB",
@@ -551,7 +551,7 @@ class PipScreen extends StatelessWidget {
                                     fontSize: fontSz,
                                     accentColor: const Color(0xFF2196F3),
                                 )
-                                : _buildRefMetricsRow(
+                                : _buildRefMetricsRow(context,
                                     label1: "RQ",
                                     value1: signal?.lteRsrq,
                                     unit1: "dB",
@@ -569,7 +569,7 @@ class PipScreen extends StatelessWidget {
     }
 
     /// RQ/SNR を縦積み (0.5行×1列) で表示するコンパクトレイアウト
-    Widget _buildCompactRefMetrics({
+    Widget _buildCompactRefMetrics(BuildContext context, {
         required String label1,
         required double? value1,
         required String unit1,
@@ -585,7 +585,7 @@ class PipScreen extends StatelessWidget {
         return Column(
             children: [
                 Expanded(
-                    child: _buildMiniRefBox(
+                    child: _buildMiniRefBox(context,
                         label: label1,
                         value: value1,
                         unit: unit1,
@@ -595,7 +595,7 @@ class PipScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 1.0),
                 Expanded(
-                    child: _buildMiniRefBox(
+                    child: _buildMiniRefBox(context,
                         label: label2,
                         value: value2,
                         unit: unit2,
@@ -607,7 +607,7 @@ class PipScreen extends StatelessWidget {
         );
     }
 
-    Widget _buildRefMetricsRow({
+    Widget _buildRefMetricsRow(BuildContext context, {
         required String label1,
         required double? value1,
         required String unit1,
@@ -623,7 +623,7 @@ class PipScreen extends StatelessWidget {
         return Row(
             children: [
                 Expanded(
-                    child: _buildMiniRefBox(
+                    child: _buildMiniRefBox(context,
                         label: label1,
                         value: value1,
                         unit: unit1,
@@ -633,7 +633,7 @@ class PipScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 2.5),
                 Expanded(
-                    child: _buildMiniRefBox(
+                    child: _buildMiniRefBox(context,
                         label: label2,
                         value: value2,
                         unit: unit2,
@@ -645,7 +645,7 @@ class PipScreen extends StatelessWidget {
         );
     }
 
-    Widget _buildMiniRefBox({
+    Widget _buildMiniRefBox(BuildContext context, {
         required String label,
         required double? value,
         required String unit,
@@ -653,14 +653,18 @@ class PipScreen extends StatelessWidget {
         required double fontSize,
     }) {
         final hasVal = value != null && !value.isNaN && value > -200;
-        final color = hasVal ? ColorGauge.getColor(level) : Colors.white38;
+        final settings = context.read<ApiService>().settings;
+        final color = ColorGauge.metricColor(value, level,
+            label == 'RQ' ? ColorGauge.rsrqMin : ColorGauge.sinrMin,
+            label == 'RQ' ? ColorGauge.rsrqMax : ColorGauge.sinrMax,
+            smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve);
         final valStr = hasVal
             ? "${value > 0 && (label == 'SNR' || label == 'SINR') ? '+' : ''}${value.toStringAsFixed(1)}"
             : "--";
 
         final double minVal = label == 'RQ' ? ColorGauge.rsrqMin : ColorGauge.sinrMin;
         final double maxVal = label == 'RQ' ? ColorGauge.rsrqMax : ColorGauge.sinrMax;
-        final double ratio = hasVal ? ((value! - minVal) / (maxVal - minVal)).clamp(0.0, 1.0) : 0.0;
+        final double ratio = hasVal ? ColorGauge.calculateNormalizedRatio(value, minVal, maxVal, curve: settings.smoothGaugeCurve) : 0.0;
 
         return ClipRRect(
             borderRadius: BorderRadius.circular(3.0),

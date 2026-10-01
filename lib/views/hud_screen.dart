@@ -179,6 +179,7 @@ class _HudScreenState extends State<HudScreen> {
         required double width,
         bool isLoggedIn = false,
     }) {
+        final settings = context.read<ApiService>().settings;
         return Container(
             width: width,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -216,9 +217,9 @@ class _HudScreenState extends State<HudScreen> {
                     Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                            _buildHudMetric("RSRP", rsrp, "dBm", ColorGauge.getColor(ColorGauge.rateRsrp(rsrp))),
-                            _buildHudMetric("RSRQ", rsrq, "dB", ColorGauge.getColor(ColorGauge.rateRsrq(rsrq))),
-                            _buildHudMetric("SINR", sinr, "dB", ColorGauge.getColor(ColorGauge.rateSinr(sinr))),
+                            _buildHudMetric("RSRP", rsrp, "dBm", ColorGauge.metricColor(rsrp, ColorGauge.rateRsrp(rsrp), ColorGauge.rsrpMin, ColorGauge.rsrpMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve)),
+                            _buildHudMetric("RSRQ", rsrq, "dB", ColorGauge.metricColor(rsrq, ColorGauge.rateRsrq(rsrq), ColorGauge.rsrqMin, ColorGauge.rsrqMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve)),
+                            _buildHudMetric("SINR", sinr, "dB", ColorGauge.metricColor(sinr, ColorGauge.rateSinr(sinr), ColorGauge.sinrMin, ColorGauge.sinrMax, smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve)),
                         ],
                     ),
                 ],

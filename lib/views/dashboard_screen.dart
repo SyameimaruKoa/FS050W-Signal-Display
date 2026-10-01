@@ -31,13 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool _isCellDetailsExpanded = false;
 
     Color _getLatencyColor(int latencyMs, bool isDark) {
-        if (latencyMs <= 50) {
-            return isDark ? const Color(0xFF00E676) : const Color(0xFF2E7D32);
-        } else if (latencyMs <= 150) {
-            return isDark ? Colors.amberAccent : Colors.orange.shade800;
-        } else {
-            return isDark ? Colors.redAccent : Colors.red.shade700;
-        }
+        return ColorGauge.latencyColor(latencyMs);
     }
 
     @override

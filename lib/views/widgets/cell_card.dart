@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../services/api_service.dart';
 import '../../models/signal_data.dart';
 import '../../models/connection_state.dart';
 import '../../utils/calc_frequency.dart';
@@ -500,7 +502,11 @@ class CellCard extends StatelessWidget {
         required SignalRatingLevel level,
     }) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final color = ColorGauge.getColor(level);
+        final settings = context.read<ApiService>().settings;
+        final color = ColorGauge.metricColor(value, level,
+            label.contains('RQ') ? ColorGauge.rsrqMin : ColorGauge.sinrMin,
+            label.contains('RQ') ? ColorGauge.rsrqMax : ColorGauge.sinrMax,
+            smooth: settings.smoothGaugeColor, curve: settings.smoothGaugeCurve);
         final valText = (value != null && !value.isNaN && value > -200)
             ? "${value > 0 && unit == 'dB' && label.contains('S') ? '+' : ''}${value.toStringAsFixed(1)} $unit"
             : "-- $unit";
@@ -511,7 +517,7 @@ class CellCard extends StatelessWidget {
         final double minVal = label.contains('RQ') ? ColorGauge.rsrqMin : ColorGauge.sinrMin;
         final double maxVal = label.contains('RQ') ? ColorGauge.rsrqMax : ColorGauge.sinrMax;
         final double ratio = (value != null && !value.isNaN && value > -200)
-            ? ((value - minVal) / (maxVal - minVal)).clamp(0.0, 1.0)
+            ? ColorGauge.calculateNormalizedRatio(value, minVal, maxVal, curve: settings.smoothGaugeCurve)
             : 0.0;
 
         return ClipRRect(

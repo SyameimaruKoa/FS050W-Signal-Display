@@ -26,6 +26,28 @@ class MetricThreshold {
 }
 
 class ColorGauge {
+    static Color temperatureColor(double? temperature, {double threshold = 45.0}) {
+        if (temperature == null || !temperature.isFinite) return colorUnknown;
+        if (temperature >= threshold) return const Color(0xFFFF5252);
+        if (temperature >= threshold - 5.0) return const Color(0xFFFFD600);
+        return const Color(0xFF00E5FF);
+    }
+
+    static Color latencyColor(int? milliseconds) {
+        if (milliseconds == null) return colorUnknown;
+        if (milliseconds <= 50) return const Color(0xFF00E676);
+        if (milliseconds <= 150) return const Color(0xFFFFD600);
+        return const Color(0xFFFF5252);
+    }
+
+    static Color metricColor(double? value, SignalRatingLevel level,
+        double min, double max, {bool smooth = false, String curve = "easeOut"}) {
+        if (value == null || !value.isFinite || value <= -200) return colorUnknown;
+        return smooth
+            ? getSmoothColor(((value - min) / (max - min)).clamp(0.0, 1.0), curve: curve)
+            : getColor(level);
+    }
+
     static const Color colorExcellent = Color(0xFF2196F3); // 青 (極めて優秀)
     static const Color colorGood = Color(0xFF4CAF50);      // 緑 (良好)
     static const Color colorModerate = Color(0xFF8BC34A);  // 黄緑 (普通)
@@ -68,7 +90,7 @@ class ColorGauge {
     ];
 
     static SignalRatingLevel rateRsrp(double? rsrp) {
-        if (rsrp == null) return SignalRatingLevel.unknown;
+        if (rsrp == null || !rsrp.isFinite || rsrp <= -200) return SignalRatingLevel.unknown;
         if (rsrp >= -80.0) return SignalRatingLevel.excellent;
         if (rsrp >= -90.0) return SignalRatingLevel.good;
         if (rsrp >= -100.0) return SignalRatingLevel.moderate;
@@ -78,7 +100,7 @@ class ColorGauge {
     }
 
     static SignalRatingLevel rateRsrq(double? rsrq) {
-        if (rsrq == null) return SignalRatingLevel.unknown;
+        if (rsrq == null || !rsrq.isFinite || rsrq <= -200) return SignalRatingLevel.unknown;
         if (rsrq >= -10.0) return SignalRatingLevel.excellent;
         if (rsrq >= -15.0) return SignalRatingLevel.good;
         if (rsrq >= -18.0) return SignalRatingLevel.moderate;
@@ -88,7 +110,7 @@ class ColorGauge {
     }
 
     static SignalRatingLevel rateSinr(double? sinr) {
-        if (sinr == null) return SignalRatingLevel.unknown;
+        if (sinr == null || !sinr.isFinite || sinr <= -200) return SignalRatingLevel.unknown;
         if (sinr >= 20.0) return SignalRatingLevel.excellent;
         if (sinr >= 13.0) return SignalRatingLevel.good;
         if (sinr >= 0.0) return SignalRatingLevel.moderate;

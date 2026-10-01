@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/pip_service.dart';
 import '../../models/signal_data.dart';
 import '../../models/connection_state.dart';
+import '../../utils/color_gauge.dart';
 import '../hud_screen.dart';
 import '../settings_screen.dart';
 import 'log_viewer_dialog.dart';
@@ -57,7 +58,7 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
             signal!.batteryTemperature! >= apiService.settings.batteryTempWarningThreshold;
 
         final hasBattery = signal?.isBatteryPresent ?? true;
-        final batPercent = signal?.scaledBatteryPercent ?? signal?.batteryPercent;
+        final batPercent = signal?.batteryPercent;
         final isCharging = signal?.isCharging ?? false;
         final temp = signal?.batteryTemperature;
         final curr = signal?.batteryCurrent;
@@ -325,17 +326,11 @@ class Fs050wAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     Color _getTempColor(double? temp, [double threshold = 45.0]) {
-        if (temp == null) return Colors.white70;
-        if (temp >= threshold) return Colors.redAccent;
-        if (temp >= threshold - 5.0) return Colors.amberAccent;
-        return const Color(0xFF00E5FF);
+        return ColorGauge.temperatureColor(temp, threshold: threshold);
     }
 
     Color _getLightTempColor(double? temp, [double threshold = 45.0]) {
-        if (temp == null) return Colors.black54;
-        if (temp >= threshold) return Colors.red.shade800;
-        if (temp >= threshold - 5.0) return Colors.orange.shade900;
-        return const Color(0xFF00838F);
+        return ColorGauge.temperatureColor(temp, threshold: threshold);
     }
 
     List<Widget> _buildDefaultActions(BuildContext context, ApiService apiService, bool isDark) {
@@ -463,7 +458,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                         const SizedBox(height: 12),
 
                                         // 2. Battery Detailed Metrics
-                                        _buildBatteryCard(signal, isDark),
+                                        _buildBatteryCard(context, signal, isDark),
                                         const SizedBox(height: 12),
 
                                         // 3. System Hardware State (/action/get_device_state)
@@ -562,7 +557,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
         );
     }
 
-    Widget _buildBatteryCard(SignalData? signal, bool isDark) {
+    Widget _buildBatteryCard(BuildContext context, SignalData? signal, bool isDark) {
         final hasBattery = signal?.isBatteryPresent ?? true;
         final rawPercent = signal?.batteryPercent;
         final scaledPercent = signal?.scaledBatteryPercent;
@@ -668,7 +663,7 @@ class BatterySystemDetailSheet extends StatelessWidget {
                                             label: "温度",
                                             value: temp != null ? "${temp.toStringAsFixed(1)} °C" : "--",
                                             dynamicValue: temp,
-                                            color: _getTemperatureColor(temp, isDark),
+                                            color: _getTemperatureColor(temp, isDark, context.read<ApiService>().settings.batteryTempWarningThreshold),
                                             icon: Icons.thermostat,
                                             isDark: isDark,
                                         ),
@@ -951,11 +946,8 @@ class BatterySystemDetailSheet extends StatelessWidget {
         return Colors.redAccent;
     }
 
-    Color _getTemperatureColor(double? temp, bool isDark) {
-        if (temp == null) return Colors.grey;
-        if (temp >= 45) return Colors.redAccent;
-        if (temp >= 40) return isDark ? Colors.amberAccent : Colors.orange.shade800;
-        return isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F);
+    Color _getTemperatureColor(double? temp, bool isDark, [double threshold = 45.0]) {
+        return ColorGauge.temperatureColor(temp, threshold: threshold);
     }
 
     Color _getCpuColor(int? cpu) {
