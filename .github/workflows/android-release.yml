@@ -2,36 +2,89 @@ name: Android Release
 
 on:
     push:
+        branches: [main]
         tags: ['v*']
+        paths:
+            -   'lib/**'
+            -   'android/**'
+            -   '!android/.gradle/**'
+            -   '!android/build/**'
+            -   '!android/**/build/**'
+            -   'assets/**'
+            -   '!assets/screenshots/**'
+            -   '!assets/icons/readme.txt'
+            -   'pubspec.yaml'
+            -   'pubspec.lock'
+            -   '.github/actions/setup-flutter/**'
+            -   '.github/actions/android-version/**'
+            -   '.github/workflows/android-*.yml'
+    workflow_dispatch:
 
 permissions:
     contents: read
 
 concurrency:
-    group: android-release-${{ github.ref }}
+    group: android-build-version
     cancel-in-progress: false
+    queue: max
 
 jobs:
     build:
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         runs-on: ubuntu-latest
         timeout-minutes: 45
         outputs:
             tag: ${{ steps.version.outputs.tag }}
         steps:
             -   uses: actions/checkout@v4
-            -   name: Validate release version
+            -   name: Select release version
                 id: version
-                shell: bash
-                env:
-                    TAG: ${{ github.ref_name }}
-                run: |
-                    if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                        echo 'Release tags must use vX.Y.Z.' >&2
-                        exit 1
-                    fi
-                    echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-                    echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+                uses: actions/github-script@v7
+                with:
+                    script: |
+                        const pattern = /^v(\d+)\.(\d+)\.(\d+)$/;
+                        let tag;
+                        if (context.ref.startsWith('refs/tags/')) {
+                            tag = context.ref.slice('refs/tags/'.length);
+                            if (!pattern.test(tag)) {
+                                throw new Error('Release tags must use vX.Y.Z.');
+                            }
+                        } else {
+                            const tags = await github.paginate(github.rest.repos.listTags, {
+                                ...context.repo,
+                                per_page: 100,
+                            });
+                            const versions = tags.filter(item => pattern.test(item.name));
+                            versions.sort((a, b) => {
+                                const left = a.name.match(pattern).slice(1).map(Number);
+                                const right = b.name.match(pattern).slice(1).map(Number);
+                                for (let index = 0; index < 3; index++) {
+                                    if (left[index] !== right[index]) {
+                                        return right[index] - left[index];
+                                    }
+                                }
+                                return 0;
+                            });
+                            // A rerun updates this commit's release instead of
+                            // allocating another version for the same merge.
+                            const existing = versions.find(item => item.commit.sha === context.sha);
+                            if (existing) {
+                                tag = existing.name;
+                            } else if (versions.length) {
+                                const [major, minor, patch] = versions[0].name.match(pattern).slice(1).map(Number);
+                                tag = `v${major}.${minor}.${patch + 1}`;
+                            } else {
+                                tag = 'v1.0.0';
+                            }
+                        }
+                        core.setOutput('tag', tag);
+                        core.setOutput('name', tag.slice(1));
+                        core.info(`Release ${tag} for ${context.sha}`);
             -   uses: ./.github/actions/setup-flutter
+            -   uses: ./.github/actions/android-version
+                id: android_version
+                with:
+                    release_name: ${{ steps.version.outputs.name }}
             -   name: Run tests
                 run: flutter test
             -   name: Restore existing debug keystore
@@ -48,9 +101,10 @@ jobs:
                     printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
             -   name: Build release APKs with debug signing
                 env:
-                    VERSION_NAME: ${{ steps.version.outputs.name }}
-                # Existing manually published builds use versionCode values below 1000.
-                run: flutter build apk --release --split-per-abi --build-name="$VERSION_NAME" --build-number="$((1000 + ${{ github.run_number }}))"
+                    VERSION_NAME: ${{ steps.android_version.outputs.name }}
+                    VERSION_CODE: ${{ steps.android_version.outputs.code }}
+                    ORG_GRADLE_PROJECT_force-version-code-ignoring-abi: 'true'
+                run: flutter build apk --release --split-per-abi --build-name="$VERSION_NAME" --build-number="$VERSION_CODE"
             -   name: Remove restored debug keystore
                 if: always()
                 run: rm -f "$HOME/.android/debug.keystore"
@@ -83,9 +137,10 @@ jobs:
                     GH_TOKEN: ${{ github.token }}
                     GH_REPO: ${{ github.repository }}
                     TAG: ${{ needs.build.outputs.tag }}
+                    SOURCE_SHA: ${{ github.sha }}
                 run: |
                     if gh release view "$TAG" > /dev/null 2>&1; then
                         gh release upload "$TAG" dist/* --clobber
                     else
-                        gh release create "$TAG" dist/* --verify-tag --title "$TAG" --generate-notes
+                        gh release create "$TAG" dist/* --target "$SOURCE_SHA" --title "$TAG" --generate-notes
                     fi

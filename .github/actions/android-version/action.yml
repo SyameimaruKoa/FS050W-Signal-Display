@@ -1,0 +1,57 @@
+name: Allocate Android version
+description: Allocate a shared chronological versionCode for serialized Android builds
+inputs:
+    release_name:
+        description: Validated official release version
+        default: ''
+    build_name:
+        description: Optional display version
+        default: ''
+    build_number:
+        description: Legacy input; versionCode is now automatic
+        default: ''
+outputs:
+    name:
+        description: Android versionName
+        value: ${{ steps.version.outputs.name }}
+    code:
+        description: Android versionCode
+        value: ${{ steps.version.outputs.code }}
+runs:
+    using: composite
+    steps:
+        -   id: version
+            shell: bash
+            env:
+                RELEASE_NAME: ${{ inputs.release_name }}
+                BUILD_NAME: ${{ inputs.build_name }}
+                BUILD_NUMBER: ${{ inputs.build_number }}
+            run: |
+                if [[ -n "$BUILD_NUMBER" ]]; then
+                    echo 'build_number is allocated automatically; leave this input empty.' >&2
+                    exit 1
+                fi
+                # Both workflows share the android-build-version concurrency group.
+                # Waiting a second also prevents a fast failed rerun reusing a code.
+                sleep 1
+                code=$(( $(date -u +%s) - 1577836800 + 10000 ))
+                if (( code <= 10000 || code > 2100000000 )); then
+                    echo 'Generated versionCode is outside the Android supported range.' >&2
+                    exit 1
+                fi
+                if [[ -n "$RELEASE_NAME" ]]; then
+                    [[ "$RELEASE_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid release version.' >&2; exit 1; }
+                    name="$RELEASE_NAME"
+                elif [[ "$GITHUB_REF_TYPE" == tag ]]; then
+                    name="${GITHUB_REF_NAME#v}"
+                else
+                    base=$(sed -nE 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' pubspec.yaml)
+                    if [[ -z "$base" ]]; then
+                        base=$(sed -nE 's/.*return Pair\("([0-9]+\.[0-9]+\.[0-9]+)",.*/\1/p' android/app/build.gradle.kts)
+                    fi
+                    [[ "$base" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Cannot determine base version.' >&2; exit 1; }
+                    name="${BUILD_NAME:-$base}-preview.$code"
+                fi
+                echo "name=$name" >> "$GITHUB_OUTPUT"
+                echo "code=$code" >> "$GITHUB_OUTPUT"
+                printf 'Android version: %s (%s)\n' "$name" "$code" >> "$GITHUB_STEP_SUMMARY"

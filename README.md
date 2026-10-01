@@ -175,13 +175,36 @@ README・更新履歴・スクリーンショットだけの変更や、Android�
 Actions画面からの手動ビルドと、公開タグpushによる `Android Release` は変更ファイルに関係なく実行します。
 Flutter 3.47.1 / Java 17で依存関係をロックファイルどおりに取得し、`flutter test` 成功後に
 デバッグAPKとABI別リリースAPKを生成します。Actionsの実行結果にある **Artifacts** から
-14日間ダウンロードできます。PRのリリースAPKは動作確認用のデバッグ署名です。
+14日間ダウンロードできます。CI直後のArtifactsはランナーの一時キーで署名されています。
+上書き更新には、後続の `Android Preview Release` が署名し直したAPKを使用してください。
 
-`Android Release` は `vX.Y.Z` 形式のタグをpushすると、テスト・署名済みABI別APKのビルドを行い、
+`Android Release` はmainへのマージ・pushで、アプリコード（`lib/`、`android/`）、
+アプリ用アセット、依存関係（`pubspec.yaml` / `pubspec.lock`）、Android用ビルド・Actions設定が変更された場合だけ実行します。
+README・更新履歴・スクリーンショット・テストだけの変更や、Androidの生成済みビルド／Gradleキャッシュの変更では公開しません。
+squash/rebase mergeも同じ条件で対象です。既存の `vX.Y.Z` タグの最大バージョンから
+patchを1つ上げ（例: `v2.2.8` → `v2.2.9`）、テスト・署名済みABI別APKのビルド成功後に、
+そのマージコミットにタグを付けて正式Releaseを公開します。タグの手動作成は不要です。
+同じコミットの再実行は既存タグを使い、添付APKを更新します。
+共通concurrencyグループは `queue: max` を使用し、連続するマージを順に処理します（GitHubの上限は100件）。
+テスト・ビルドが失敗した場合は公開せず、修正後に失敗したActionsを再実行してください。
+Actions画面からmainを選んで手動実行することもでき、導入前の最新マージを公開できます。
+
+従来の `vX.Y.Z` 形式のタグpushでも、テスト・署名済みABI別APKのビルドを行い、
 APKと `SHA256SUMS.txt` を添付したGitHub Releaseを公開します。既存Releaseがある場合は添付ファイルを更新します。
 バージョン名はタグ（例: `v2.2.8` → `2.2.8`）、AndroidのversionCodeは
-`1000 + Android Releaseのrun_number` になります。同じ実行の再実行ではversionCodeも同じです。
-ワークフローを作り直す場合は、公開済みversionCodeを上回るようにオフセットを調整してください。
+Release版・PR版ともに `10000 + 2020-01-01 00:00:00 UTCからの経過秒数` を使用します。
+両ワークフローは共通のconcurrencyグループでビルドを直列化し、採番前に1秒待機するため、再実行も新しい番号になります。
+ABI別APKへのFlutterのversionCode加算を無効化し、デバッグAPKと全ABIの番号を揃えます。
+後からビルドされたAPKへは、Release版・PR版のどちらからでも更新できます。過去のAPKへのダウングレードは対象外です。
+手動実行の `build_number` は空欄にしてください。PR版の表示バージョンは `2.2.6-preview.<versionCode>` のようになります。
+
+CI成功後、`Android Preview Release` が3種類のABI別APKを既存キーで署名し直し、
+`preview-<run_id>-<run_attempt>` ごとのドラフトReleaseにAPKと `SHA256SUMS.txt` を添付します。
+PR更新・CI再実行ごとに別ドラフトとなり、署名ワークフローだけの再実行では同じドラフトの添付を更新します。
+手動CIでも同様にドラフトを作成します。mainへのpushは `Android Release` で正式公開するため、ドラフトは作成しません。
+署名済みArtifactsはこの後続ワークフローからも取得できます。
+ドラフトReleaseはリポジトリへの書き込み権限を持つユーザー向けです。
+後続ワークフローはデフォルトブランチに反映されると有効になり、PRコードのcheckout・実行は行いません。
 
 ### 従来のデバッグキーで署名
 
@@ -201,7 +224,8 @@ Secret名は `ANDROID_DEBUG_KEYSTORE_BASE64` です。未登録なら公開ビ�
 開発環境の `debug.keystore` は今後も同じものを使用し、バックアップしてください。
 異なる開発環境の鍵で署名した既存APKは、今回のキーと一致しない場合に再インストールが必要です。
 PRのCIにはこのSecretを渡さず、ランナー側のデバッグキーを使用します。
-そのため、PRの検証用APKと公開APKの間で上書き更新できない場合があります。
+後続の署名専用ワークフローで公開APKと同じキーに署名し直すため、ドラフトReleaseのPR版と公開APKは上書き更新できます。
+以前の一時キーで署名されたPR版をインストール済みの場合、同じ既存キーに移行する際だけ再インストールが必要です。
 
 公開例（ワークフローを含む変更がGitHubに反映された後に実行）:
 
