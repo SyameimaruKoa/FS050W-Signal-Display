@@ -178,7 +178,42 @@ APKと `SHA256SUMS.txt` を添付したGitHub Releaseを公開します。既存
 `1000 + Android Releaseのrun_number` になります。同じ実行の再実行ではversionCodeも同じです。
 ワークフローを作り直す場合は、公開済みversionCodeを上回るようにオフセットを調整してください。
 
-公開前に、リポジトリの **Settings → Secrets and variables → Actions** に以下を登録します。
+### 署名キーの新規作成（Windows PowerShell）
+
+既存の公開APKと同じ鍵で更新する場合は、新規作成せず、そのAPKに使用したキーストアを使用してください。
+新しい署名キーを作る場合は、Java JDKまたはAndroid Studioに付属する `keytool` を使います。
+以下は [Flutter公式のキーストア作成手順](https://docs.flutter.dev/deployment/android#create-an-upload-keystore) に沿った例です。
+
+まず、リポジトリの外に保存用フォルダーを作成します。
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\fs050w-signing"
+```
+
+次のコマンドで `release.jks` を作成します。すでに同名のファイルがある場合は再作成せず、既存の鍵を確認してください。
+
+```powershell
+keytool -genkeypair -v -keystore "$env:USERPROFILE\fs050w-signing\release.jks" -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias fs050w-release
+```
+
+`keytool` が見つからない場合は、Android Studio付属の実行ファイルを指定します。
+インストール先が異なる場合はパスを変更してください。
+
+```powershell
+& 'C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe' -genkeypair -v -keystore "$env:USERPROFILE\fs050w-signing\release.jks" -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias fs050w-release
+```
+
+実行すると、キーストアのパスワード、証明書の名前・組織・国コードなど、最後に鍵のパスワードが対話形式で求められます。
+パスワード入力中は文字が表示されません。キーストアと鍵のパスワードは6文字以上にし、パスワード管理ツールなどに保存してください。
+鍵のパスワードでEnterを押すと、キーストアと同じパスワードになります。
+証明書の情報を確認して承認すると作成されます。エイリアスはこの例では `fs050w-release` です。
+
+`release.jks` とパスワードは、今後の更新でも同じものを使うため、安全な場所にバックアップしてください。
+キーストアやパスワードをリポジトリにコミットしないでください。
+
+### GitHub Secretsへの登録
+
+公開前に、リポジトリの **Settings → Secrets and variables → Actions → New repository secret** で以下を1項目ずつ登録します。
 
 | Secret | 内容 |
 | --- | --- |
@@ -186,6 +221,15 @@ APKと `SHA256SUMS.txt` を添付したGitHub Releaseを公開します。既存
 | `ANDROID_KEYSTORE_PASSWORD` | キーストアのパスワード |
 | `ANDROID_KEY_ALIAS` | 署名鍵のエイリアス |
 | `ANDROID_KEY_PASSWORD` | 署名鍵のパスワード |
+
+上記のコマンドで新規作成した場合、`ANDROID_KEY_ALIAS` は `fs050w-release`、
+`ANDROID_KEYSTORE_PASSWORD` は作成時のキーストアパスワード、`ANDROID_KEY_PASSWORD` は鍵のパスワードです。
+鍵のパスワード入力をEnterで省略した場合は、両方のパスワードSecretに同じ値を登録します。
+`ANDROID_KEYSTORE_BASE64` は、次のコマンドでコピーした文字列をそのままSecretの値に貼り付けます。
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\fs050w-signing\release.jks")) | Set-Clipboard
+```
 
 Windows PowerShellでキーストアをBase64に変換する例:
 
