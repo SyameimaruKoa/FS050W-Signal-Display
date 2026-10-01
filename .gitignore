@@ -54,4 +54,7 @@ app.*.map.json
 .venv/
 NEXT_INSTRUCTIONS.md
 scratch/
+*.jks
+*.keystore
+android/key.properties
 

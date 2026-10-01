@@ -165,6 +165,51 @@ flutter build apk --release --split-per-abi
 
 ---
 
+## GitHub Actionsによるビルド・公開
+
+`Android CI` はPR作成・更新、`main`へのpush、Actions画面からの手動実行に対応します。
+Flutter 3.47.1 / Java 17で依存関係をロックファイルどおりに取得し、`flutter test` 成功後に
+デバッグAPKとABI別リリースAPKを生成します。Actionsの実行結果にある **Artifacts** から
+14日間ダウンロードできます。PRのリリースAPKは動作確認用のデバッグ署名です。
+
+`Android Release` は `vX.Y.Z` 形式のタグをpushすると、テスト・署名済みABI別APKのビルドを行い、
+APKと `SHA256SUMS.txt` を添付したGitHub Releaseを公開します。既存Releaseがある場合は添付ファイルを更新します。
+バージョン名はタグ（例: `v2.2.8` → `2.2.8`）、AndroidのversionCodeは
+`1000 + Android Releaseのrun_number` になります。同じ実行の再実行ではversionCodeも同じです。
+ワークフローを作り直す場合は、公開済みversionCodeを上回るようにオフセットを調整してください。
+
+公開前に、リポジトリの **Settings → Secrets and variables → Actions** に以下を登録します。
+
+| Secret | 内容 |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | 署名キーストアのBase64文字列 |
+| `ANDROID_KEYSTORE_PASSWORD` | キーストアのパスワード |
+| `ANDROID_KEY_ALIAS` | 署名鍵のエイリアス |
+| `ANDROID_KEY_PASSWORD` | 署名鍵のパスワード |
+
+Windows PowerShellでキーストアをBase64に変換する例:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\secure\release.jks')) | Set-Clipboard
+```
+
+既存APKから上書き更新できるように、これまでの公開APKと同じ署名鍵を使用してください。
+従来のローカルビルドはデバッグ鍵で署名しているため、そのAPKの利用者が更新するには
+元の開発環境のデバッグキーストアを登録するか、新しい鍵へ移行する際に再インストールが必要です。
+Secretsが未設定なら公開ビルドは失敗し、Releaseは作成されません。
+署名鍵はPRのビルドには渡されません。
+
+公開例（ワークフローを含む変更がGitHubに反映された後に実行）:
+
+```bash
+git tag v2.2.8
+git push origin v2.2.8
+```
+
+ローカルのリリースビルドでも `ANDROID_KEYSTORE_PATH`（絶対パス）、
+`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` を設定すると
+同じ鍵で署名できます。未設定時は従来どおりデバッグ署名を使用します。
+
 ## 📝 更新履歴
 
 詳細な全バージョンの更新履歴は [CHANGELOG.md](CHANGELOG.md) をご覧ください。

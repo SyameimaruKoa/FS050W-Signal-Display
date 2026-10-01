@@ -19,6 +19,7 @@ fun getPubspecVersion(): Pair<String, Int> {
 }
 
 val (pubspecVersionName, pubspecVersionCode) = getPubspecVersion()
+val releaseStoreFile = System.getenv("ANDROID_KEYSTORE_PATH")
 
 android {
     namespace = "com.syameimarukoa.fs050w_signal_display"
@@ -41,9 +42,22 @@ android {
         versionName = if (flutter.versionName != null && flutter.versionName != "1.0") flutter.versionName else pubspecVersionName
     }
 
+    signingConfigs {
+        if (!releaseStoreFile.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (releaseStoreFile.isNullOrBlank()) "debug" else "release"
+            )
         }
     }
 
