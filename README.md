@@ -168,6 +168,10 @@ flutter build apk --release --split-per-abi
 ## GitHub Actionsによるビルド・公開
 
 `Android CI` はPR作成・更新、`main`へのpush、Actions画面からの手動実行に対応します。
+PRと`main`へのpushでは、アプリ本体（`lib/`、`android/`、`assets/icons/`）、テスト、
+依存関係（`pubspec.yaml` / `pubspec.lock`）、解析設定、Android用Actions設定に変更がある場合だけ実行します。
+README・更新履歴・スクリーンショットだけの変更や、Androidの生成済みビルド／Gradleキャッシュの変更では実行しません。
+Actions画面からの手動ビルドと、公開タグpushによる `Android Release` は変更ファイルに関係なく実行します。
 Flutter 3.47.1 / Java 17で依存関係をロックファイルどおりに取得し、`flutter test` 成功後に
 デバッグAPKとABI別リリースAPKを生成します。Actionsの実行結果にある **Artifacts** から
 14日間ダウンロードできます。PRのリリースAPKは動作確認用のデバッグ署名です。
@@ -178,26 +182,25 @@ APKと `SHA256SUMS.txt` を添付したGitHub Releaseを公開します。既存
 `1000 + Android Releaseのrun_number` になります。同じ実行の再実行ではversionCodeも同じです。
 ワークフローを作り直す場合は、公開済みversionCodeを上回るようにオフセットを調整してください。
 
-公開前に、リポジトリの **Settings → Secrets and variables → Actions** に以下を登録します。
+### 従来のデバッグキーで署名
 
-| Secret | 内容 |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | 署名キーストアのBase64文字列 |
-| `ANDROID_KEYSTORE_PASSWORD` | キーストアのパスワード |
-| `ANDROID_KEY_ALIAS` | 署名鍵のエイリアス |
-| `ANDROID_KEY_PASSWORD` | 署名鍵のパスワード |
+ローカルビルドとGitHub ReleaseのAPKは、従来どおり `debug` の署名設定を使用します。
+新しいリリースキーの作成や、署名パスワード4項目の登録は不要です。
+GitHub Actionsでは開発環境の既存 `debug.keystore` を復元して使うため、実行ごとに署名キーは変わりません。
 
-Windows PowerShellでキーストアをBase64に変換する例:
+既存キーはリポジトリのSecret `ANDROID_DEBUG_KEYSTORE_BASE64` に登録済みです。
+別のリポジトリに移す場合など、再登録が必要なときは、これまでのAPKに使用した開発環境で次を実行し、
+**Settings → Secrets and variables → Actions → New repository secret** の値に貼り付けてください。
 
 ```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\secure\release.jks')) | Set-Clipboard
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.android\debug.keystore")) | Set-Clipboard
 ```
 
-既存APKから上書き更新できるように、これまでの公開APKと同じ署名鍵を使用してください。
-従来のローカルビルドはデバッグ鍵で署名しているため、そのAPKの利用者が更新するには
-元の開発環境のデバッグキーストアを登録するか、新しい鍵へ移行する際に再インストールが必要です。
-Secretsが未設定なら公開ビルドは失敗し、Releaseは作成されません。
-署名鍵はPRのビルドには渡されません。
+Secret名は `ANDROID_DEBUG_KEYSTORE_BASE64` です。未登録なら公開ビルドは停止します。
+開発環境の `debug.keystore` は今後も同じものを使用し、バックアップしてください。
+異なる開発環境の鍵で署名した既存APKは、今回のキーと一致しない場合に再インストールが必要です。
+PRのCIにはこのSecretを渡さず、ランナー側のデバッグキーを使用します。
+そのため、PRの検証用APKと公開APKの間で上書き更新できない場合があります。
 
 公開例（ワークフローを含む変更がGitHubに反映された後に実行）:
 
@@ -205,10 +208,6 @@ Secretsが未設定なら公開ビルドは失敗し、Releaseは作成されま
 git tag v2.2.8
 git push origin v2.2.8
 ```
-
-ローカルのリリースビルドでも `ANDROID_KEYSTORE_PATH`（絶対パス）、
-`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` を設定すると
-同じ鍵で署名できます。未設定時は従来どおりデバッグ署名を使用します。
 
 ## 📝 更新履歴
 
