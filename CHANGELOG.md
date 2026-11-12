@@ -6,6 +6,8 @@ FS050W Signal Display のバージョンごとの更新履歴です。
 
 ## [未リリース]
 
+- アプリ終了時（ライフサイクル detached）にルーターへ `/action/logout` を送信し、ログインセッションを破棄するようにした。バックグラウンド移行時（paused）は従来どおりセッションを維持する。
+
 - mainへのマージ・pushでアプリコード・アセット・依存関係・ビルド設定が変更された場合に正式Releaseを自動公開。既存タグからpatchバージョンを自動更新し、連続マージはキューで処理。同一コミットの再実行は既存Releaseを更新。
 
 - GitHub ActionsのRelease版・PR版を共通の自動採番と既存署名キーに統一。ABI間のversionCode差を解消し、PR版のABI別APKとチェックサムをビルドごとのドラフトReleaseへ添付。

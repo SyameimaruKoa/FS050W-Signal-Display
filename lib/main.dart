@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -107,6 +109,9 @@ class _Fs050wAppState extends State<Fs050wApp> with WidgetsBindingObserver {
             SystemFontService.instance.refresh();
             api.startPolling();
             PipService.setAutoEnterPip(api.settings.autoPipOnHome, api.settings.pipAspectRatio);
+        } else if (state == AppLifecycleState.detached) {
+            // アプリ終了時はルーターのログインセッションを破棄する
+            unawaited(api.logout());
         } else if (state == AppLifecycleState.paused) {
             // オーバーレイ有効中、またはPiPモード中はバックグラウンドでもポーリングを継続する
             final isOverlayActive = api.settings.overlayEnabled;
