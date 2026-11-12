@@ -36,6 +36,7 @@ class ApiService extends ChangeNotifier {
     bool _isPolling = false;
     bool _isScreenOn = true;
     bool _isFetching = false;
+    bool _isClosing = false;
     int _consecutiveErrorCount = 0;
     DateTime? _lastLoginAttempt;
     DateTime? _lockoutUntil;
@@ -92,7 +93,7 @@ class ApiService extends ChangeNotifier {
     }
 
     void startPolling() {
-        if (_isPolling) return;
+        if (_isPolling || _isClosing) return;
         _isPolling = true;
         if (_isScreenOn) {
             _pollOnce();
@@ -110,6 +111,58 @@ class ApiService extends ChangeNotifier {
         stopPolling();
         _resetSession();
         startPolling();
+    }
+
+    /// アプリ終了時にルーターのログインセッションを破棄する。
+    ///
+    /// `POST /action/logout` でルーター側のセッションを破棄し、ローカルの
+    /// セッション情報も消去する。ベストエフォートであり、送信に失敗しても
+    /// ローカル側の破棄は必ず行う。以後のポーリングは再開しない。
+    Future<void> logout() async {
+        if (_isClosing) return;
+        _isClosing = true;
+        stopPolling();
+
+        final String? csrf = _csrfToken;
+        final String? cookie = _sessionCookie;
+        final bool wasLoggedIn = _isLoggedIn;
+        _resetSession();
+        _status = ConnectionStatus.disconnected;
+
+        if (!wasLoggedIn || csrf == null || cookie == null || _settings.routerIp.isEmpty) {
+            _client.close();
+            return;
+        }
+
+        try {
+            final uri = Uri.parse("http://${_settings.routerIp}/action/logout");
+            final response = await _client.post(
+                uri,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Csrf-Token': csrf,
+                    'Cookie': cookie,
+                },
+                body: '{}',
+            ).timeout(const Duration(seconds: 3));
+            if (response.statusCode == 200) {
+                AppLogger.info("Logged out from router: session closed");
+            } else {
+                AppLogger.warn("Logout request returned status ${response.statusCode}");
+            }
+        } catch (e) {
+            AppLogger.warn("Logout request failed: $e");
+        } finally {
+            _client.close();
+        }
+    }
+
+    @override
+    void dispose() {
+        // ライフサイクル通知を取りこぼした場合の保険として、破棄時にも
+        // セッションを閉じる (応答は待たない)。
+        unawaited(logout());
+        super.dispose();
     }
 
     void _restartTimer() {
@@ -177,7 +230,7 @@ class ApiService extends ChangeNotifier {
     }
 
     Future<void> _pollOnce() async {
-        if (_isFetching) return;
+        if (_isFetching || _isClosing) return;
         _isFetching = true;
 
         try {
@@ -539,7 +592,9 @@ class ApiService extends ChangeNotifier {
         if (_consecutiveErrorCount >= 3) {
             _status = ConnectionStatus.connecting;
             OverlayService.updateOverlayData(_currentSignal, _settings, isConnecting: true);
-            notifyListeners();
+            if (!_isClosing) {
+                notifyListeners();
+            }
         }
     }
 }
