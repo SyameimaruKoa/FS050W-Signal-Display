@@ -103,7 +103,7 @@ class SignalRepository(
     }
 
     fun updateSettings(newSettings: AppSettings) {
-        settingsStore.set(newSettings)
+        settingsStore.persist(newSettings)
         api.updateSettings(newSettings)
         if (_isPolling.value) restartPolling()
     }

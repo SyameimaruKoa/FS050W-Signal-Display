@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.syameimarukoa.fs050w_signal_display"
     android:versionCode="30"
-    android:versionName="2.2.6" >
+    android:versionName="3.0.0" >
 
     <uses-sdk
         android:minSdkVersion="33"

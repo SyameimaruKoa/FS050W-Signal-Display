@@ -14,7 +14,7 @@ class SettingsStore(private val context: Context) {
 
     var value: AppSettings
         get() = _settings.value
-        set(value) = set(value)
+        set(value) = persist(value)
 
     private fun load(): AppSettings {
         val stored = prefs.getString(KEY_SETTINGS, null)
@@ -43,12 +43,12 @@ class SettingsStore(private val context: Context) {
         return AppSettings()
     }
 
-    fun set(settings: AppSettings) {
+    fun persist(settings: AppSettings) {
         _settings.value = settings
         prefs.edit().putString(KEY_SETTINGS, settings.toJson().toString()).apply()
     }
 
-    fun update(transform: (AppSettings) -> AppSettings) = set(transform(_settings.value))
+    fun update(transform: (AppSettings) -> AppSettings) = persist(transform(_settings.value))
 
     companion object {
         private const val PREFS_NAME = "fs050w_prefs"

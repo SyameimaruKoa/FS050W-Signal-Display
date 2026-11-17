@@ -20864,6 +20864,8 @@ com.google.common.util.concurrent.ListenableFuture:
     public abstract void addListener(java.lang.Runnable,java.util.concurrent.Executor)
 com.syameimarukoa.fs050w_signal_display.Fs050wApp:
     public static final int $stable
+com.syameimarukoa.fs050w_signal_display.MainActivity$onCreate$1$1$1:
+    int label
 com.syameimarukoa.fs050w_signal_display.MainActivity:
     public static final int $stable
     private boolean isHomeKeyPressed
@@ -42204,8 +42206,11 @@ com.syameimarukoa.fs050w_signal_display.Fs050wApp$onCreate$1:
 com.syameimarukoa.fs050w_signal_display.Fs050wApp:
     static void <clinit>()
     public final com.syameimarukoa.fs050w_signal_display.data.SignalRepository getRepository()
+com.syameimarukoa.fs050w_signal_display.MainActivity$onCreate$1$1$1:
+    public final java.lang.Object invoke(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.Continuation)
 com.syameimarukoa.fs050w_signal_display.MainActivity:
     static void <clinit>()
+    public final void applyKeepScreenOn(boolean)
 com.syameimarukoa.fs050w_signal_display.OverlayService$Companion
 com.syameimarukoa.fs050w_signal_display.OverlayService:
     static void <clinit>()
@@ -42276,7 +42281,7 @@ com.syameimarukoa.fs050w_signal_display.data.SettingsStore:
     public com.syameimarukoa.fs050w_signal_display.Fs050wApp context
     static void <clinit>()
     public static kotlinx.coroutines.flow.StateFlow getSettings()
-    public static void set()
+    public static void persist()
 com.syameimarukoa.fs050w_signal_display.data.SignalRepository$Companion
 com.syameimarukoa.fs050w_signal_display.data.SignalRepository$logout$1:
     public final java.lang.Object invoke(kotlinx.coroutines.CoroutineScope,kotlin.coroutines.Continuation)

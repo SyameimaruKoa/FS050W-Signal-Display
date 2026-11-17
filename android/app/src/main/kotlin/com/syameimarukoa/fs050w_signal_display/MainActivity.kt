@@ -16,6 +16,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,6 +64,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by repository.settings.collectAsStateWithLifecycle()
+            LaunchedEffect(settings.keepScreenOn) {
+                applyKeepScreenOn(settings.keepScreenOn)
+            }
             CompositionLocalProvider(LocalRepository provides repository) {
                 Fs050wTheme(settings) {
                     MainScreen(
@@ -94,6 +98,7 @@ class MainActivity : ComponentActivity() {
         isRecentAppsPressed = false
         repository.setScreenState(true)
         syncPipSettings(settingsStore.value)
+        if (settingsStore.value.overlayEnabled) startOverlay()
     }
 
     override fun onPause() {

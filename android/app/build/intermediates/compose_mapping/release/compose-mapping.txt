@@ -1420,9 +1420,9 @@ ComposeStackTrace -> $$compose:
     1:1:void androidx.activity.compose.ReportDrawnKt.ReportDrawnWhen(kotlin.jvm.functions.Function0,androidx.compose.runtime.Composer,int):117:117 -> m$-2047119994
     1:1:void androidx.activity.compose.ReportDrawnKt.ReportDrawn(androidx.compose.runtime.Composer,int):136:136 -> m$-1357012904
     1:1:void androidx.activity.compose.ReportDrawnKt.ReportDrawnAfter(kotlin.jvm.functions.Function1,androidx.compose.runtime.Composer,int):149:149 -> m$945311272
-    1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.MainActivity.onCreate$lambda$0$1$0(com.syameimarukoa.fs050w_signal_display.MainActivity,androidx.compose.runtime.Composer,int):69:69 -> m$-1527251922
-    1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.MainActivity.onCreate$lambda$0$1(androidx.compose.runtime.State,com.syameimarukoa.fs050w_signal_display.MainActivity,androidx.compose.runtime.Composer,int):67:67 -> m$-403319918
-    1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.MainActivity.onCreate$lambda$0(com.syameimarukoa.fs050w_signal_display.MainActivity,androidx.compose.runtime.Composer,int):65:65 -> m$-1978310574
+    1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.MainActivity.onCreate$lambda$0$2$0(com.syameimarukoa.fs050w_signal_display.MainActivity,androidx.compose.runtime.Composer,int):73:73 -> m$-1527251922
+    1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.MainActivity.onCreate$lambda$0$2(androidx.compose.runtime.State,com.syameimarukoa.fs050w_signal_display.MainActivity,androidx.compose.runtime.Composer,int):71:71 -> m$-403319918
+    1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.MainActivity.onCreate$lambda$0(com.syameimarukoa.fs050w_signal_display.MainActivity,androidx.compose.runtime.Composer,int):66:66 -> m$-1978310574
     1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.OverlayService.showOverlay$lambda$1$0$0(com.syameimarukoa.fs050w_signal_display.OverlayService,androidx.compose.runtime.Composer,int):187:187 -> m$-586114073
     1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.OverlayService.showOverlay$lambda$1$0(com.syameimarukoa.fs050w_signal_display.OverlayService,androidx.compose.runtime.Composer,int):185:185 -> m$1395672871
     1:1:kotlin.Unit com.syameimarukoa.fs050w_signal_display.OverlayService.recompose$lambda$0$0$0(com.syameimarukoa.fs050w_signal_display.OverlayService,androidx.compose.runtime.Composer,int):245:245 -> m$36487129
