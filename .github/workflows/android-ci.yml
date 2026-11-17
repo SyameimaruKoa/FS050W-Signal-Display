@@ -77,10 +77,19 @@ jobs:
                     BUILD_NAME: ${{ steps.version.outputs.name }}
                     BUILD_NUMBER: ${{ steps.version.outputs.code }}
                 run: ./gradlew :app:assembleRelease --no-daemon -PversionName="$BUILD_NAME" -PversionCode="$BUILD_NUMBER"
+            -   name: Prepare ABI-named release APKs
+                working-directory: android/app/build/outputs/apk/release
+                run: |
+                    # The native app has no .so files, so a single universal APK is built.
+                    # Publish it under the legacy ABI names so the existing preview
+                    # workflow (which runs from the default branch) can sign it.
+                    for abi in armeabi-v7a arm64-v8a x86_64; do
+                        cp app-release.apk "app-$abi-release.apk"
+                    done
             -   name: Upload release APK
                 uses: actions/upload-artifact@v4
                 with:
                     name: android-release-preview-${{ github.sha }}
-                    path: android/app/build/outputs/apk/release/app-release.apk
+                    path: android/app/build/outputs/apk/release/*-release.apk
                     if-no-files-found: error
                     retention-days: 14
