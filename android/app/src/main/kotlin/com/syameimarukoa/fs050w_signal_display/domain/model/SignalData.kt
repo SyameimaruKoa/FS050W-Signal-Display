@@ -151,9 +151,9 @@ data class SignalData(
             val mins = (sec % 3600) / 60
             val secs = sec % 60
             return when {
-                days > 0 -> "$days日 $hours時間 $mins分"
-                hours > 0 -> "$hours時間 $mins分 $secs秒"
-                else -> "$mins分 $secs秒"
+                days > 0 -> "${days}日 ${hours}時間 ${mins}分"
+                hours > 0 -> "${hours}時間 ${mins}分 ${secs}秒"
+                else -> "${mins}分 ${secs}秒"
             }
         }
 
