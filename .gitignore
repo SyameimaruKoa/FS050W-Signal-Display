@@ -19,8 +19,6 @@ migrate_working_dir/
 # Android Studio-related
 android/.gradle
 android/captures/
-android/gradlew
-android/gradlew.bat
 android/local.properties
 android/GeneratedPluginRegistrant.java
 android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java

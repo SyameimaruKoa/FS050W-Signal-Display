@@ -1,48 +1,52 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
-fun getPubspecVersion(): Pair<String, Int> {
+fun getDefaultVersion(): Pair<String, Int> {
     val pubspecFile = rootProject.file("../pubspec.yaml")
     if (pubspecFile.exists()) {
-        val content = pubspecFile.readText()
-        val match = Regex("""version:\s*([0-9\.]+)\+?([0-9]*)""").find(content)
+        val match = Regex("""version:\s*([0-9\.]+)\+?([0-9]*)""").find(pubspecFile.readText())
         if (match != null) {
-            val name = match.groupValues[1]
-            val code = match.groupValues[2].toIntOrNull() ?: 1
-            return Pair(name, code)
+            return Pair(
+                match.groupValues[1],
+                match.groupValues[2].toIntOrNull() ?: 1
+            )
         }
     }
     return Pair("2.2.6", 30)
 }
 
-val (pubspecVersionName, pubspecVersionCode) = getPubspecVersion()
+val (defaultVersionName, defaultVersionCode) = getDefaultVersion()
+val versionNameValue = providers.gradleProperty("versionName").orNull ?: defaultVersionName
+val versionCodeValue = providers.gradleProperty("versionCode").orNull?.toIntOrNull() ?: defaultVersionCode
 
 android {
     namespace = "com.syameimarukoa.fs050w_signal_display"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.syameimarukoa.fs050w_signal_display"
+        minSdk = 33
+        targetSdk = 36
+        versionCode = versionCodeValue
+        versionName = versionNameValue
+    }
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    defaultConfig {
-        applicationId = "com.syameimarukoa.fs050w_signal_display"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-        versionCode = if (flutter.versionCode != null && flutter.versionCode != 1) flutter.versionCode else pubspecVersionCode
-        versionName = if (flutter.versionName != null && flutter.versionName != "1.0") flutter.versionName else pubspecVersionName
-    }
-
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -60,10 +64,23 @@ kotlin {
     }
 }
 
-flutter {
-    source = "../.."
-}
-
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
