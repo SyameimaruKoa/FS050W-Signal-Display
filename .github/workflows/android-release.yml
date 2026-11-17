@@ -5,17 +5,10 @@ on:
         branches: [main]
         tags: ['v*']
         paths:
-            -   'lib/**'
             -   'android/**'
             -   '!android/.gradle/**'
             -   '!android/build/**'
             -   '!android/**/build/**'
-            -   'assets/**'
-            -   '!assets/screenshots/**'
-            -   '!assets/icons/readme.txt'
-            -   'pubspec.yaml'
-            -   'pubspec.lock'
-            -   '.github/actions/setup-flutter/**'
             -   '.github/actions/android-version/**'
             -   '.github/workflows/android-*.yml'
     workflow_dispatch:
@@ -80,19 +73,26 @@ jobs:
                         core.setOutput('tag', tag);
                         core.setOutput('name', tag.slice(1));
                         core.info(`Release ${tag} for ${context.sha}`);
-            -   uses: ./.github/actions/setup-flutter
+            -   uses: actions/setup-java@v4
+                with:
+                    distribution: temurin
+                    java-version: '17'
+            -   uses: gradle/actions/setup-gradle@v4
+                with:
+                    gradle-version: wrapper
             -   uses: ./.github/actions/android-version
                 id: android_version
                 with:
                     release_name: ${{ steps.version.outputs.name }}
-            -   name: Run tests
-                run: flutter test
-            -   name: Build release APKs
+            -   name: Run unit tests
+                working-directory: android
+                run: ./gradlew testDebugUnitTest --no-daemon
+            -   name: Build release APK
+                working-directory: android
                 env:
                     VERSION_NAME: ${{ steps.android_version.outputs.name }}
                     VERSION_CODE: ${{ steps.android_version.outputs.code }}
-                    ORG_GRADLE_PROJECT_force-version-code-ignoring-abi: 'true'
-                run: flutter build apk --release --split-per-abi --build-name="$VERSION_NAME" --build-number="$VERSION_CODE"
+                run: ./gradlew :app:assembleRelease --no-daemon -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
             -   name: Re-sign APKs with the existing debug keystore
                 shell: bash
                 env:
@@ -113,7 +113,7 @@ jobs:
                     apksigner=$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -name apksigner | sort -V | tail -n 1)
                     [[ -x "$apksigner" ]] || { echo 'Android apksigner is unavailable.' >&2; exit 1; }
                     expected='ff3316eeda4e3474d86541581cd3deb662e038da1a0ade85a14a5883fc8b3268'
-                    cd build/app/outputs/flutter-apk
+                    cd android/app/build/outputs/apk/release
                     for apk in *-release.apk; do
                         "$apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out "$apk.signed" "$apk"
                         mv "$apk.signed" "$apk"
@@ -128,14 +128,14 @@ jobs:
                 if: always()
                 run: rm -f "$RUNNER_TEMP/release.keystore"
             -   name: Add checksums
-                working-directory: build/app/outputs/flutter-apk
+                working-directory: android/app/build/outputs/apk/release
                 run: sha256sum *-release.apk > SHA256SUMS.txt
             -   uses: actions/upload-artifact@v4
                 with:
                     name: signed-android-release
                     path: |
-                        build/app/outputs/flutter-apk/*-release.apk
-                        build/app/outputs/flutter-apk/SHA256SUMS.txt
+                        android/app/build/outputs/apk/release/*-release.apk
+                        android/app/build/outputs/apk/release/SHA256SUMS.txt
                     if-no-files-found: error
                     retention-days: 14
 

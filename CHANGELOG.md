@@ -6,6 +6,16 @@ FS050W Signal Display のバージョンごとの更新履歴です。
 
 ## [未リリース]
 
+### v3.0.0 — ネイティブ移行 (Flutter → Kotlin / Jetpack Compose)
+
+- Flutter / Dart 実装を完全に置き換え、Kotlin + Jetpack Compose のネイティブ Android アプリへ移行。
+- UI を Material Design 3 / Material You に刷新。壁紙連動ダイナミックカラー、OLED 漆黒テーマ、M3 タイポグラフィ・モーションを採用。
+- オーバーレイ / PiP も Material You に追従。既存の WindowManager ジェスチャー（ドラッグ・吸着・リサイズ・LED ランプ）を維持しつつ中身を Compose 化。
+- ドメインロジック（認証ハッシュ、信号パース、周波数計算、カラーゲージ、イベント検知）を Kotlin へ移植し、JUnit テストを追加。
+- minSdk を 33 (Android 13)、targetSdk / compileSdk を 36 に引き上げ。
+- ビルドをスタンドアロン Gradle に変更し、R8 minify / リソース縮小でリリース APK を約 3 MB に削減。
+- CI を Flutter 依存から Gradle 単体に変更。Flutter ソース・pubspec・セットアップスクリプトを削除。
+
 - アプリ終了時（ライフサイクル detached）にルーターへ `/action/logout` を送信し、ログインセッションを破棄するようにした。バックグラウンド移行時（paused）は従来どおりセッションを維持する。
 
 - mainへのマージ・pushでアプリコード・アセット・依存関係・ビルド設定が変更された場合に正式Releaseを自動公開。既存タグからpatchバージョンを自動更新し、連続マージはキューで処理。同一コミットの再実行は既存Releaseを更新。

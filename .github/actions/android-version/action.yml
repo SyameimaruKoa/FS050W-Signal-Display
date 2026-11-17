@@ -45,10 +45,7 @@ runs:
                 elif [[ "$GITHUB_REF_TYPE" == tag ]]; then
                     name="${GITHUB_REF_NAME#v}"
                 else
-                    base=$(sed -nE 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' pubspec.yaml)
-                    if [[ -z "$base" ]]; then
-                        base=$(sed -nE 's/.*return Pair\("([0-9]+\.[0-9]+\.[0-9]+)",.*/\1/p' android/app/build.gradle.kts)
-                    fi
+                    base=$(sed -nE 's/^versionName=([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' android/version.properties)
                     [[ "$base" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Cannot determine base version.' >&2; exit 1; }
                     name="${BUILD_NAME:-$base}-preview.$code"
                 fi

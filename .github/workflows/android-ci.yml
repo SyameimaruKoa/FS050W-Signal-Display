@@ -3,35 +3,19 @@ name: Android CI
 on:
     pull_request:
         paths:
-            -   'lib/**'
             -   'android/**'
             -   '!android/.gradle/**'
             -   '!android/build/**'
             -   '!android/**/build/**'
-            -   'assets/icons/**'
-            -   '!assets/icons/readme.txt'
-            -   'test/**'
-            -   'pubspec.yaml'
-            -   'pubspec.lock'
-            -   'analysis_options.yaml'
-            -   '.github/actions/setup-flutter/**'
             -   '.github/actions/android-version/**'
             -   '.github/workflows/android-*.yml'
     push:
         branches: [main]
         paths:
-            -   'lib/**'
             -   'android/**'
             -   '!android/.gradle/**'
             -   '!android/build/**'
             -   '!android/**/build/**'
-            -   'assets/icons/**'
-            -   '!assets/icons/readme.txt'
-            -   'test/**'
-            -   'pubspec.yaml'
-            -   'pubspec.lock'
-            -   'analysis_options.yaml'
-            -   '.github/actions/setup-flutter/**'
             -   '.github/actions/android-version/**'
             -   '.github/workflows/android-*.yml'
     workflow_dispatch:
@@ -59,55 +43,44 @@ jobs:
         timeout-minutes: 45
         steps:
             -   uses: actions/checkout@v4
-            -   uses: ./.github/actions/setup-flutter
+            -   uses: actions/setup-java@v4
+                with:
+                    distribution: temurin
+                    java-version: '17'
+            -   uses: gradle/actions/setup-gradle@v4
+                with:
+                    gradle-version: wrapper
             -   uses: ./.github/actions/android-version
                 id: version
                 with:
                     build_name: ${{ inputs.build_name }}
                     build_number: ${{ inputs.build_number }}
-            -   name: Run tests
-                run: flutter test
+            -   name: Run unit tests
+                working-directory: android
+                run: ./gradlew testDebugUnitTest --no-daemon
             -   name: Build debug APK
+                working-directory: android
                 env:
                     BUILD_NAME: ${{ steps.version.outputs.name }}
                     BUILD_NUMBER: ${{ steps.version.outputs.code }}
-                    ORG_GRADLE_PROJECT_force-version-code-ignoring-abi: 'true'
-                run: |
-                    build_args=()
-                    if [[ -n "$BUILD_NAME" ]]; then
-                        build_args+=(--build-name="$BUILD_NAME")
-                    fi
-                    if [[ -n "$BUILD_NUMBER" ]]; then
-                        [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'build_number must be a positive integer' >&2; exit 1; }
-                        build_args+=(--build-number="$BUILD_NUMBER")
-                    fi
-                    flutter build apk --debug "${build_args[@]}"
+                run: ./gradlew :app:assembleDebug --no-daemon -PversionName="$BUILD_NAME" -PversionCode="$BUILD_NUMBER"
             -   name: Upload debug APK
                 uses: actions/upload-artifact@v4
                 with:
                     name: android-debug-${{ github.sha }}
-                    path: build/app/outputs/flutter-apk/app-debug.apk
+                    path: android/app/build/outputs/apk/debug/app-debug.apk
                     if-no-files-found: error
                     retention-days: 14
-            -   name: Build release APKs
+            -   name: Build release APK
+                working-directory: android
                 env:
                     BUILD_NAME: ${{ steps.version.outputs.name }}
                     BUILD_NUMBER: ${{ steps.version.outputs.code }}
-                    ORG_GRADLE_PROJECT_force-version-code-ignoring-abi: 'true'
-                run: |
-                    build_args=()
-                    if [[ -n "$BUILD_NAME" ]]; then
-                        build_args+=(--build-name="$BUILD_NAME")
-                    fi
-                    if [[ -n "$BUILD_NUMBER" ]]; then
-                        [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'build_number must be a positive integer' >&2; exit 1; }
-                        build_args+=(--build-number="$BUILD_NUMBER")
-                    fi
-                    flutter build apk --release --split-per-abi "${build_args[@]}"
-            -   name: Upload release APKs
+                run: ./gradlew :app:assembleRelease --no-daemon -PversionName="$BUILD_NAME" -PversionCode="$BUILD_NUMBER"
+            -   name: Upload release APK
                 uses: actions/upload-artifact@v4
                 with:
                     name: android-release-preview-${{ github.sha }}
-                    path: build/app/outputs/flutter-apk/*-release.apk
+                    path: android/app/build/outputs/apk/release/app-release.apk
                     if-no-files-found: error
                     retention-days: 14

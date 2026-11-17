@@ -10,193 +10,189 @@
 8-->INJECTED
 9        android:targetSdkVersion="36" />
 9-->INJECTED
-10    <!--
-11         The INTERNET permission is required for development. Specifically,
-12         the Flutter tool needs it to communicate with the running application
-13         to allow setting breakpoints, to provide hot reload, etc.
-14    -->
-15    <uses-permission android:name="android.permission.INTERNET" />
-15-->/workspace/android/app/src/main/AndroidManifest.xml:6:5-67
-15-->/workspace/android/app/src/main/AndroidManifest.xml:6:22-64
-16    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-16-->/workspace/android/app/src/main/AndroidManifest.xml:5:5-78
-16-->/workspace/android/app/src/main/AndroidManifest.xml:5:22-75
-17    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-17-->/workspace/android/app/src/main/AndroidManifest.xml:7:5-79
-17-->/workspace/android/app/src/main/AndroidManifest.xml:7:22-76
-18    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-18-->/workspace/android/app/src/main/AndroidManifest.xml:8:5-76
-18-->/workspace/android/app/src/main/AndroidManifest.xml:8:22-73
-19    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-19-->/workspace/android/app/src/main/AndroidManifest.xml:9:5-77
-19-->/workspace/android/app/src/main/AndroidManifest.xml:9:22-74
-20    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-20-->/workspace/android/app/src/main/AndroidManifest.xml:10:5-89
-20-->/workspace/android/app/src/main/AndroidManifest.xml:10:22-86
-21    <uses-permission android:name="android.permission.VIBRATE" />
-21-->/workspace/android/app/src/main/AndroidManifest.xml:11:5-66
-21-->/workspace/android/app/src/main/AndroidManifest.xml:11:22-63
-22    <uses-permission android:name="android.permission.WAKE_LOCK" />
-22-->/workspace/android/app/src/main/AndroidManifest.xml:12:5-68
-22-->/workspace/android/app/src/main/AndroidManifest.xml:12:22-65
+10
+11    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+11-->/workspace/android/app/src/main/AndroidManifest.xml:5:5-78
+11-->/workspace/android/app/src/main/AndroidManifest.xml:5:22-75
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->/workspace/android/app/src/main/AndroidManifest.xml:6:5-67
+12-->/workspace/android/app/src/main/AndroidManifest.xml:6:22-64
+13    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+13-->/workspace/android/app/src/main/AndroidManifest.xml:7:5-79
+13-->/workspace/android/app/src/main/AndroidManifest.xml:7:22-76
+14    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+14-->/workspace/android/app/src/main/AndroidManifest.xml:8:5-76
+14-->/workspace/android/app/src/main/AndroidManifest.xml:8:22-73
+15    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+15-->/workspace/android/app/src/main/AndroidManifest.xml:9:5-77
+15-->/workspace/android/app/src/main/AndroidManifest.xml:9:22-74
+16    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+16-->/workspace/android/app/src/main/AndroidManifest.xml:10:5-89
+16-->/workspace/android/app/src/main/AndroidManifest.xml:10:22-86
+17    <uses-permission android:name="android.permission.VIBRATE" />
+17-->/workspace/android/app/src/main/AndroidManifest.xml:11:5-66
+17-->/workspace/android/app/src/main/AndroidManifest.xml:11:22-63
+18    <uses-permission android:name="android.permission.WAKE_LOCK" />
+18-->/workspace/android/app/src/main/AndroidManifest.xml:12:5-68
+18-->/workspace/android/app/src/main/AndroidManifest.xml:12:22-65
+19
+20    <permission
+20-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:22:5-24:47
+21        android:name="com.syameimarukoa.fs050w_signal_display.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+21-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:23:9-81
+22        android:protectionLevel="signature" />
+22-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:24:9-44
 23
-24    <permission
-24-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:22:5-24:47
-25        android:name="com.syameimarukoa.fs050w_signal_display.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-25-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:23:9-81
-26        android:protectionLevel="signature" />
-26-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:24:9-44
-27
-28    <uses-permission android:name="com.syameimarukoa.fs050w_signal_display.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-28-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:26:5-97
-28-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:26:22-94
-29
-30    <application
-30-->/workspace/android/app/src/main/AndroidManifest.xml:14:5-50:19
-31        android:name="com.syameimarukoa.fs050w_signal_display.Fs050wApp"
-31-->/workspace/android/app/src/main/AndroidManifest.xml:15:9-34
-32        android:allowBackup="true"
-32-->/workspace/android/app/src/main/AndroidManifest.xml:18:9-35
-33        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-33-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:28:18-86
-34        android:dataExtractionRules="@xml/data_extraction_rules"
-34-->/workspace/android/app/src/main/AndroidManifest.xml:20:9-65
-35        android:debuggable="true"
-36        android:enableOnBackInvokedCallback="true"
-36-->/workspace/android/app/src/main/AndroidManifest.xml:22:9-51
-37        android:extractNativeLibs="false"
-37-->INJECTED
-38        android:fullBackupContent="@xml/backup_rules"
-38-->/workspace/android/app/src/main/AndroidManifest.xml:19:9-54
-39        android:icon="@mipmap/ic_launcher"
-39-->/workspace/android/app/src/main/AndroidManifest.xml:17:9-43
-40        android:label="FS050W Signal Display"
-40-->/workspace/android/app/src/main/AndroidManifest.xml:16:9-46
-41        android:usesCleartextTraffic="true" >
-41-->/workspace/android/app/src/main/AndroidManifest.xml:21:9-44
-42        <service
-42-->/workspace/android/app/src/main/AndroidManifest.xml:24:9-32:19
-43            android:name="com.syameimarukoa.fs050w_signal_display.OverlayService"
-43-->/workspace/android/app/src/main/AndroidManifest.xml:25:13-43
-44            android:exported="false"
-44-->/workspace/android/app/src/main/AndroidManifest.xml:28:13-37
-45            android:foregroundServiceType="specialUse"
-45-->/workspace/android/app/src/main/AndroidManifest.xml:26:13-55
-46            android:stopWithTask="true" >
-46-->/workspace/android/app/src/main/AndroidManifest.xml:27:13-40
-47            <property
-47-->/workspace/android/app/src/main/AndroidManifest.xml:29:13-31:92
-48                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-48-->/workspace/android/app/src/main/AndroidManifest.xml:30:17-76
-49                android:value="FS050W router signal and battery status floating overlay" />
-49-->/workspace/android/app/src/main/AndroidManifest.xml:31:17-89
-50        </service>
-51
-52        <activity
-52-->/workspace/android/app/src/main/AndroidManifest.xml:34:9-49:20
-53            android:name="com.syameimarukoa.fs050w_signal_display.MainActivity"
-53-->/workspace/android/app/src/main/AndroidManifest.xml:35:13-41
-54            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-54-->/workspace/android/app/src/main/AndroidManifest.xml:42:13-163
-55            android:exported="true"
-55-->/workspace/android/app/src/main/AndroidManifest.xml:36:13-36
-56            android:hardwareAccelerated="true"
-56-->/workspace/android/app/src/main/AndroidManifest.xml:43:13-47
-57            android:launchMode="singleTop"
-57-->/workspace/android/app/src/main/AndroidManifest.xml:37:13-43
-58            android:screenOrientation="portrait"
-58-->/workspace/android/app/src/main/AndroidManifest.xml:41:13-49
-59            android:supportsPictureInPicture="true"
-59-->/workspace/android/app/src/main/AndroidManifest.xml:40:13-52
-60            android:taskAffinity=""
-60-->/workspace/android/app/src/main/AndroidManifest.xml:38:13-36
-61            android:theme="@style/AppTheme"
-61-->/workspace/android/app/src/main/AndroidManifest.xml:39:13-44
-62            android:windowSoftInputMode="adjustResize" >
-62-->/workspace/android/app/src/main/AndroidManifest.xml:44:13-55
-63            <intent-filter>
-63-->/workspace/android/app/src/main/AndroidManifest.xml:45:13-48:29
-64                <action android:name="android.intent.action.MAIN" />
-64-->/workspace/android/app/src/main/AndroidManifest.xml:46:17-69
-64-->/workspace/android/app/src/main/AndroidManifest.xml:46:25-66
-65
-66                <category android:name="android.intent.category.LAUNCHER" />
-66-->/workspace/android/app/src/main/AndroidManifest.xml:47:17-77
-66-->/workspace/android/app/src/main/AndroidManifest.xml:47:27-74
-67            </intent-filter>
-68        </activity>
-69        <activity
-69-->[androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
-70            android:name="androidx.compose.ui.tooling.PreviewActivity"
-70-->[androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:24:13-71
-71            android:exported="true" />
-71-->[androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:25:13-36
-72
-73        <provider
-73-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
-74            android:name="androidx.startup.InitializationProvider"
-74-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
-75            android:authorities="com.syameimarukoa.fs050w_signal_display.androidx-startup"
-75-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
-76            android:exported="false" >
-76-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
-77            <meta-data
-77-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
-78                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-78-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
-79                android:value="androidx.startup" />
-79-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
-80            <meta-data
-80-->[androidx.lifecycle:lifecycle-process:2.9.4] /root/.gradle/caches/9.3.1/transforms/a24036d1ae4f059e64ea2ae453da6681/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:29:13-31:52
-81                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-81-->[androidx.lifecycle:lifecycle-process:2.9.4] /root/.gradle/caches/9.3.1/transforms/a24036d1ae4f059e64ea2ae453da6681/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:30:17-78
-82                android:value="androidx.startup" />
-82-->[androidx.lifecycle:lifecycle-process:2.9.4] /root/.gradle/caches/9.3.1/transforms/a24036d1ae4f059e64ea2ae453da6681/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:31:17-49
-83            <meta-data
-83-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
-84                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-84-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
-85                android:value="androidx.startup" />
-85-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
-86        </provider>
-87
-88        <receiver
-88-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
-89            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-89-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
-90            android:directBootAware="false"
-90-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
-91            android:enabled="true"
-91-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
-92            android:exported="true"
-92-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
-93            android:permission="android.permission.DUMP" >
-93-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
-94            <intent-filter>
-94-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
-95                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-95-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
-95-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
-96            </intent-filter>
-97            <intent-filter>
-97-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
-98                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-98-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
-98-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
-99            </intent-filter>
-100            <intent-filter>
-100-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
-101                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-101-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
-101-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
-102            </intent-filter>
-103            <intent-filter>
-103-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
-104                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-104-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
-104-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
-105            </intent-filter>
-106        </receiver>
-107    </application>
-108
-109</manifest>
+24    <uses-permission android:name="com.syameimarukoa.fs050w_signal_display.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+24-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:26:5-97
+24-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:26:22-94
+25
+26    <application
+26-->/workspace/android/app/src/main/AndroidManifest.xml:14:5-50:19
+27        android:name="com.syameimarukoa.fs050w_signal_display.Fs050wApp"
+27-->/workspace/android/app/src/main/AndroidManifest.xml:15:9-34
+28        android:allowBackup="true"
+28-->/workspace/android/app/src/main/AndroidManifest.xml:18:9-35
+29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+29-->[androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:28:18-86
+30        android:dataExtractionRules="@xml/data_extraction_rules"
+30-->/workspace/android/app/src/main/AndroidManifest.xml:20:9-65
+31        android:debuggable="true"
+32        android:enableOnBackInvokedCallback="true"
+32-->/workspace/android/app/src/main/AndroidManifest.xml:22:9-51
+33        android:extractNativeLibs="false"
+33-->INJECTED
+34        android:fullBackupContent="@xml/backup_rules"
+34-->/workspace/android/app/src/main/AndroidManifest.xml:19:9-54
+35        android:icon="@mipmap/ic_launcher"
+35-->/workspace/android/app/src/main/AndroidManifest.xml:17:9-43
+36        android:label="FS050W Signal Display"
+36-->/workspace/android/app/src/main/AndroidManifest.xml:16:9-46
+37        android:usesCleartextTraffic="true" >
+37-->/workspace/android/app/src/main/AndroidManifest.xml:21:9-44
+38        <service
+38-->/workspace/android/app/src/main/AndroidManifest.xml:24:9-32:19
+39            android:name="com.syameimarukoa.fs050w_signal_display.OverlayService"
+39-->/workspace/android/app/src/main/AndroidManifest.xml:25:13-43
+40            android:exported="false"
+40-->/workspace/android/app/src/main/AndroidManifest.xml:28:13-37
+41            android:foregroundServiceType="specialUse"
+41-->/workspace/android/app/src/main/AndroidManifest.xml:26:13-55
+42            android:stopWithTask="true" >
+42-->/workspace/android/app/src/main/AndroidManifest.xml:27:13-40
+43            <property
+43-->/workspace/android/app/src/main/AndroidManifest.xml:29:13-31:92
+44                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+44-->/workspace/android/app/src/main/AndroidManifest.xml:30:17-76
+45                android:value="FS050W router signal and battery status floating overlay" />
+45-->/workspace/android/app/src/main/AndroidManifest.xml:31:17-89
+46        </service>
+47
+48        <activity
+48-->/workspace/android/app/src/main/AndroidManifest.xml:34:9-49:20
+49            android:name="com.syameimarukoa.fs050w_signal_display.MainActivity"
+49-->/workspace/android/app/src/main/AndroidManifest.xml:35:13-41
+50            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+50-->/workspace/android/app/src/main/AndroidManifest.xml:42:13-163
+51            android:exported="true"
+51-->/workspace/android/app/src/main/AndroidManifest.xml:36:13-36
+52            android:hardwareAccelerated="true"
+52-->/workspace/android/app/src/main/AndroidManifest.xml:43:13-47
+53            android:launchMode="singleTop"
+53-->/workspace/android/app/src/main/AndroidManifest.xml:37:13-43
+54            android:screenOrientation="portrait"
+54-->/workspace/android/app/src/main/AndroidManifest.xml:41:13-49
+55            android:supportsPictureInPicture="true"
+55-->/workspace/android/app/src/main/AndroidManifest.xml:40:13-52
+56            android:taskAffinity=""
+56-->/workspace/android/app/src/main/AndroidManifest.xml:38:13-36
+57            android:theme="@style/AppTheme"
+57-->/workspace/android/app/src/main/AndroidManifest.xml:39:13-44
+58            android:windowSoftInputMode="adjustResize" >
+58-->/workspace/android/app/src/main/AndroidManifest.xml:44:13-55
+59            <intent-filter>
+59-->/workspace/android/app/src/main/AndroidManifest.xml:45:13-48:29
+60                <action android:name="android.intent.action.MAIN" />
+60-->/workspace/android/app/src/main/AndroidManifest.xml:46:17-69
+60-->/workspace/android/app/src/main/AndroidManifest.xml:46:25-66
+61
+62                <category android:name="android.intent.category.LAUNCHER" />
+62-->/workspace/android/app/src/main/AndroidManifest.xml:47:17-77
+62-->/workspace/android/app/src/main/AndroidManifest.xml:47:27-74
+63            </intent-filter>
+64        </activity>
+65        <activity
+65-->[androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
+66            android:name="androidx.compose.ui.tooling.PreviewActivity"
+66-->[androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:24:13-71
+67            android:exported="true" />
+67-->[androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:25:13-36
+68
+69        <provider
+69-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
+70            android:name="androidx.startup.InitializationProvider"
+70-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
+71            android:authorities="com.syameimarukoa.fs050w_signal_display.androidx-startup"
+71-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
+72            android:exported="false" >
+72-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
+73            <meta-data
+73-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
+74                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+74-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
+75                android:value="androidx.startup" />
+75-->[androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
+76            <meta-data
+76-->[androidx.lifecycle:lifecycle-process:2.9.4] /root/.gradle/caches/9.3.1/transforms/a24036d1ae4f059e64ea2ae453da6681/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:29:13-31:52
+77                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+77-->[androidx.lifecycle:lifecycle-process:2.9.4] /root/.gradle/caches/9.3.1/transforms/a24036d1ae4f059e64ea2ae453da6681/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:30:17-78
+78                android:value="androidx.startup" />
+78-->[androidx.lifecycle:lifecycle-process:2.9.4] /root/.gradle/caches/9.3.1/transforms/a24036d1ae4f059e64ea2ae453da6681/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:31:17-49
+79            <meta-data
+79-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+80                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+80-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+81                android:value="androidx.startup" />
+81-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+82        </provider>
+83
+84        <receiver
+84-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+85            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+85-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+86            android:directBootAware="false"
+86-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+87            android:enabled="true"
+87-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+88            android:exported="true"
+88-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+89            android:permission="android.permission.DUMP" >
+89-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+90            <intent-filter>
+90-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+91                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+91-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+91-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+92            </intent-filter>
+93            <intent-filter>
+93-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+94                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+94-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+94-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+95            </intent-filter>
+96            <intent-filter>
+96-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+97                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+97-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+97-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+98            </intent-filter>
+99            <intent-filter>
+99-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+100                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+100-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+100-->[androidx.profileinstaller:profileinstaller:1.4.0] /root/.gradle/caches/9.3.1/transforms/25a6da15f8c67f93009ccc32cd8c3e16/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+101            </intent-filter>
+102        </receiver>
+103    </application>
+104
+105</manifest>

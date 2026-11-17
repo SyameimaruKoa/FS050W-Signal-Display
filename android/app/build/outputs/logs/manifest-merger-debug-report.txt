@@ -1,10 +1,9 @@
 -- Merging decision tree log ---
 manifest
 ADDED from /workspace/android/app/src/main/AndroidManifest.xml:2:1-51:12
-MERGED from /workspace/android/app/src/main/AndroidManifest.xml:2:1-51:12
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml:1:1-7:12
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml:1:1-7:12
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml:1:1-7:12
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml:2:1-51:12
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml:2:1-51:12
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml:2:1-51:12
 MERGED from [androidx.autofill:autofill:1.0.0] /root/.gradle/caches/9.3.1/transforms/226c20696afc399b85d0f43248e927ca/transformed/autofill-1.0.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.compose.material3:material3-android:1.3.2] /root/.gradle/caches/9.3.1/transforms/43a71990b3a7257f297aa31641aebf9d/transformed/material3-release/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.compose.material:material-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/948001febce772d96a3048f9f801cf70/transformed/material/AndroidManifest.xml:2:1-7:12
@@ -55,14 +54,13 @@ MERGED from [androidx.tracing:tracing:1.2.0] /root/.gradle/caches/9.3.1/transfor
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /root/.gradle/caches/9.3.1/transforms/3e24af017126582e3bf1fadf6ee1a4cb/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
 MERGED from [androidx.arch.core:core-runtime:2.2.0] /root/.gradle/caches/9.3.1/transforms/7410e19716a3fae986b2a1314a1e157e/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
 	package
-		INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 	android:versionName
-		INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 	xmlns:tools
 		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:3:5-51
-		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:3:5-51
 	android:versionCode
-		INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 	xmlns:android
 		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:2:11-69
 uses-permission#android.permission.SYSTEM_ALERT_WINDOW
@@ -71,8 +69,6 @@ ADDED from /workspace/android/app/src/main/AndroidManifest.xml:5:5-78
 		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:5:22-75
 uses-permission#android.permission.INTERNET
 ADDED from /workspace/android/app/src/main/AndroidManifest.xml:6:5-67
-MERGED from /workspace/android/app/src/main/AndroidManifest.xml:6:5-67
-MERGED from /workspace/android/app/src/main/AndroidManifest.xml:6:5-67
 	android:name
 		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:6:22-64
 uses-permission#android.permission.ACCESS_NETWORK_STATE
@@ -101,7 +97,7 @@ ADDED from /workspace/android/app/src/main/AndroidManifest.xml:12:5-68
 		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:12:22-65
 application
 ADDED from /workspace/android/app/src/main/AndroidManifest.xml:14:5-50:19
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml:14:5-50:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.emoji2:emoji2:1.4.0] /root/.gradle/caches/9.3.1/transforms/3b6e19a8b55a6b25a1dd4b2d425633b6/transformed/emoji2-1.4.0/AndroidManifest.xml:23:5-33:19
@@ -117,7 +113,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /root/.gradle/caches/9.3.1/
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /root/.gradle/caches/9.3.1/transforms/3e24af017126582e3bf1fadf6ee1a4cb/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /root/.gradle/caches/9.3.1/transforms/3e24af017126582e3bf1fadf6ee1a4cb/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 	android:extractNativeLibs
-		INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.16.0] /root/.gradle/caches/9.3.1/transforms/1e07b67cc40dd1d6f1502b2306c8bb38/transformed/core-1.16.0/AndroidManifest.xml:28:18-86
 	android:label
@@ -185,9 +181,9 @@ ADDED from /workspace/android/app/src/main/AndroidManifest.xml:47:17-77
 	android:name
 		ADDED from /workspace/android/app/src/main/AndroidManifest.xml:47:27-74
 uses-sdk
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
-INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
+INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 MERGED from [androidx.autofill:autofill:1.0.0] /root/.gradle/caches/9.3.1/transforms/226c20696afc399b85d0f43248e927ca/transformed/autofill-1.0.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.autofill:autofill:1.0.0] /root/.gradle/caches/9.3.1/transforms/226c20696afc399b85d0f43248e927ca/transformed/autofill-1.0.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.compose.material3:material3-android:1.3.2] /root/.gradle/caches/9.3.1/transforms/43a71990b3a7257f297aa31641aebf9d/transformed/material3-release/AndroidManifest.xml:20:5-44
@@ -287,9 +283,9 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /root/.grad
 MERGED from [androidx.arch.core:core-runtime:2.2.0] /root/.gradle/caches/9.3.1/transforms/7410e19716a3fae986b2a1314a1e157e/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.arch.core:core-runtime:2.2.0] /root/.gradle/caches/9.3.1/transforms/7410e19716a3fae986b2a1314a1e157e/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
 	android:targetSdkVersion
-		INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from /workspace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /workspace/android/app/src/main/AndroidManifest.xml
 activity#androidx.compose.ui.tooling.PreviewActivity
 ADDED from [androidx.compose.ui:ui-tooling-android:1.9.1] /root/.gradle/caches/9.3.1/transforms/2aa961ec0e28f95c8b7891cf47982439/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
 	android:exported

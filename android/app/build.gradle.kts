@@ -1,20 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 fun getDefaultVersion(): Pair<String, Int> {
-    val pubspecFile = rootProject.file("../pubspec.yaml")
-    if (pubspecFile.exists()) {
-        val match = Regex("""version:\s*([0-9\.]+)\+?([0-9]*)""").find(pubspecFile.readText())
-        if (match != null) {
-            return Pair(
-                match.groupValues[1],
-                match.groupValues[2].toIntOrNull() ?: 1
-            )
-        }
+    val props = Properties()
+    val file = rootProject.file("version.properties")
+    if (file.exists()) {
+        file.inputStream().use { props.load(it) }
     }
-    return Pair("2.2.6", 30)
+    val name = props.getProperty("versionName", "2.2.6")
+    val code = props.getProperty("versionCode", "30").toIntOrNull() ?: 30
+    return Pair(name, code)
 }
 
 val (defaultVersionName, defaultVersionCode) = getDefaultVersion()
@@ -83,5 +82,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20250517")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
