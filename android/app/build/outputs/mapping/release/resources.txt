@@ -1,0 +1,252 @@
+id:accessibility_custom_action_9:2131034144 reachable from Field int androidx.core.R$id.accessibility_custom_action_9
+id:tag_accessibility_heading:2131034181 reachable from Field int androidx.core.R$id.tag_accessibility_heading
+id:report_drawn:2131034176 reachable from Field int androidx.activity.R$id.report_drawn
+id:accessibility_custom_action_7:2131034142 reachable from Field int androidx.core.R$id.accessibility_custom_action_7
+id:accessibility_custom_action_8:2131034143 reachable from Field int androidx.core.R$id.accessibility_custom_action_8
+id:accessibility_custom_action_31:2131034138 reachable from Field int androidx.core.R$id.accessibility_custom_action_31
+id:inspection_slot_table_set:2131034166 reachable from Field int androidx.compose.ui.R$id.inspection_slot_table_set
+id:accessibility_custom_action_30:2131034137 reachable from Field int androidx.core.R$id.accessibility_custom_action_30
+string:switch_role:2131296339 reachable from Field int androidx.compose.ui.R$string.switch_role
+id:view_tree_lifecycle_owner:2131034199 reachable from Field int androidx.lifecycle.runtime.R$id.view_tree_lifecycle_owner
+drawable:ic_dashboard:2130968582 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_dashboard
+id:accessibility_custom_action_1:2131034114 reachable from Field int androidx.core.R$id.accessibility_custom_action_1
+id:accessibility_custom_action_2:2131034125 reachable from Field int androidx.core.R$id.accessibility_custom_action_2
+drawable:ic_settings:2130968590 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_settings
+integer:m3c_window_layout_in_display_cutout_mode:2131099648 reachable from style:EdgeToEdgeFloatingDialogTheme:2131361794
+id:accessibility_custom_action_0:2131034113 reachable from Field int androidx.core.R$id.accessibility_custom_action_0
+id:accessibility_custom_action_5:2131034140 reachable from Field int androidx.core.R$id.accessibility_custom_action_5
+id:accessibility_custom_action_6:2131034141 reachable from Field int androidx.core.R$id.accessibility_custom_action_6
+drawable:ic_hud:2130968584 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_hud
+id:accessibility_custom_action_3:2131034136 reachable from Field int androidx.core.R$id.accessibility_custom_action_3
+id:accessibility_custom_action_4:2131034139 reachable from Field int androidx.core.R$id.accessibility_custom_action_4
+string:close_sheet:2131296266 reachable from Field int androidx.compose.ui.R$string.close_sheet
+drawable:ic_graph:2130968583 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_graph
+id:tag_compat_insets_dispatch:2131034183 reachable from Field int androidx.core.R$id.tag_compat_insets_dispatch
+attr:fontVariationSettings:2130771979 reachable from Field int[] androidx.core.R$styleable.FontFamilyFont
+id:compose_view_saveable_id_tag:2131034155 reachable from Field int androidx.compose.ui.R$id.compose_view_saveable_id_tag
+string:selected:2131296333 reachable from Field int androidx.compose.ui.R$string.selected
+string:m3c_bottom_sheet_dismiss_description:2131296273 reachable from Field int androidx.compose.material3.R$string.m3c_bottom_sheet_dismiss_description
+id:view_tree_on_back_pressed_dispatcher_owner:2131034200 reachable from Field int androidx.activity.R$id.view_tree_on_back_pressed_dispatcher_owner
+string:tab:2131296340 reachable from Field int androidx.compose.ui.R$string.tab
+attr:fontProviderFetchStrategy:2130771973 reachable from Field int[] androidx.core.R$styleable.FontFamily
+style:FloatingDialogWindowTheme:2131361796 reachable from Field int androidx.compose.ui.R$style.FloatingDialogWindowTheme
+id:androidx_compose_ui_view_composition_context:2131034150 reachable from Field int androidx.compose.ui.R$id.androidx_compose_ui_view_composition_context
+attr:fontStyle:2130771978 reachable from Field int[] androidx.core.R$styleable.FontFamilyFont
+style:EdgeToEdgeFloatingDialogWindowTheme:2131361795 reachable from Field int androidx.compose.material3.R$style.EdgeToEdgeFloatingDialogWindowTheme
+string:in_progress:2131296270 reachable from Field int androidx.compose.ui.R$string.in_progress
+id:is_pooling_container_tag:2131034167 reachable from Field int androidx.customview.poolingcontainer.R$id.is_pooling_container_tag
+string:state_empty:2131296335 reachable from Field int androidx.compose.ui.R$string.state_empty
+id:accessibility_custom_action_13:2131034118 reachable from Field int androidx.core.R$id.accessibility_custom_action_13
+id:accessibility_custom_action_12:2131034117 reachable from Field int androidx.core.R$id.accessibility_custom_action_12
+id:accessibility_custom_action_11:2131034116 reachable from Field int androidx.core.R$id.accessibility_custom_action_11
+id:accessibility_custom_action_10:2131034115 reachable from Field int androidx.core.R$id.accessibility_custom_action_10
+id:view_tree_disjoint_parent:2131034198 reachable from Field int androidx.core.viewtree.R$id.view_tree_disjoint_parent
+attr:fontProviderPackage:2130771975 reachable from Field int[] androidx.core.R$styleable.FontFamily
+id:accessibility_custom_action_17:2131034122 reachable from Field int androidx.core.R$id.accessibility_custom_action_17
+string:m3c_bottom_sheet_pane_title:2131296276 reachable from Field int androidx.compose.material3.R$string.m3c_bottom_sheet_pane_title
+id:accessibility_custom_action_16:2131034121 reachable from Field int androidx.core.R$id.accessibility_custom_action_16
+id:accessibility_custom_action_15:2131034120 reachable from Field int androidx.core.R$id.accessibility_custom_action_15
+id:accessibility_custom_action_14:2131034119 reachable from Field int androidx.core.R$id.accessibility_custom_action_14
+id:tag_screen_reader_focusable:2131034187 reachable from Field int androidx.core.R$id.tag_screen_reader_focusable
+id:accessibility_custom_action_19:2131034124 reachable from Field int androidx.core.R$id.accessibility_custom_action_19
+id:accessibility_custom_action_18:2131034123 reachable from Field int androidx.core.R$id.accessibility_custom_action_18
+style:AppTheme:2131361792 reachable from AndroidManifest.xml
+id:wrapped_composition_tag:2131034203 reachable from Field int androidx.compose.ui.R$id.wrapped_composition_tag
+string:m3c_dialog:2131296308 reachable from Field int androidx.compose.material3.R$string.m3c_dialog
+string:androidx_startup:2131296256 reachable from Field int androidx.startup.R$string.androidx_startup
+drawable:ic_refresh:2130968589 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_refresh
+id:consume_window_insets_tag:2131034156 reachable from Field int androidx.compose.ui.R$id.consume_window_insets_tag
+id:accessibility_custom_action_20:2131034126 reachable from Field int androidx.core.R$id.accessibility_custom_action_20
+id:view_tree_saved_state_registry_owner:2131034201 reachable from Field int androidx.savedstate.R$id.view_tree_saved_state_registry_owner
+id:accessibility_custom_action_24:2131034130 reachable from Field int androidx.core.R$id.accessibility_custom_action_24
+id:accessibility_custom_action_23:2131034129 reachable from Field int androidx.core.R$id.accessibility_custom_action_23
+attr:fontProviderFetchTimeout:2130771974 reachable from Field int[] androidx.core.R$styleable.FontFamily
+id:accessibility_custom_action_22:2131034128 reachable from Field int androidx.core.R$id.accessibility_custom_action_22
+id:accessibility_custom_action_21:2131034127 reachable from Field int androidx.core.R$id.accessibility_custom_action_21
+attr:alpha:2130771968 reachable from Field int[] androidx.core.R$styleable.ColorStateListItem
+id:accessibility_custom_action_28:2131034134 reachable from Field int androidx.core.R$id.accessibility_custom_action_28
+id:accessibility_custom_action_27:2131034133 reachable from Field int androidx.core.R$id.accessibility_custom_action_27
+drawable:ic_pip:2130968588 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_pip
+id:accessibility_custom_action_26:2131034132 reachable from Field int androidx.core.R$id.accessibility_custom_action_26
+id:accessibility_custom_action_25:2131034131 reachable from Field int androidx.core.R$id.accessibility_custom_action_25
+xml:backup_rules:2131492864 reachable from AndroidManifest.xml
+id:view_tree_view_model_store_owner:2131034202 reachable from Field int androidx.lifecycle.viewmodel.R$id.view_tree_view_model_store_owner
+style:DialogWindowTheme:2131361793 reachable from Field int androidx.compose.ui.R$style.DialogWindowTheme
+string:m3c_bottom_sheet_drag_handle_description:2131296274 reachable from Field int androidx.compose.material3.R$string.m3c_bottom_sheet_drag_handle_description
+id:accessibility_custom_action_29:2131034135 reachable from Field int androidx.core.R$id.accessibility_custom_action_29
+string:state_on:2131296337 reachable from Field int androidx.compose.ui.R$string.state_on
+attr:lStar:2130771981 reachable from Field int[] androidx.core.R$styleable.ColorStateListItem
+string:template_percent:2131296341 reachable from Field int androidx.compose.ui.R$string.template_percent
+id:hide_in_inspector_tag:2131034162 reachable from Field int androidx.compose.ui.R$id.hide_in_inspector_tag
+string:default_error_message:2131296267 reachable from Field int androidx.compose.ui.R$string.default_error_message
+attr:fontProviderQuery:2130771976 reachable from Field int[] androidx.core.R$styleable.FontFamily
+attr:fontWeight:2130771980 reachable from Field int[] androidx.core.R$styleable.FontFamilyFont
+attr:fontProviderSystemFontFamily:2130771977 reachable from Field int[] androidx.core.R$styleable.FontFamily
+id:tag_state_description:2131034188 reachable from Field int androidx.core.R$id.tag_state_description
+id:pooling_container_listener_holder_tag:2131034175 reachable from Field int androidx.customview.poolingcontainer.R$id.pooling_container_listener_holder_tag
+attr:fontProviderAuthority:2130771970 reachable from Field int[] androidx.core.R$styleable.FontFamily
+string:m3c_bottom_sheet_collapse_description:2131296272 reachable from Field int androidx.compose.material3.R$string.m3c_bottom_sheet_collapse_description
+drawable:ic_launcher_foreground:2130968586 reachable from res/mipmap-anydpi-v26/ic_launcher.xml
+id:tag_accessibility_actions:2131034179 reachable from Field int androidx.core.R$id.tag_accessibility_actions
+id:tag_accessibility_pane_title:2131034182 reachable from Field int androidx.core.R$id.tag_accessibility_pane_title
+attr:fontProviderFallbackQuery:2130771972 reachable from Field int[] androidx.core.R$styleable.FontFamily
+string:not_selected:2131296330 reachable from Field int androidx.compose.ui.R$string.not_selected
+attr:ttcIndex:2130771985 reachable from Field int[] androidx.core.R$styleable.FontFamilyFont
+drawable:ic_log:2130968587 reachable from Field int com.syameimarukoa.fs050w_signal_display.R$drawable.ic_log
+drawable:ic_launcher_background:2130968585 reachable from res/mipmap-anydpi-v26/ic_launcher.xml
+attr:font:2130771969 reachable from Field int[] androidx.core.R$styleable.FontFamilyFont
+string:indeterminate:2131296271 reachable from Field int androidx.compose.ui.R$string.indeterminate
+string:default_popup_window_title:2131296268 reachable from Field int androidx.compose.ui.R$string.default_popup_window_title
+id:tag_accessibility_clickable_spans:2131034180 reachable from Field int androidx.core.R$id.tag_accessibility_clickable_spans
+string:state_off:2131296336 reachable from Field int androidx.compose.ui.R$string.state_off
+style:EdgeToEdgeFloatingDialogTheme:2131361794 reachable from style:EdgeToEdgeFloatingDialogWindowTheme:2131361795
+string:m3c_bottom_sheet_expand_description:2131296275 reachable from Field int androidx.compose.material3.R$string.m3c_bottom_sheet_expand_description
+attr:fontProviderCerts:2130771971 reachable from Field int[] androidx.core.R$styleable.FontFamily
+xml:data_extraction_rules:2131492865 reachable from AndroidManifest.xml
+id:tag_window_insets_animation_callback:2131034193 reachable from Field int androidx.core.R$id.tag_window_insets_animation_callback
+id:accessibility_action_clickable_span:2131034112 reachable from Field int androidx.core.R$id.accessibility_action_clickable_span
+mipmap:ic_launcher:2131230720 reachable from AndroidManifest.xml
+attr:nestedScrollViewStyle:2130771982 is not reachable.
+attr:queryPatterns:2130771983 is not reachable.
+attr:shortcutMatchRequired:2130771984 is not reachable.
+color:androidx_core_ripple_material_light:2130837504 is not reachable.
+color:androidx_core_secondary_text_default_material_light:2130837505 is not reachable.
+color:call_notification_answer_color:2130837506 is not reachable.
+color:call_notification_decline_color:2130837507 is not reachable.
+color:notification_action_color_filter:2130837508 is not reachable.
+color:notification_icon_bg_color:2130837509 is not reachable.
+color:vector_tint_color:2130837510 is not reachable.
+color:vector_tint_theme_color:2130837511 is not reachable.
+dimen:compat_button_inset_horizontal_material:2130903040 is not reachable.
+dimen:compat_button_inset_vertical_material:2130903041 is not reachable.
+dimen:compat_button_padding_horizontal_material:2130903042 is not reachable.
+dimen:compat_button_padding_vertical_material:2130903043 is not reachable.
+dimen:compat_control_corner_material:2130903044 is not reachable.
+dimen:compat_notification_large_icon_max_height:2130903045 is not reachable.
+dimen:compat_notification_large_icon_max_width:2130903046 is not reachable.
+dimen:notification_action_icon_size:2130903047 is not reachable.
+dimen:notification_action_text_size:2130903048 is not reachable.
+dimen:notification_big_circle_margin:2130903049 is not reachable.
+dimen:notification_content_margin_start:2130903050 is not reachable.
+dimen:notification_large_icon_height:2130903051 is not reachable.
+dimen:notification_large_icon_width:2130903052 is not reachable.
+dimen:notification_main_column_padding_top:2130903053 is not reachable.
+dimen:notification_media_narrow_margin:2130903054 is not reachable.
+dimen:notification_right_icon_size:2130903055 is not reachable.
+dimen:notification_right_side_padding_top:2130903056 is not reachable.
+dimen:notification_small_icon_background_padding:2130903057 is not reachable.
+dimen:notification_small_icon_size_as_large:2130903058 is not reachable.
+dimen:notification_subtext_size:2130903059 is not reachable.
+dimen:notification_top_pad:2130903060 is not reachable.
+dimen:notification_top_pad_large_text:2130903061 is not reachable.
+drawable:ic_call_answer:2130968576 is not reachable.
+drawable:ic_call_answer_low:2130968577 is not reachable.
+drawable:ic_call_answer_video:2130968578 is not reachable.
+drawable:ic_call_answer_video_low:2130968579 is not reachable.
+drawable:ic_call_decline:2130968580 is not reachable.
+drawable:ic_call_decline_low:2130968581 is not reachable.
+drawable:launch_background:2130968591 is not reachable.
+drawable:notification_action_background:2130968592 is not reachable.
+drawable:notification_bg:2130968593 is not reachable.
+drawable:notification_bg_low:2130968594 is not reachable.
+drawable:notification_bg_low_normal:2130968595 is not reachable.
+drawable:notification_bg_low_pressed:2130968596 is not reachable.
+drawable:notification_bg_normal:2130968597 is not reachable.
+drawable:notification_bg_normal_pressed:2130968598 is not reachable.
+drawable:notification_icon_background:2130968599 is not reachable.
+drawable:notification_oversize_large_icon_bg:2130968600 is not reachable.
+drawable:notification_template_icon_bg:2130968601 is not reachable.
+drawable:notification_template_icon_low_bg:2130968602 is not reachable.
+drawable:notification_tile_bg:2130968603 is not reachable.
+drawable:notify_panel_notification_icon_bg:2130968604 is not reachable.
+integer:status_bar_notification_info_maxnum:2131099649 is not reachable.
+layout:custom_dialog:2131165184 is not reachable.
+layout:ime_base_split_test_activity:2131165185 is not reachable.
+layout:ime_secondary_split_test_activity:2131165186 is not reachable.
+layout:notification_action:2131165187 is not reachable.
+layout:notification_action_tombstone:2131165188 is not reachable.
+layout:notification_template_custom_big:2131165189 is not reachable.
+layout:notification_template_icon_group:2131165190 is not reachable.
+layout:notification_template_part_chronometer:2131165191 is not reachable.
+layout:notification_template_part_time:2131165192 is not reachable.
+string:autofill:2131296257 is not reachable.
+string:call_notification_answer_action:2131296258 is not reachable.
+string:call_notification_answer_video_action:2131296259 is not reachable.
+string:call_notification_decline_action:2131296260 is not reachable.
+string:call_notification_hang_up_action:2131296261 is not reachable.
+string:call_notification_incoming_text:2131296262 is not reachable.
+string:call_notification_ongoing_text:2131296263 is not reachable.
+string:call_notification_screening_text:2131296264 is not reachable.
+string:close_drawer:2131296265 is not reachable.
+string:dropdown_menu:2131296269 is not reachable.
+string:m3c_date_input_headline:2131296277 is not reachable.
+string:m3c_date_input_headline_description:2131296278 is not reachable.
+string:m3c_date_input_invalid_for_pattern:2131296279 is not reachable.
+string:m3c_date_input_invalid_not_allowed:2131296280 is not reachable.
+string:m3c_date_input_invalid_year_range:2131296281 is not reachable.
+string:m3c_date_input_label:2131296282 is not reachable.
+string:m3c_date_input_no_input_description:2131296283 is not reachable.
+string:m3c_date_input_title:2131296284 is not reachable.
+string:m3c_date_picker_headline:2131296285 is not reachable.
+string:m3c_date_picker_headline_description:2131296286 is not reachable.
+string:m3c_date_picker_navigate_to_year_description:2131296287 is not reachable.
+string:m3c_date_picker_no_selection_description:2131296288 is not reachable.
+string:m3c_date_picker_scroll_to_earlier_years:2131296289 is not reachable.
+string:m3c_date_picker_scroll_to_later_years:2131296290 is not reachable.
+string:m3c_date_picker_switch_to_calendar_mode:2131296291 is not reachable.
+string:m3c_date_picker_switch_to_day_selection:2131296292 is not reachable.
+string:m3c_date_picker_switch_to_input_mode:2131296293 is not reachable.
+string:m3c_date_picker_switch_to_next_month:2131296294 is not reachable.
+string:m3c_date_picker_switch_to_previous_month:2131296295 is not reachable.
+string:m3c_date_picker_switch_to_year_selection:2131296296 is not reachable.
+string:m3c_date_picker_title:2131296297 is not reachable.
+string:m3c_date_picker_today_description:2131296298 is not reachable.
+string:m3c_date_picker_year_picker_pane_title:2131296299 is not reachable.
+string:m3c_date_range_input_invalid_range_input:2131296300 is not reachable.
+string:m3c_date_range_input_title:2131296301 is not reachable.
+string:m3c_date_range_picker_day_in_range:2131296302 is not reachable.
+string:m3c_date_range_picker_end_headline:2131296303 is not reachable.
+string:m3c_date_range_picker_scroll_to_next_month:2131296304 is not reachable.
+string:m3c_date_range_picker_scroll_to_previous_month:2131296305 is not reachable.
+string:m3c_date_range_picker_start_headline:2131296306 is not reachable.
+string:m3c_date_range_picker_title:2131296307 is not reachable.
+string:m3c_dropdown_menu_collapsed:2131296309 is not reachable.
+string:m3c_dropdown_menu_expanded:2131296310 is not reachable.
+string:m3c_dropdown_menu_toggle:2131296311 is not reachable.
+string:m3c_search_bar_search:2131296312 is not reachable.
+string:m3c_snackbar_dismiss:2131296313 is not reachable.
+string:m3c_suggestions_available:2131296314 is not reachable.
+string:m3c_time_picker_am:2131296315 is not reachable.
+string:m3c_time_picker_hour:2131296316 is not reachable.
+string:m3c_time_picker_hour_24h_suffix:2131296317 is not reachable.
+string:m3c_time_picker_hour_selection:2131296318 is not reachable.
+string:m3c_time_picker_hour_suffix:2131296319 is not reachable.
+string:m3c_time_picker_hour_text_field:2131296320 is not reachable.
+string:m3c_time_picker_minute:2131296321 is not reachable.
+string:m3c_time_picker_minute_selection:2131296322 is not reachable.
+string:m3c_time_picker_minute_suffix:2131296323 is not reachable.
+string:m3c_time_picker_minute_text_field:2131296324 is not reachable.
+string:m3c_time_picker_period_toggle_description:2131296325 is not reachable.
+string:m3c_time_picker_pm:2131296326 is not reachable.
+string:m3c_tooltip_long_press_label:2131296327 is not reachable.
+string:m3c_tooltip_pane_description:2131296328 is not reachable.
+string:navigation_menu:2131296329 is not reachable.
+string:range_end:2131296331 is not reachable.
+string:range_start:2131296332 is not reachable.
+string:snackbar_pane_title:2131296334 is not reachable.
+string:status_bar_notification_info_overflow:2131296338 is not reachable.
+string:tooltip_description:2131296342 is not reachable.
+string:tooltip_label:2131296343 is not reachable.
+style:TextAppearance_Compat_Notification:2131361797 is not reachable.
+style:TextAppearance_Compat_Notification_Info:2131361798 is not reachable.
+style:TextAppearance_Compat_Notification_Line2:2131361799 is not reachable.
+style:TextAppearance_Compat_Notification_Time:2131361800 is not reachable.
+style:TextAppearance_Compat_Notification_Title:2131361801 is not reachable.
+style:Widget_Compat_NotificationActionContainer:2131361802 is not reachable.
+style:Widget_Compat_NotificationActionText:2131361803 is not reachable.
+styleable:Capability:2131427328 is not reachable.
+styleable:ColorStateListItem:2131427329 is not reachable.
+styleable:FontFamily:2131427330 is not reachable.
+styleable:FontFamilyFont:2131427331 is not reachable.
+styleable:GradientColor:2131427332 is not reachable.
+styleable:GradientColorItem:2131427333 is not reachable.

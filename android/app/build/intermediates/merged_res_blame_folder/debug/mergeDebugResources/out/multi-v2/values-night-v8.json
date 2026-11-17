@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.syameimarukoa.fs050w_signal_display.app-mergeDebugResources-32:/values-night-v8/values-night-v8.xml",
+            "map": [
+                {
+                    "source": "/workspace/android/app/src/main/res/values-night/styles.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "288"
+                    }
+                }
+            ]
+        }
+    ]
+}
