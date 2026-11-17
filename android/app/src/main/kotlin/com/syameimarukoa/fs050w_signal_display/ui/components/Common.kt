@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.syameimarukoa.fs050w_signal_display.domain.util.ColorGauge
 
-fun Long.argbColor(): Color = Color(this.toULong())
+fun Long.argbColor(): Color = Color((this and 0xFFFFFFFFL).toInt())
 
 @Composable
 fun SectionCard(

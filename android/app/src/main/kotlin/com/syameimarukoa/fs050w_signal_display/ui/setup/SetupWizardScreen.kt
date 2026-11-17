@@ -3,6 +3,7 @@ package com.syameimarukoa.fs050w_signal_display.ui.setup
 import android.content.Context
 import android.net.wifi.WifiManager
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +19,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.autofill.contentType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
@@ -54,7 +60,14 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
             onValueChange = { password = it },
             label = { Text("Web管理パスワード (任意)") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .contentType(ContentType.Password),
         )
         Button(onClick = {
             scope.launch {
