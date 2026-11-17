@@ -1,8 +1,0 @@
-com.syameimarukoa.fs050w_signal_display.app-pngs-0 /workspace/android/app/build/generated/res/pngs/release
-com.syameimarukoa.fs050w_signal_display.app-updated_navigation_xml-1 /workspace/android/app/build/generated/updated_navigation_xml/release
-com.syameimarukoa.fs050w_signal_display.app-packageReleaseResources-2 /workspace/android/app/build/intermediates/incremental/release/packageReleaseResources/merged.dir
-com.syameimarukoa.fs050w_signal_display.app-packageReleaseResources-3 /workspace/android/app/build/intermediates/incremental/release/packageReleaseResources/stripped.dir
-com.syameimarukoa.fs050w_signal_display.app-merged-not-compiled-resources-4 /workspace/android/app/build/intermediates/merged-not-compiled-resources/release
-com.syameimarukoa.fs050w_signal_display.app-release-5 /workspace/android/app/build/intermediates/merged_res/release/mergeReleaseResources
-com.syameimarukoa.fs050w_signal_display.app-main-6 /workspace/android/app/src/main/res
-com.syameimarukoa.fs050w_signal_display.app-release-7 /workspace/android/app/src/release/res

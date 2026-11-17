@@ -1,6 +1,0 @@
--keep class androidx.core.app.CoreComponentFactory { <init>(); }
--keep class androidx.profileinstaller.ProfileInstallReceiver { <init>(); }
--keep class androidx.startup.InitializationProvider { <init>(); }
--keep class com.syameimarukoa.fs050w_signal_display.Fs050wApp { <init>(); }
--keep class com.syameimarukoa.fs050w_signal_display.MainActivity { <init>(); }
--keep class com.syameimarukoa.fs050w_signal_display.OverlayService { <init>(); }
