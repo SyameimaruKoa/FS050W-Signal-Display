@@ -1,6 +1,13 @@
 com.syameimarukoa.fs050w_signal_display
+drawable ic_dashboard
+drawable ic_graph
+drawable ic_hud
 drawable ic_launcher_background
 drawable ic_launcher_foreground
+drawable ic_log
+drawable ic_pip
+drawable ic_refresh
+drawable ic_settings
 drawable launch_background
 mipmap ic_launcher
 style AppTheme

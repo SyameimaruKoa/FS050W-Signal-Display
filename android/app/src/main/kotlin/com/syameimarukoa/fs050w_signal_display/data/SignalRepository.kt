@@ -47,6 +47,19 @@ class SignalRepository(
     private val _isPolling = MutableStateFlow(false)
     val isPolling: StateFlow<Boolean> = _isPolling.asStateFlow()
 
+    private val _isPipMode = MutableStateFlow(false)
+    val isPipMode: StateFlow<Boolean> = _isPipMode.asStateFlow()
+
+    fun setPipMode(active: Boolean) {
+        _isPipMode.value = active
+        if (active || settingsStore.value.overlayEnabled) {
+            if (!screenOn) setScreenState(true)
+            startPolling()
+        } else {
+            stopPolling()
+        }
+    }
+
     private val _lockoutRemainingSeconds = MutableStateFlow(0)
     val lockoutRemainingSeconds: StateFlow<Int> = _lockoutRemainingSeconds.asStateFlow()
 
