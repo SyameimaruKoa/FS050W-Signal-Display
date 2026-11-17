@@ -1,102 +1,74 @@
 [
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/xml_data_extraction_rules.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/xml/data_extraction_rules.xml"
     },
     {
         "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_log.xml.flat",
         "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_log.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-mdpi/ic_launcher.png"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/xml_backup_rules.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/xml/backup_rules.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/xml_data_extraction_rules.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/xml/data_extraction_rules.xml"
-    },
-    {
-        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_settings.xml.flat",
-        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_settings.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_settings.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_settings.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_refresh.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_refresh.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_launcher_background.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_launcher_background.xml"
-    },
-    {
-        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_hud.xml.flat",
-        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_hud.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-xxxhdpi/ic_launcher.png"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_graph.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_graph.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_launcher_foreground.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable-v21_launch_background.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable-v21/launch_background.xml"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable-v21_launch_background.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable-v21/launch_background.xml"
     },
     {
         "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_dashboard.xml.flat",
         "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_dashboard.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_dashboard.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_dashboard.xml"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-hdpi/ic_launcher.png"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-xxxhdpi/ic_launcher.png"
     },
     {
         "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_refresh.xml.flat",
         "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_refresh.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_pip.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_pip.xml"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_log.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_log.xml"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_settings.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_settings.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_hud.xml.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_hud.xml"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_launcher_background.xml"
     },
     {
         "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_pip.xml.flat",
         "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_pip.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-xhdpi/ic_launcher.png"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_hud.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_hud.xml"
+    },
+    {
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-xxhdpi/ic_launcher.png"
     },
     {
         "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/drawable_ic_graph.xml.flat",
         "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/drawable/ic_graph.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-debug-34:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "/root/.gradle/daemon/9.3.1/com.syameimarukoa.fs050w_signal_display.app-main-36:/mipmap-hdpi/ic_launcher.png"
+        "merged": "com.syameimarukoa.fs050w_signal_display.app-debug-34:/xml_backup_rules.xml.flat",
+        "source": "com.syameimarukoa.fs050w_signal_display.app-main-36:/xml/backup_rules.xml"
     }
 ]

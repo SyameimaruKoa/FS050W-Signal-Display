@@ -84,12 +84,21 @@ class MainActivity : ComponentActivity() {
         applyKeepScreenOn(initial.keepScreenOn)
         if (initial.overlayEnabled) startOverlay()
 
-        registerReceiver(screenReceiver, IntentFilter().apply {
-            addAction(Intent.ACTION_SCREEN_OFF)
-            addAction(Intent.ACTION_SCREEN_ON)
-        })
-        @Suppress("DEPRECATION")
-        registerReceiver(systemDialogReceiver, IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
+        ContextCompat.registerReceiver(
+            this,
+            screenReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        ContextCompat.registerReceiver(
+            this,
+            systemDialogReceiver,
+            IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS),
+            ContextCompat.RECEIVER_EXPORTED,
+        )
     }
 
     override fun onResume() {
