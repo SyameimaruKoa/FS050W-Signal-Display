@@ -79,17 +79,14 @@ fun DashboardScreen(
                 )
             },
             actions = {
-                IconButton(onClick = { repo.restartPolling() }) {
-                    Icon(painterResource(R.drawable.ic_refresh), contentDescription = "再読み込み")
-                }
                 IconButton(onClick = onEnterPip) {
-                    Icon(painterResource(R.drawable.ic_pip), contentDescription = "PiP")
-                }
-                IconButton(onClick = onOpenHud) {
-                    Icon(painterResource(R.drawable.ic_hud), contentDescription = "HUD")
+                    Icon(painterResource(R.drawable.ic_pip), contentDescription = "PiP", tint = SignalColors.cyan)
                 }
                 IconButton(onClick = onOpenLogs) {
                     Icon(painterResource(R.drawable.ic_log), contentDescription = "ログ")
+                }
+                IconButton(onClick = onOpenHud) {
+                    Icon(painterResource(R.drawable.ic_hud), contentDescription = "HUD", tint = SignalColors.yellow)
                 }
             },
         )
@@ -116,6 +113,8 @@ fun DashboardScreen(
                 ),
                 wifiFreq = signal?.wifiFreqDisplay,
                 wifiClients = signal?.wifiClientCount,
+                preferNetMode = signal?.preferNetMode,
+                isWifiEnabled = signal?.isWifiEnabled ?: false,
             )
             if (!error.isNullOrEmpty()) {
                 Text(error!!, color = SignalColors.red, style = MaterialTheme.typography.bodySmall)
@@ -203,6 +202,8 @@ private fun ConnectionBanner(
     modeText: String,
     wifiFreq: String?,
     wifiClients: Int?,
+    preferNetMode: String?,
+    isWifiEnabled: Boolean,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -225,17 +226,47 @@ private fun ConnectionBanner(
                     fontSize = 14.sp,
                 )
                 if (latency != null) {
-                    Text(
-                        "$latency ms",
-                        color = ColorGauge.latencyColor(latency).argbColorSafe(),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                ColorGauge.latencyColor(latency).argbColorSafe().copy(alpha = 0.18f),
+                                RoundedCornerShape(4.dp),
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            "⏱ ${latency}ms",
+                            color = ColorGauge.latencyColor(latency).argbColorSafe(),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
                 Text(operatorName ?: "--", modifier = Modifier.weight(1f), fontSize = 13.sp)
             }
-            KeyValueRow("ステータス", modeText)
-            if (wifiFreq != null) KeyValueRow("Wi-Fi", "$wifiFreq (${wifiClients ?: 0} 台接続中)")
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("ステータス", style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .background(SignalColors.blue.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) { Text(modeText, color = SignalColors.blue, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                    val net = if (preferNetMode != null && preferNetMode!!.contains("5g")) "5G優先" else preferNetMode ?: "--"
+                    Text("ルーター設定: $net", fontSize = 12.sp)
+                }
+            }
+            if (wifiFreq != null) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Wi-Fi", style = MaterialTheme.typography.bodyMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (isWifiEnabled) {
+                            Text("有効", color = SignalColors.green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                        Text("$wifiFreq  (${wifiClients ?: 0} 台接続中)", fontSize = 12.sp)
+                    }
+                }
+            }
         }
     }
 }
@@ -252,7 +283,19 @@ private fun RsrpOverviewCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("電波強度 (RSRP)", style = MaterialTheme.typography.titleMedium, color = SignalColors.cyan)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(painterResource(R.drawable.ic_graph), contentDescription = null, tint = SignalColors.cyan, modifier = Modifier.size(22.dp))
+                    Text("電波強度 (RSRP)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                }
+                if (isLoggedIn) {
+                    Box(
+                        modifier = Modifier
+                            .background(SignalColors.good.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) { Text("ログイン済", color = SignalColors.good, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                }
+            }
             if (!signal.is5gDisabledByConfig) {
                 RsrpPanel(
                     title = ConnectionModeHelper.get5gCardTitle(mode, notation),
@@ -260,6 +303,7 @@ private fun RsrpOverviewCard(
                     pci = signal.nrPci,
                     rsrp = signal.nrRsrp,
                     accent = SignalColors.cyan,
+                    standbyNote = if (signal.nrRsrp == null) "4G単独中" else null,
                 )
             }
             if (mode != Fs050wConnectionMode.NR5G && mode != Fs050wConnectionMode.NR5G_SUB6 || !signal.isSa) {
@@ -271,12 +315,16 @@ private fun RsrpOverviewCard(
                     accent = SignalColors.blue,
                 )
             }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("✓", color = SignalColors.good, fontWeight = FontWeight.Bold)
+                Text("フル情報モード: セル詳細・ハンドオーバー常時監視中", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
 
 @Composable
-private fun RsrpPanel(title: String, band: String, pci: Int?, rsrp: Double?, accent: Color) {
+private fun RsrpPanel(title: String, band: String, pci: Int?, rsrp: Double?, accent: Color, standbyNote: String? = null) {
     val level = ColorGauge.rateRsrp(rsrp)
     val color = ColorGauge.colorFor(level).argbColorSafe()
     val progress = ColorGauge.calculateNormalizedRatio(
@@ -288,9 +336,17 @@ private fun RsrpPanel(title: String, band: String, pci: Int?, rsrp: Double?, acc
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text("$band / ${pci ?: "--"}", fontSize = 12.sp)
+                if (standbyNote != null) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0x33FFFFFF), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) { Text(standbyNote, color = Color(0xAAFFFFFF), fontSize = 11.sp) }
+                } else {
+                    Text("$band / ${pci ?: "--"}", fontSize = 12.sp)
+                }
             }
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val valueText = if (rsrp != null && rsrp > -200) String.format(Locale.ROOT, "%.1f", rsrp) else "--"

@@ -76,64 +76,22 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        SectionCard(title = "接続設定") {
-            AutofillCredentialFields(
-                ip = settings.routerIp,
-                password = settings.webPassword,
-                onIpChange = { value -> update { s -> s.copy(routerIp = value) } },
-                onPasswordChange = { value -> update { s -> s.copy(webPassword = value) } },
-                passwordVisible = passwordVisible,
-                onDone = { commitAutofill() },
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("パスワードを表示", modifier = Modifier.weight(1f))
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        painterResource(if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
-                        contentDescription = if (passwordVisible) "パスワードを隠す" else "パスワードを表示",
-                    )
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
-                    scope.launch {
-                        val ok = repo.testConnection(settings.routerIp, settings.webPassword)
-                        connectionMessage = if (ok) "接続テスト成功" else "接続テスト失敗"
+        SectionCard(title = "1. 監視 & フローティング表示") {
+            SwitchRow(
+                "フローティングオーバーレイ",
+                settings.overlayEnabled,
+                subtitle = "他アプリ使用中も最前面に電波ウィジェットを常時表示",
+                onCheckedChange = { enabled ->
+                    if (enabled && !Settings.canDrawOverlays(context)) {
+                        context.startActivity(
+                            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                        )
+                    } else {
+                        update { s -> s.copy(overlayEnabled = enabled) }
+                        onOverlayChanged(enabled)
                     }
-                    commitAutofill()
-                }) { Text("接続テスト") }
-                connectionMessage?.let { Text(it, modifier = Modifier.align(Alignment.CenterVertically)) }
-            }
-        }
-
-        SectionCard(title = "ポーリング設定") {
-            KeyValueRow("フォアグラウンド間隔", "${settings.foregroundIntervalSeconds} 秒")
-            Slider(
-                value = settings.foregroundIntervalSeconds.toFloat(),
-                onValueChange = { value -> update { s -> s.copy(foregroundIntervalSeconds = value.toInt().coerceIn(1, 5)) } },
-                valueRange = 1f..5f,
-                steps = 3,
+                },
             )
-            KeyValueRow("未ログイン時間隔", "${settings.unauthIntervalSeconds} 秒")
-            Slider(
-                value = settings.unauthIntervalSeconds.toFloat(),
-                onValueChange = { value -> update { s -> s.copy(unauthIntervalSeconds = value.toInt().coerceIn(3, 10)) } },
-                valueRange = 3f..10f,
-                steps = 6,
-            )
-        }
-
-        SectionCard(title = "監視 & フローティング表示") {
-            SwitchRow("フローティングオーバーレイ", settings.overlayEnabled) { enabled ->
-                if (enabled && !Settings.canDrawOverlays(context)) {
-                    context.startActivity(
-                        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
-                    )
-                } else {
-                    update { s -> s.copy(overlayEnabled = enabled) }
-                    onOverlayChanged(enabled)
-                }
-            }
             ChipSelector(
                 label = "オーバーレイ表示形式",
                 options = listOf("card" to "カード", "compact" to "コンパクト"),
@@ -145,17 +103,21 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
                 onValueChange = { value -> update { s -> s.copy(overlayOpacity = value.toDouble()) } },
                 valueRange = 0.2f..1f,
             )
-            SwitchRow("ホーム時に自動PiP", settings.autoPipOnHome) { enabled ->
-                update { s -> s.copy(autoPipOnHome = enabled) }
-            }
+            SwitchRow(
+                "ホーム画面に戻った時に自動でPiP起動",
+                settings.autoPipOnHome,
+                subtitle = "アプリ使用中にホーム操作を行うと自動で小窓化",
+                onCheckedChange = { enabled -> update { s -> s.copy(autoPipOnHome = enabled) } },
+            )
             ChipSelector(
-                label = "PiP アスペクト比",
+                label = "PiP アスペクト比 (全7種)",
                 options = listOf("16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21").map { it to it },
                 selected = settings.pipAspectRatio,
             ) { value -> update { s -> s.copy(pipAspectRatio = value) } }
+            Text("現在: ${settings.pipAspectRatio}", style = MaterialTheme.typography.bodySmall)
         }
 
-        SectionCard(title = "イベント検知 & LEDランプ") {
+        SectionCard(title = "2. イベントハプティクス & LED通知") {
             SwitchRow("イベントLEDランプ", settings.eventLampEnabled) { enabled ->
                 update { s -> s.copy(eventLampEnabled = enabled) }
             }
@@ -190,7 +152,51 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
             )
         }
 
-        SectionCard(title = "UI・テーマ") {
+        SectionCard(title = "3. 通信 & ルーター接続") {
+            AutofillCredentialFields(
+                ip = settings.routerIp,
+                password = settings.webPassword,
+                onIpChange = { value -> update { s -> s.copy(routerIp = value) } },
+                onPasswordChange = { value -> update { s -> s.copy(webPassword = value) } },
+                passwordVisible = passwordVisible,
+                onDone = { commitAutofill() },
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("パスワードを表示", modifier = Modifier.weight(1f))
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        painterResource(if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
+                        contentDescription = if (passwordVisible) "パスワードを隠す" else "パスワードを表示",
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    scope.launch {
+                        val ok = repo.testConnection(settings.routerIp, settings.webPassword)
+                        connectionMessage = if (ok) "接続テスト成功" else "接続テスト失敗"
+                    }
+                    commitAutofill()
+                }) { Text("接続テスト") }
+                connectionMessage?.let { Text(it, modifier = Modifier.align(Alignment.CenterVertically)) }
+            }
+            KeyValueRow("フォアグラウンド間隔", "${settings.foregroundIntervalSeconds} 秒")
+            Slider(
+                value = settings.foregroundIntervalSeconds.toFloat(),
+                onValueChange = { value -> update { s -> s.copy(foregroundIntervalSeconds = value.toInt().coerceIn(1, 5)) } },
+                valueRange = 1f..5f,
+                steps = 3,
+            )
+            KeyValueRow("未ログイン時間隔", "${settings.unauthIntervalSeconds} 秒")
+            Slider(
+                value = settings.unauthIntervalSeconds.toFloat(),
+                onValueChange = { value -> update { s -> s.copy(unauthIntervalSeconds = value.toInt().coerceIn(3, 10)) } },
+                valueRange = 3f..10f,
+                steps = 6,
+            )
+        }
+
+        SectionCard(title = "4. UI・テーマ & 表示設定") {
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 listOf("システム" to AppThemeMode.SYSTEM, "ライト" to AppThemeMode.LIGHT, "ダーク" to AppThemeMode.DARK, "OLED" to AppThemeMode.OLED)
                     .forEachIndexed { index, (label, mode) ->
@@ -246,13 +252,23 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    label: String,
+    checked: Boolean,
+    subtitle: String? = null,
+    onCheckedChange: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            if (subtitle != null) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
