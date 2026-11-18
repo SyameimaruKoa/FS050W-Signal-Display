@@ -9,13 +9,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,23 +57,33 @@ fun PipScreen() {
     val ratio = settings.pipAspectRatio
     val isPortrait = ratio.contains("9:16") || ratio.contains("3:4") || ratio.contains("9:21")
     val isSquare = ratio == "1:1"
-    val showGraph = settings.pipGraphType != "none" && history.size >= 2 && (isPortrait || isSquare)
-    // PiP では weight が効かないため、アスペクト比から実寸を推定して高さを明示する。
-    val signalHeight = when {
-        isSquare -> if (showGraph) 150.dp else 210.dp
-        isPortrait -> if (showGraph) 240.dp else 350.dp
-        ratio.contains("21:") -> 138.dp
-        else -> 154.dp
-    }
-    val graphHeight = if (isPortrait) 110.dp else 50.dp
+    // PiP の実寸は onSizeChanged で State に保存し、再コンポーズで反映する。
+    var pipSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val pipWidth = with(density) { pipSize.width.toDp() }
+    val pipHeight = with(density) { pipSize.height.toDp() }
+
+    val threshold = settings.pipGraphScaleThreshold.toFloat()
+    val showGraph = settings.pipGraphType != "none" && history.size >= 2 &&
+        if (isSquare) pipWidth.value >= 220f * threshold && pipHeight.value >= 220f * threshold
+        else if (isPortrait) pipHeight.value >= 260f * threshold && pipWidth.value >= 140f * threshold
+        else pipHeight.value >= 170f * threshold && pipWidth.value >= 280f * threshold
+
+    // 実寸から、ヘッダー(約20dp)と余白を引いた高さを子に割り当てる。
+    val available = (pipHeight - 24.dp).coerceAtLeast(40.dp)
+    val signalHeight = if (showGraph) available * (if (isPortrait) 0.6f else 0.66f) else available
+    val graphHeight = if (showGraph) available - signalHeight else 0.dp
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(horizontal = 3.dp, vertical = 2.dp),
+            .padding(horizontal = 3.dp, vertical = 2.dp)
+            .onSizeChanged {
+                pipSize = it
+            },
     ) {
-        PipHeader(signal, settings, connecting, isSquare)
+        PipHeader(signal, settings, connecting, isSquare, isPortrait)
         androidx.compose.foundation.layout.Spacer(Modifier.height(2.dp))
         Column(modifier = Modifier.height(signalHeight)) {
             if (isSquare) {
@@ -82,8 +97,8 @@ fun PipScreen() {
                 }
             } else {
                 Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    NrSection(signal, settings, false, Modifier.fillMaxSize())
-                    LteSection(signal, settings, false, Modifier.fillMaxSize())
+                    NrSection(signal, settings, false, Modifier.weight(1f).fillMaxHeight())
+                    LteSection(signal, settings, false, Modifier.weight(1f).fillMaxHeight())
                 }
             }
         }
@@ -107,7 +122,7 @@ fun PipScreen() {
 }
 
 @Composable
-private fun PipHeader(signal: SignalData?, settings: AppSettings, connecting: Boolean, isSquare: Boolean) {
+private fun PipHeader(signal: SignalData?, settings: AppSettings, connecting: Boolean, isSquare: Boolean, isPortrait: Boolean) {
     val mode = signal?.connectionMode ?: Fs050wConnectionMode.DISCONNECTED
     val badge = if (connecting) "[ 接続中... ]" else
         "[ ${ConnectionModeHelper.getIconBadgeText(mode, settings.generationNotation)} ]"
@@ -115,11 +130,12 @@ private fun PipHeader(signal: SignalData?, settings: AppSettings, connecting: Bo
     val isDelayed = latency != null && latency > 150
     val latencyColor = ColorGauge.latencyColor(latency).argbColor()
     val ratio = if (latency != null) (latency / 200.0).coerceIn(0.0, 1.0).toFloat() else 0f
-    val fs = if (isSquare) 11.sp else 9.5.sp
+    val fs = if (isSquare) 11.sp else if (isPortrait) 6.sp else 9.5.sp
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(if (isSquare) 26.dp else 18.dp)
             .background(Color.White.copy(alpha = 0.06f))
             .padding(horizontal = 4.dp, vertical = if (isSquare) 2.5.dp else 1.5.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -156,7 +172,7 @@ private fun PipHeader(signal: SignalData?, settings: AppSettings, connecting: Bo
                 val warn = settings.batteryTempWarningEnabled &&
                     (signal?.batteryTemperature ?: 0.0) >= settings.batteryTempWarningThreshold
                 Text(bat, color = if (warn) Color(0xFFFF5252) else Color.White.copy(alpha = 0.7f),
-                    fontSize = if (isSquare) 10.sp else 8.5.sp, fontWeight = FontWeight.Bold)
+                    fontSize = if (isSquare) 10.sp else if (isPortrait) 5.5.sp else 8.5.sp, fontWeight = FontWeight.Bold)
             }
         }
         Box(
@@ -206,13 +222,12 @@ private fun NrSection(signal: SignalData?, settings: AppSettings, single: Boolea
     val pci = if (signal?.nrPci != null && signal!!.nrPci!! > 0) "${signal!!.nrPci}" else "--"
     Column(
         modifier = modifier
-            .fillMaxSize()
             .background(Color.White.copy(alpha = 0.03f))
             .border(0.6.dp, SignalColors.excellent.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
             .padding(horizontal = 3.dp, vertical = 2.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth().height(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(if (signal?.nrBand != null) "$title ($band)" else title, color = SignalColors.cyan, fontSize = fs * 1.12f, fontWeight = FontWeight.Bold)
+            Text("$title ($band)", color = SignalColors.cyan, fontSize = fs * 1.12f, fontWeight = FontWeight.Bold)
             Text("PCI: $pci", color = Color.White.copy(alpha = 0.7f), fontSize = fs * 1.06f)
         }
         IntensityBar("RSRP", signal?.nrRsrp, ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX,
@@ -235,7 +250,6 @@ private fun LteSection(signal: SignalData?, settings: AppSettings, single: Boole
     val pci = if (signal?.ltePci != null && signal!!.ltePci!! > 0) "${signal!!.ltePci}" else "--"
     Column(
         modifier = modifier
-            .fillMaxSize()
             .background(Color.White.copy(alpha = 0.03f))
             .border(0.6.dp, SignalColors.blue.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
             .padding(horizontal = 3.dp, vertical = 2.dp),
@@ -289,16 +303,27 @@ private fun IntensityBar(
 }
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 private fun RefBox(label: String, value: Double?, unit: String, accent: Color, modifier: Modifier) {
     val color = when (label) {
         "RQ" -> ColorGauge.colorFor(ColorGauge.rateRsrq(value)).argbColor()
         else -> ColorGauge.colorFor(ColorGauge.rateSinr(value)).argbColor()
     }
-    val text = if (value != null && value.isFinite() && value > -200) String.format(Locale.ROOT, "%+.1f", value) else "--"
-    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = accent, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
-        Text(text, color = color, fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-        Text(unit, color = Color.White.copy(alpha = 0.5f), fontSize = 8.sp)
+    val hasVal = value != null && value.isFinite() && value > -200
+    val text = if (hasVal) String.format(Locale.ROOT, "%+.1f", value) else "--"
+    val minVal = if (label == "RQ") ColorGauge.RSRQ_MIN else ColorGauge.SINR_MIN
+    val maxVal = if (label == "RQ") ColorGauge.RSRQ_MAX else ColorGauge.SINR_MAX
+    val ratio = if (hasVal) ((value - minVal) / (maxVal - minVal)).coerceIn(0.0, 1.0).toFloat() else 0f
+    Box(
+        modifier = modifier
+            .background(Color.White.copy(alpha = 0.035f), androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
+            .border(0.5.dp, if (hasVal) color.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.08f), androidx.compose.foundation.shape.RoundedCornerShape(3.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (hasVal && ratio > 0f) {
+            Box(Modifier.fillMaxWidth(ratio).fillMaxHeight().background(color.copy(alpha = 0.24f)))
+        }
+        Text("$label $text", color = color, fontSize = 6.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 
