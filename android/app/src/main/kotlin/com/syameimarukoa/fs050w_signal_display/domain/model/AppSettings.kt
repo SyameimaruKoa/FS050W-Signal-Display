@@ -27,7 +27,7 @@ data class AppSettings(
     var batteryTempWarningEnabled: Boolean = true,
     var batteryTempWarningThreshold: Double = 45.0,
 
-    var autoPipOnHome: Boolean = true,
+    var autoPipOnHome: Boolean = false,
     var pipAspectRatio: String = "16:9",
     var pipGraphType: String = "rsrp",
     var pipGraphScaleThreshold: Double = 1.0,
@@ -109,7 +109,7 @@ data class AppSettings(
             vibrateOnCriticalSignal = json.optBoolean("vibrateOnCriticalSignal", true),
             batteryTempWarningEnabled = json.optBoolean("batteryTempWarningEnabled", true),
             batteryTempWarningThreshold = json.optDouble("batteryTempWarningThreshold", 45.0),
-            autoPipOnHome = json.optBoolean("autoPipOnHome", true),
+            autoPipOnHome = json.optBoolean("autoPipOnHome", false),
             pipAspectRatio = json.optString("pipAspectRatio", "16:9"),
             pipGraphType = json.optString("pipGraphType", "rsrp"),
             pipGraphScaleThreshold = json.optDouble("pipGraphScaleThreshold", 1.0),

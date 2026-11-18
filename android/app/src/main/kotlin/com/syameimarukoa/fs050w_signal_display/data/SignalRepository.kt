@@ -61,6 +61,7 @@ class SignalRepository(
 
     fun startPolling() {
         if (pollJob?.isActive == true) return
+        api.resume()
         _isPolling.value = true
         pollJob = scope.launch {
             while (isActive && screenOn) {

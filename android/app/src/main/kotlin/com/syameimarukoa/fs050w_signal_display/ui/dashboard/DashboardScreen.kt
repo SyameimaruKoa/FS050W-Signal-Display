@@ -1,17 +1,25 @@
 package com.syameimarukoa.fs050w_signal_display.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -24,19 +32,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.syameimarukoa.fs050w_signal_display.R
 import com.syameimarukoa.fs050w_signal_display.domain.model.ConnectionModeHelper
 import com.syameimarukoa.fs050w_signal_display.domain.model.Fs050wConnectionMode
+import com.syameimarukoa.fs050w_signal_display.domain.model.SignalData
 import com.syameimarukoa.fs050w_signal_display.domain.util.ColorGauge
 import com.syameimarukoa.fs050w_signal_display.domain.util.FrequencyCalculator
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
 import com.syameimarukoa.fs050w_signal_display.ui.components.KeyValueRow
-import com.syameimarukoa.fs050w_signal_display.ui.components.MetricRow
-import com.syameimarukoa.fs050w_signal_display.ui.components.SectionCard
-import com.syameimarukoa.fs050w_signal_display.ui.components.argbColor
+import com.syameimarukoa.fs050w_signal_display.ui.components.SignalColors
+import com.syameimarukoa.fs050w_signal_display.ui.components.StatusHeader
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,12 +64,20 @@ fun DashboardScreen(
     val status by repo.status.collectAsStateWithLifecycle()
     val error by repo.errorMessage.collectAsStateWithLifecycle()
     val isLoggedIn by repo.isLoggedIn.collectAsStateWithLifecycle()
-    val latency by repo.currentSignal.collectAsStateWithLifecycle()
+    val isConnecting by repo.isConnecting.collectAsStateWithLifecycle()
     var showBatterySheet by remember { mutableStateOf(false) }
+    var detailsExpanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("FS050W Signal Display") },
+            title = {
+                StatusHeader(
+                    signal = signal,
+                    notation = settings.generationNotation,
+                    isConnecting = isConnecting,
+                    onOpenDetail = { showBatterySheet = true },
+                )
+            },
             actions = {
                 IconButton(onClick = { repo.restartPolling() }) {
                     Icon(painterResource(R.drawable.ic_refresh), contentDescription = "再読み込み")
@@ -81,91 +102,86 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val mode = signal?.connectionMode ?: Fs050wConnectionMode.DISCONNECTED
-            val notation = settings.generationNotation
-            val badge = ConnectionModeHelper.getIconBadgeText(mode, notation)
-            val modeText = ConnectionModeHelper.getUiModeText(mode, isSa = signal?.isSa ?: false, notation = notation)
+            val connected = status.name == "AUTHENTICATED" || status.name == "UNAUTHENTICATED_MODE"
 
-            SectionCard(title = "接続ステータス") {
-                KeyValueRow("状態", if (status.name == "CONNECTING") "[ 接続中... ]" else "[ $badge ] $modeText")
-                KeyValueRow("ルーター", settings.routerIp.ifEmpty { "未設定" })
-                KeyValueRow("認証", if (isLoggedIn) "ログイン済み" else "未ログインモード")
-                KeyValueRow("事業者", signal?.operatorName ?: "--")
-                latency?.routerLatencyMs?.let { KeyValueRow("応答時間", "$it ms") }
-                if (!error.isNullOrEmpty()) {
-                    Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
+            // 接続ステータスバナー
+            ConnectionBanner(
+                connected = connected,
+                isConnecting = isConnecting,
+                routerIp = settings.routerIp,
+                latency = signal?.routerLatencyMs,
+                operatorName = signal?.operatorName,
+                modeText = ConnectionModeHelper.getUiModeText(
+                    mode, isSa = signal?.isSa ?: false, notation = settings.generationNotation,
+                ),
+                wifiFreq = signal?.wifiFreqDisplay,
+                wifiClients = signal?.wifiClientCount,
+            )
+            if (!error.isNullOrEmpty()) {
+                Text(error!!, color = SignalColors.red, style = MaterialTheme.typography.bodySmall)
             }
 
-            val batterySummary = when {
-                signal?.isBatteryPresent == false -> "AC給電"
-                signal?.batteryPercent != null -> buildString {
-                    append(signal!!.batteryPercentDisplay)
-                    if (signal!!.isCharging) append(" ⚡")
-                    signal!!.batteryTemperature?.let { append(" ${it.toInt()}℃") }
-                }
-                else -> "--"
-            }
-            SectionCard(title = "バッテリー / システム") {
-                Row(
+            // 電波強度 (RSRP) オーバービュー
+            if (signal != null) {
+                RsrpOverviewCard(
+                    signal = signal!!,
+                    mode = mode,
+                    notation = settings.generationNotation,
+                    isLoggedIn = isLoggedIn,
+                )
+
+                // 詳細セル情報（折りたたみ）
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showBatterySheet = true },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                        .clickable { detailsExpanded = !detailsExpanded },
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
                 ) {
-                    Text("詳細を見る", style = MaterialTheme.typography.bodyMedium)
-                    Text(batterySummary, style = MaterialTheme.typography.bodyMedium)
-                }
-                signal?.handoverDescription?.let {
-                    Text("ハンドオーバー: $it", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-
-            val s = signal
-            if (s != null) {
-                if (!s.is5gDisabledByConfig) {
-                    SectionCard(title = ConnectionModeHelper.get5gCardTitle(mode, notation)) {
-                        val band = FrequencyCalculator.getNrBandName(s.nrBand)
-                        KeyValueRow("Band / PCI", "$band / ${s.nrPci ?: "--"}")
-                        MetricRow(
-                            "RSRP", s.nrRsrp, "dBm",
-                            ColorGauge.metricColor(s.nrRsrp, ColorGauge.rateRsrp(s.nrRsrp), ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX),
-                            ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX,
-                        )
-                        MetricRow(
-                            "RSRQ", s.nrRsrq, "dB",
-                            ColorGauge.metricColor(s.nrRsrq, ColorGauge.rateRsrq(s.nrRsrq), ColorGauge.RSRQ_MIN, ColorGauge.RSRQ_MAX),
-                            ColorGauge.RSRQ_MIN, ColorGauge.RSRQ_MAX,
-                        )
-                        MetricRow(
-                            if (notation == "lte_nr") "SNR" else "SNR", s.nrSnr, "dB",
-                            ColorGauge.metricColor(s.nrSnr, ColorGauge.rateSinr(s.nrSnr), ColorGauge.SINR_MIN, ColorGauge.SINR_MAX),
-                            ColorGauge.SINR_MIN, ColorGauge.SINR_MAX, signed = true,
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("詳細セル情報", style = MaterialTheme.typography.titleMedium)
+                        Text(if (detailsExpanded) "折りたたむ ▲" else "展開 ▼", color = MaterialTheme.colorScheme.primary)
                     }
-                }
-
-                if (mode != Fs050wConnectionMode.NR5G && mode != Fs050wConnectionMode.NR5G_SUB6 || !s.isSa) {
-                    SectionCard(title = ConnectionModeHelper.get4gCardTitle(mode, notation)) {
-                        KeyValueRow(
-                            "Band / PCI",
-                            "${FrequencyCalculator.getLteBandName(s.lteBand)} / ${s.ltePci ?: "--"}",
-                        )
-                        MetricRow(
-                            "RSRP", s.lteRsrp, "dBm",
-                            ColorGauge.metricColor(s.lteRsrp, ColorGauge.rateRsrp(s.lteRsrp), ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX),
-                            ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX,
-                        )
-                        MetricRow(
-                            "RSRQ", s.lteRsrq, "dB",
-                            ColorGauge.metricColor(s.lteRsrq, ColorGauge.rateRsrq(s.lteRsrq), ColorGauge.RSRQ_MIN, ColorGauge.RSRQ_MAX),
-                            ColorGauge.RSRQ_MIN, ColorGauge.RSRQ_MAX,
-                        )
-                        MetricRow(
-                            "SINR", s.lteSinr, "dB",
-                            ColorGauge.metricColor(s.lteSinr, ColorGauge.rateSinr(s.lteSinr), ColorGauge.SINR_MIN, ColorGauge.SINR_MAX),
-                            ColorGauge.SINR_MIN, ColorGauge.SINR_MAX, signed = true,
-                        )
+                    if (detailsExpanded) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            if (!signal!!.is5gDisabledByConfig) {
+                                DetailCell(
+                                    title = ConnectionModeHelper.get5gCardTitle(mode, settings.generationNotation),
+                                    band = FrequencyCalculator.getNrBandName(signal!!.nrBand),
+                                    pci = signal!!.nrPci,
+                                    rsrp = signal!!.nrRsrp,
+                                    rsrq = if (isLoggedIn) signal!!.nrRsrq else null,
+                                    snr = if (isLoggedIn) signal!!.nrSnr else null,
+                                    snrLabel = "SNR",
+                                    accent = SignalColors.cyan,
+                                )
+                            }
+                            if (mode != Fs050wConnectionMode.NR5G && mode != Fs050wConnectionMode.NR5G_SUB6 || !signal!!.isSa) {
+                                DetailCell(
+                                    title = ConnectionModeHelper.get4gCardTitle(mode, settings.generationNotation),
+                                    band = FrequencyCalculator.getLteBandName(signal!!.lteBand),
+                                    pci = signal!!.ltePci,
+                                    rsrp = signal!!.lteRsrp,
+                                    rsrq = if (isLoggedIn) signal!!.lteRsrq else null,
+                                    snr = if (isLoggedIn) signal!!.lteSinr else null,
+                                    snrLabel = "SINR",
+                                    accent = SignalColors.blue,
+                                )
+                            }
+                            signal!!.handoverDescription?.let {
+                                Text("ハンドオーバー: $it", color = SignalColors.yellow, fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
             }
@@ -173,36 +189,190 @@ fun DashboardScreen(
     }
 
     if (showBatterySheet && signal != null) {
-        val s = signal!!
-        ModalBottomSheet(
-            onDismissRequest = { showBatterySheet = false },
-            sheetState = rememberModalBottomSheetState(),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text("ルーター詳細統計", style = MaterialTheme.typography.titleLarge)
-                KeyValueRow("残り稼働予測", s.estimatedTimeDisplay)
-                if (s.isBatteryPresent) {
-                    KeyValueRow("バッテリー残量", s.batteryPercentDisplay)
-                    KeyValueRow("温度", s.batteryTemperature?.let { String.format(java.util.Locale.ROOT, "%.1f", it) + "℃" } ?: "--")
-                    KeyValueRow("電圧", s.batteryVoltage?.let { String.format(java.util.Locale.ROOT, "%.2f", it) + " V" } ?: "--")
-                    KeyValueRow("電流", s.batteryCurrent?.let { "$it mA" } ?: "--")
-                    KeyValueRow("状態", s.batteryChargeStatus ?: "--")
-                } else {
-                    Text("AC給電駆動中 (バッテリーレス)", color = MaterialTheme.colorScheme.primary)
+        BatteryDetailSheet(signal = signal!!, onDismiss = { showBatterySheet = false })
+    }
+}
+
+@Composable
+private fun ConnectionBanner(
+    connected: Boolean,
+    isConnecting: Boolean,
+    routerIp: String,
+    latency: Int?,
+    operatorName: String?,
+    modeText: String,
+    wifiFreq: String?,
+    wifiClients: Int?,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(9.dp)
+                        .background(
+                            if (connected) SignalColors.green else SignalColors.red,
+                            RoundedCornerShape(50),
+                        ),
+                )
+                Text(
+                    if (isConnecting) "接続中..." else if (connected) "接続中: $routerIp" else "未接続",
+                    color = if (connected) SignalColors.green else SignalColors.red,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+                if (latency != null) {
+                    Text(
+                        "$latency ms",
+                        color = ColorGauge.latencyColor(latency).argbColorSafe(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
-                Text("ハードウェア", style = MaterialTheme.typography.titleMedium)
-                KeyValueRow("CPU使用率", s.cpuUsagePercent?.let { "$it %" } ?: "--")
-                KeyValueRow("RAM使用率", s.formattedRamUsage)
-                KeyValueRow("稼働時間", s.formattedUptime)
-                KeyValueRow("プロセス数", s.processCount?.toString() ?: "--")
+                Text(operatorName ?: "--", modifier = Modifier.weight(1f), fontSize = 13.sp)
+            }
+            KeyValueRow("ステータス", modeText)
+            if (wifiFreq != null) KeyValueRow("Wi-Fi", "$wifiFreq (${wifiClients ?: 0} 台接続中)")
+        }
+    }
+}
+
+@Composable
+private fun RsrpOverviewCard(
+    signal: SignalData,
+    mode: Fs050wConnectionMode,
+    notation: String,
+    isLoggedIn: Boolean,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("電波強度 (RSRP)", style = MaterialTheme.typography.titleMedium, color = SignalColors.cyan)
+            if (!signal.is5gDisabledByConfig) {
+                RsrpPanel(
+                    title = ConnectionModeHelper.get5gCardTitle(mode, notation),
+                    band = FrequencyCalculator.getNrBandName(signal.nrBand),
+                    pci = signal.nrPci,
+                    rsrp = signal.nrRsrp,
+                    accent = SignalColors.cyan,
+                )
+            }
+            if (mode != Fs050wConnectionMode.NR5G && mode != Fs050wConnectionMode.NR5G_SUB6 || !signal.isSa) {
+                RsrpPanel(
+                    title = ConnectionModeHelper.get4gCardTitle(mode, notation),
+                    band = FrequencyCalculator.getLteBandName(signal.lteBand),
+                    pci = signal.ltePci,
+                    rsrp = signal.lteRsrp,
+                    accent = SignalColors.blue,
+                )
             }
         }
     }
 }
+
+@Composable
+private fun RsrpPanel(title: String, band: String, pci: Int?, rsrp: Double?, accent: Color) {
+    val level = ColorGauge.rateRsrp(rsrp)
+    val color = ColorGauge.colorFor(level).argbColorSafe()
+    val progress = ColorGauge.calculateNormalizedRatio(
+        rsrp, ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX, "easeOut",
+    ).toFloat()
+    val label = ColorGauge.getLabel(level)
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("$band / ${pci ?: "--"}", fontSize = 12.sp)
+            }
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val valueText = if (rsrp != null && rsrp > -200) String.format(Locale.ROOT, "%.1f", rsrp) else "--"
+                Text(
+                    valueText,
+                    color = color,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                )
+                Text("dBm", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Box(
+                    modifier = Modifier
+                        .background(color.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) { Text(label, color = color, fontSize = 11.sp) }
+            }
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = color,
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailCell(
+    title: String,
+    band: String,
+    pci: Int?,
+    rsrp: Double?,
+    rsrq: Double?,
+    snr: Double?,
+    snrLabel: String,
+    accent: Color,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text("$band / ${pci ?: "--"}", fontSize = 12.sp)
+        }
+        KeyValueRow("RSRP", rsrp?.let { String.format(Locale.ROOT, "%.1f dBm", it) } ?: "-- dBm")
+        KeyValueRow("RSRQ", rsrq?.let { String.format(Locale.ROOT, "%.1f dB", it) } ?: "-- dB")
+        KeyValueRow(snrLabel, snr?.let { String.format(Locale.ROOT, "%+.1f dB", it) } ?: "-- dB")
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BatteryDetailSheet(signal: SignalData, onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("ルーター詳細統計", style = MaterialTheme.typography.titleLarge)
+            KeyValueRow("残り稼働予測", signal.estimatedTimeDisplay)
+            if (signal.isBatteryPresent) {
+                KeyValueRow("バッテリー残量", signal.batteryPercentDisplay)
+                KeyValueRow("温度", signal.batteryTemperature?.let { String.format(Locale.ROOT, "%.1f℃", it) } ?: "--")
+                KeyValueRow("電圧", signal.batteryVoltage?.let { String.format(Locale.ROOT, "%.2f V", it) } ?: "--")
+                KeyValueRow("電流", signal.batteryCurrent?.let { "$it mA" } ?: "--")
+                KeyValueRow("状態", signal.batteryChargeStatus ?: "--")
+            } else {
+                Text("AC給電駆動中 (バッテリーレス)", color = MaterialTheme.colorScheme.primary)
+            }
+            Text("ハードウェア", style = MaterialTheme.typography.titleMedium)
+            KeyValueRow("CPU使用率", signal.cpuUsagePercent?.let { "$it %" } ?: "--")
+            KeyValueRow("RAM使用率", signal.formattedRamUsage)
+            KeyValueRow("稼働時間", signal.formattedUptime)
+            KeyValueRow("プロセス数", signal.processCount?.toString() ?: "--")
+        }
+    }
+}
+
+private fun Long.argbColorSafe(): Color = Color((this and 0xFFFFFFFFL).toInt())

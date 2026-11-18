@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -21,6 +22,21 @@ import androidx.compose.ui.unit.dp
 import com.syameimarukoa.fs050w_signal_display.domain.util.ColorGauge
 
 fun Long.argbColor(): Color = Color((this and 0xFFFFFFFFL).toInt())
+
+/** 信号品質 6 段階の固定色（Material You の dinamic カラーとは別に意味論を保持）。 */
+object SignalColors {
+    val excellent = 0xFF2196F3L.argbColor()
+    val good = 0xFF4CAF50L.argbColor()
+    val moderate = 0xFF8BC34AL.argbColor()
+    val weak = 0xFFFF9800L.argbColor()
+    val veryWeak = 0xFFF44336L.argbColor()
+    val critical = 0xFF9C27B0L.argbColor()
+    val cyan = 0xFF00E5FFL.argbColor()
+    val blue = 0xFF64B5F6L.argbColor()
+    val green = 0xFF00E676L.argbColor()
+    val yellow = 0xFFFFD600L.argbColor()
+    val red = 0xFFFF5252L.argbColor()
+}
 
 @Composable
 fun SectionCard(
@@ -65,6 +81,7 @@ fun MetricRow(
         else String.format(java.util.Locale.ROOT, "%.1f", value)
     } else "--"
     val progress = ColorGauge.calculateNormalizedRatio(value, min, max, curve).toFloat()
+    val argb = color.argbColor()
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -76,7 +93,7 @@ fun MetricRow(
             Text(
                 text = "$valueText $unit",
                 style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                color = color.argbColor(),
+                color = argb,
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -84,8 +101,9 @@ fun MetricRow(
             progress = { progress },
             modifier = Modifier
                 .fillMaxWidth()
+                .height(6.dp)
                 .padding(top = 4.dp),
-            color = color.argbColor(),
+            color = argb,
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
     }

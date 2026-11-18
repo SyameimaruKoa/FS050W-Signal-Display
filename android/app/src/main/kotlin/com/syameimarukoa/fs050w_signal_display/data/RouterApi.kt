@@ -74,12 +74,19 @@ class RouterApi(initialSettings: AppSettings) {
         settings = newSettings
         lastIp = newSettings.routerIp
         lastPassword = newSettings.webPassword
+        // アプリ再開後にポーリングが再開できるよう、closing を必ず解除する。
+        closing = false
         if (changed) {
             resetSession()
             consecutiveErrorCount = 0
             lastLoginAttempt = null
             lockoutUntil = null
         }
+    }
+
+    /** 新しいポーリングセッションを開始する前に呼び、closing 状態を解除する。 */
+    fun resume() {
+        closing = false
     }
 
     private fun resetSession() {
