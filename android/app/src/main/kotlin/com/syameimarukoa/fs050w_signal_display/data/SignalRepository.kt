@@ -92,6 +92,7 @@ class SignalRepository(
     }
 
     fun setScreenState(on: Boolean) {
+        if (screenOn == on) return
         screenOn = on
         if (on) {
             AppLogger.info("Screen ON detected: Resuming polling loop immediately")

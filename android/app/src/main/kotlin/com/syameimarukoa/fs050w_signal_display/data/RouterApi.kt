@@ -310,9 +310,9 @@ class RouterApi(initialSettings: AppSettings) {
         val headers = authHeaders()
         return try {
             post("http://$ip/action/get_device_state", headers, "{}").use { response ->
-                updateHeaders(response)
                 val body = response.body?.string().orEmpty()
                 if (response.code == 200 && !body.startsWith("<!DOCTYPE")) {
+                    updateHeaders(response)
                     val json = JSONObject(body)
                     if (json.optInt("retcode") == 0) {
                         val data = json.opt("data")
@@ -337,9 +337,9 @@ class RouterApi(initialSettings: AppSettings) {
                 val response = post("http://$ip/action/get_mgdb_params", headers, body)
                 response.use { resp ->
                     lastLatencyMs = (System.currentTimeMillis() - start).toInt()
-                    updateHeaders(resp)
                     val text = resp.body?.string().orEmpty()
                     if (resp.code == 200 && !text.startsWith("<!DOCTYPE")) {
+                        updateHeaders(resp)
                         val json = JSONObject(text)
                         if (json.optInt("retcode") == 0) {
                             val data = json.opt("data")
@@ -363,9 +363,9 @@ class RouterApi(initialSettings: AppSettings) {
                 val response = post("http://$ip$endpoint", authHeaders(), body)
                 response.use { resp ->
                     lastLatencyMs = (System.currentTimeMillis() - start).toInt()
-                    updateHeaders(resp)
                     val text = resp.body?.string().orEmpty()
                     if (resp.code == 200 && !text.startsWith("<!DOCTYPE")) {
+                        updateHeaders(resp)
                         val json = JSONObject(text)
                         if (json.optInt("retcode") == 0) {
                             val data = json.opt("data")
@@ -388,9 +388,14 @@ class RouterApi(initialSettings: AppSettings) {
 
     private fun updateHeaders(response: okhttp3.Response) {
         response.header("x-csrf-token")?.takeIf { it.isNotEmpty() }?.let { csrfToken = it }
-        response.headers("set-cookie").firstOrNull()?.let { cookie ->
-            sessionCookie = Regex("-webs-session-=[^;]+").find(cookie)?.value
-                ?: cookie.substringBefore(";")
+        val cookies = response.headers("set-cookie")
+        // Prefer the router's session cookie across all Set-Cookie headers. Other
+        // cookies (tracking, login-page hints) must not overwrite the session.
+        val session = cookies.mapNotNull { Regex("-webs-session-=[^;]+").find(it)?.value }.firstOrNull()
+        if (session != null) {
+            sessionCookie = session
+        } else if (sessionCookie == null) {
+            sessionCookie = cookies.firstOrNull()?.substringBefore(";")
         }
     }
 
