@@ -3,8 +3,9 @@ package com.syameimarukoa.fs050w_signal_display.ui.settings
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.view.View
+import android.view.autofill.AutofillManager
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,8 +16,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -32,19 +34,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.ContentType
-import androidx.compose.ui.autofill.contentType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.syameimarukoa.fs050w_signal_display.R
 import com.syameimarukoa.fs050w_signal_display.data.AppLogger
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppNavigationStyle
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppSettings
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppThemeMode
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
+import com.syameimarukoa.fs050w_signal_display.ui.components.AutofillField
 import com.syameimarukoa.fs050w_signal_display.ui.components.KeyValueRow
 import com.syameimarukoa.fs050w_signal_display.ui.components.SectionCard
 import kotlinx.coroutines.launch
@@ -57,9 +57,17 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
     val scope = rememberCoroutineScope()
     var showLogs by remember { mutableStateOf(false) }
     var connectionMessage by remember { mutableStateOf<String?>(null) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     fun update(transform: (AppSettings) -> AppSettings) {
         repo.updateSettings(transform(settings))
+    }
+
+    fun commitAutofill() {
+        try {
+            context.getSystemService(AutofillManager::class.java)?.commit()
+        } catch (_: Exception) {
+        }
     }
 
     Column(
@@ -70,33 +78,39 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         SectionCard(title = "接続設定") {
-            OutlinedTextField(
+            AutofillField(
                 value = settings.routerIp,
                 onValueChange = { value -> update { s -> s.copy(routerIp = value) } },
-                label = { Text("ルーターIPアドレス") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                label = "ルーターIPアドレス",
+                hints = arrayOf("uri", View.AUTOFILL_HINT_USERNAME),
+                onDone = { commitAutofill() },
             )
-            OutlinedTextField(
-                value = settings.webPassword,
-                onValueChange = { value -> update { s -> s.copy(webPassword = value) } },
-                label = { Text("Web管理パスワード") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .contentType(ContentType.Password),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AutofillField(
+                    modifier = Modifier.weight(1f),
+                    value = settings.webPassword,
+                    onValueChange = { value -> update { s -> s.copy(webPassword = value) } },
+                    label = "Web管理パスワード",
+                    hints = arrayOf(View.AUTOFILL_HINT_PASSWORD),
+                    password = true,
+                    passwordVisible = passwordVisible,
+                    imeDone = true,
+                    onDone = { commitAutofill() },
+                )
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        painterResource(if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
+                        contentDescription = if (passwordVisible) "パスワードを隠す" else "パスワードを表示",
+                    )
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
                     scope.launch {
                         val ok = repo.testConnection(settings.routerIp, settings.webPassword)
                         connectionMessage = if (ok) "接続テスト成功" else "接続テスト失敗"
                     }
+                    commitAutofill()
                 }) { Text("接続テスト") }
                 connectionMessage?.let { Text(it, modifier = Modifier.align(Alignment.CenterVertically)) }
             }

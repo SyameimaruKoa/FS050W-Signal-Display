@@ -50,14 +50,10 @@ class SignalRepository(
     private val _isPipMode = MutableStateFlow(false)
     val isPipMode: StateFlow<Boolean> = _isPipMode.asStateFlow()
 
+    /** Flutter 版 PiPDetectorShell と同じ: PiP 状態を更新するだけ。
+     *  ポーリングの開始/停止はライフサイクル（resumed/paused）側が担う。 */
     fun setPipMode(active: Boolean) {
         _isPipMode.value = active
-        if (active || settingsStore.value.overlayEnabled) {
-            if (!screenOn) setScreenState(true)
-            startPolling()
-        } else {
-            stopPolling()
-        }
     }
 
     private val _lockoutRemainingSeconds = MutableStateFlow(0)

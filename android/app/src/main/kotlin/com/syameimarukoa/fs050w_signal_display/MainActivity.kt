@@ -159,12 +159,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (autoPipEnabled && !isRecentAppsPressed) {
+        if (autoPipEnabled && !isRecentAppsPressed && isPipSupported()) {
             enterPip(pipNumerator, pipDenominator)
         }
         isRecentAppsPressed = false
         isHomeKeyPressed = false
     }
+
+    private fun isPipSupported(): Boolean =
+        packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
