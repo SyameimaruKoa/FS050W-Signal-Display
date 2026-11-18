@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +40,14 @@ fun MainScreen(
     val isPip by repo.isPipMode.collectAsStateWithLifecycle()
     var selected by remember { mutableIntStateOf(0) }
     var showHud by remember { mutableStateOf(false) }
+
+    // Flutter 版 MainNavigationShell と同じ: 設定完了後にポーリングを開始する。
+    // Activity の onResume はセットアップ表示中に一度きりなので、ここで確実に開始する。
+    LaunchedEffect(settings.routerIp.isEmpty()) {
+        if (settings.routerIp.isNotEmpty()) {
+            repo.startPolling()
+        }
+    }
 
     when {
         settings.routerIp.isEmpty() -> SetupWizardScreen(onFinished = { selected = 0 })

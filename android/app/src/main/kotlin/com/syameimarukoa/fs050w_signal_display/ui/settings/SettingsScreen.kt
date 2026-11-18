@@ -265,7 +265,10 @@ private fun ChipSelector(
     onSelect: (String) -> Unit,
 ) {
     Text(label, style = MaterialTheme.typography.bodySmall)
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
         options.forEach { (value, text) ->
             FilterChip(
                 selected = selected == value,

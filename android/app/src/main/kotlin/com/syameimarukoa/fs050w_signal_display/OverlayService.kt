@@ -300,21 +300,15 @@ class OverlayService : Service() {
             MotionEvent.ACTION_UP -> {
                 val moved = abs(event.rawX - initialTouchX) + abs(event.rawY - initialTouchY)
                 if (moved < ViewConfiguration.get(this).scaledTouchSlop) {
-                    val now = System.currentTimeMillis()
-                    if (now - lastTapAt < 300L) {
-                        openMainActivity()
-                    } else if (event.y > (composeView?.height ?: 0) - dp(28f)) {
-                        // resize handle area: handled by the dedicated view
-                    } else {
-                        toggleExpanded()
-                    }
-                    lastTapAt = now
+                    // タップは Compose 側の clickable に任せるため、ここでは消費しない。
+                    return false
                 } else {
                     snapToEdge(p)
                 }
             }
         }
-        return true
+        // ドラッグ中のみイベントを消費する。
+        return event.actionMasked == MotionEvent.ACTION_MOVE
     }
 
     private fun snapToEdge(p: WindowManager.LayoutParams) {

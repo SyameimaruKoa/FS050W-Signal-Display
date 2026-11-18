@@ -1,6 +1,7 @@
 package com.syameimarukoa.fs050w_signal_display.ui.overlay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +53,7 @@ fun OverlayRoot(
         val opacity = settings.overlayOpacity.toFloat().coerceIn(0.2f, 1f)
         val cardModifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onToggleExpanded)
             .background(
                 color = Color(0xFF0A0A0A).copy(alpha = opacity.coerceAtLeast(0.85f)),
                 shape = RoundedCornerShape(12.dp),
