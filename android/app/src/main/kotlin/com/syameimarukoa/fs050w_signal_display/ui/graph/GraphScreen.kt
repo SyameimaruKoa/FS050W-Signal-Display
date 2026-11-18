@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
@@ -39,6 +40,7 @@ import com.syameimarukoa.fs050w_signal_display.domain.model.ConnectionModeHelper
 import com.syameimarukoa.fs050w_signal_display.domain.model.SignalData
 import com.syameimarukoa.fs050w_signal_display.domain.util.ColorGauge
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
+import com.syameimarukoa.fs050w_signal_display.ui.components.Fs050wTopAppBar
 import com.syameimarukoa.fs050w_signal_display.ui.components.SignalColors
 import com.syameimarukoa.fs050w_signal_display.ui.components.argbColor
 import java.time.Duration
@@ -61,7 +63,7 @@ private data class ChartConfig(
 )
 
 @Composable
-fun GraphScreen() {
+fun GraphScreen(onEnterPip: () -> Unit, onOpenLogs: () -> Unit, onOpenHud: () -> Unit) {
     val repo = LocalRepository.current
     val history by repo.history.collectAsStateWithLifecycle()
     val settings by repo.settings.collectAsStateWithLifecycle()
@@ -96,13 +98,16 @@ fun GraphScreen() {
             label4g = "ルーター", label5g = ""),
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Fs050wTopAppBar(onEnterPip, onOpenLogs, onOpenHud, onOpenDetail = {})
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -114,11 +119,16 @@ fun GraphScreen() {
                     selected = spanMinutes == minutes,
                     onClick = { spanMinutes = minutes },
                     label = { Text("${minutes}分") },
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = SignalColors.cyan.copy(alpha = 0.25f),
+                        selectedLabelColor = SignalColors.cyan,
+                    ),
                 )
             }
         }
-        configs.forEach { config ->
-            ChartCard(config, visible, cutoff, now, spanMinutes * 60.0)
+            configs.forEach { config ->
+                ChartCard(config, visible, cutoff, now, spanMinutes * 60.0)
+            }
         }
     }
 }
@@ -151,7 +161,7 @@ private fun ChartCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
+                    .height(150.dp)
                     .padding(top = 8.dp),
             ) {
                 val textMeasurer = rememberTextMeasurer()
@@ -173,15 +183,17 @@ private fun ChartCard(
                     // 水平グリッド線と Y 軸ラベル
                     config.yLabels.forEach { value ->
                         val y = yOf(value)
-                        drawLine(gridColor, Offset(left, y), Offset(left + plotW, y), 1f)
-                        val color = when (value) {
-                            -80.0, -10.0 -> SignalColors.excellent
-                            -90.0, -15.0 -> SignalColors.good
-                            -100.0, -18.0 -> SignalColors.moderate
-                            -110.0, -20.0 -> SignalColors.weak
-                            -120.0, -22.0 -> SignalColors.veryWeak
-                            else -> axisColor
+                        val threshold = config.thresholds.firstOrNull { it.value == value }
+                        if (threshold != null) {
+                            drawLine(
+                                threshold.color.argbColor().copy(alpha = 0.45f),
+                                Offset(left, y), Offset(left + plotW, y), 1f,
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f)),
+                            )
+                        } else {
+                            drawLine(gridColor, Offset(left, y), Offset(left + plotW, y), 1f)
                         }
+                        val color = threshold?.color?.argbColor() ?: axisColor
                         drawText(
                             textMeasurer,
                             String.format(Locale.ROOT, "%.0f", value),
@@ -191,7 +203,10 @@ private fun ChartCard(
                     }
                     if (config.hasZeroLine) {
                         val y = yOf(0.0)
-                        drawLine(Color.White.copy(alpha = 0.5f), Offset(left, y), Offset(left + plotW, y), 1.5f)
+                        drawLine(
+                            Color.White.copy(alpha = 0.54f), Offset(left, y), Offset(left + plotW, y), 1.5f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f)),
+                        )
                     }
 
                     // 垂直グリッド線と X 軸ラベル

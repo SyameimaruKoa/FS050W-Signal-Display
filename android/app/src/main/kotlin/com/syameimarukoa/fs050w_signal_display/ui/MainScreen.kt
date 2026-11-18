@@ -62,8 +62,8 @@ fun MainScreen(
                         onOpenLogs = { selected = 2 },
                     )
                 },
-                { GraphScreen() },
-                { SettingsScreen(onOverlayChanged = onOverlayChanged) },
+                { GraphScreen(onEnterPip = onEnterPip, onOpenLogs = { selected = 2 }, onOpenHud = { showHud = true }) },
+                { SettingsScreen(onOverlayChanged = onOverlayChanged, onEnterPip = onEnterPip, onOpenLogs = { selected = 2 }, onOpenHud = { showHud = true }) },
             )
             if (settings.navigationStyle == AppNavigationStyle.BOTTOM_NAV) {
                 Scaffold(

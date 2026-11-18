@@ -7,14 +7,25 @@ import android.view.autofill.AutofillManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.TextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,9 +44,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.syameimarukoa.fs050w_signal_display.R
 import com.syameimarukoa.fs050w_signal_display.data.AppLogger
@@ -44,12 +57,13 @@ import com.syameimarukoa.fs050w_signal_display.domain.model.AppSettings
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppThemeMode
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
 import com.syameimarukoa.fs050w_signal_display.ui.components.AutofillCredentialFields
+import com.syameimarukoa.fs050w_signal_display.ui.components.Fs050wTopAppBar
 import com.syameimarukoa.fs050w_signal_display.ui.components.KeyValueRow
-import com.syameimarukoa.fs050w_signal_display.ui.components.SectionCard
+import com.syameimarukoa.fs050w_signal_display.ui.components.SignalColors
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
+fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit, onEnterPip: () -> Unit, onOpenLogs: () -> Unit, onOpenHud: () -> Unit) {
     val repo = LocalRepository.current
     val settings by repo.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -69,14 +83,17 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        SectionCard(title = "1. 監視 & フローティング表示") {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Fs050wTopAppBar(onEnterPip, onOpenLogs, onOpenHud, onOpenDetail = {})
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+        SettingsSection(title = "1. 監視 & フローティング表示", painter = painterResource(R.drawable.ic_pip)) {
             SwitchRow(
                 "フローティングオーバーレイ",
                 settings.overlayEnabled,
@@ -92,45 +109,49 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
                     }
                 },
             )
-            ChipSelector(
-                label = "オーバーレイ表示形式",
-                options = listOf("card" to "カード", "compact" to "コンパクト"),
-                selected = settings.overlayStyle,
-            ) { value -> update { s -> s.copy(overlayStyle = value) } }
-            KeyValueRow("背景透過度", "%.0f%%".format(java.util.Locale.ROOT, settings.overlayOpacity * 100))
-            Slider(
-                value = settings.overlayOpacity.toFloat(),
-                onValueChange = { value -> update { s -> s.copy(overlayOpacity = value.toDouble()) } },
-                valueRange = 0.2f..1f,
-            )
+            if (settings.overlayEnabled) {
+                DropdownSelector(
+                    label = "オーバーレイ表示形式",
+                    options = listOf("card" to "PiP共通カード型 (スタイルA)", "compact" to "コンパクト行型 (スタイルB)"),
+                    selected = settings.overlayStyle,
+                ) { value -> update { s -> s.copy(overlayStyle = value) } }
+                KeyValueRow("背景透過度", "%.0f%%".format(java.util.Locale.ROOT, settings.overlayOpacity * 100))
+                Slider(
+                    value = settings.overlayOpacity.toFloat(),
+                    onValueChange = { value -> update { s -> s.copy(overlayOpacity = value.toDouble()) } },
+                    valueRange = 0.2f..1f,
+                )
+            }
+            HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             SwitchRow(
                 "ホーム画面に戻った時に自動でPiP起動",
                 settings.autoPipOnHome,
                 subtitle = "アプリ使用中にホーム操作を行うと自動で小窓化",
                 onCheckedChange = { enabled -> update { s -> s.copy(autoPipOnHome = enabled) } },
             )
-            ChipSelector(
+            DropdownSelector(
                 label = "PiP アスペクト比 (全7種)",
-                options = listOf("16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21").map { it to it },
+                options = listOf("16:9" to "16:9 (横長標準)", "9:16" to "9:16 (縦長標準)", "1:1" to "1:1 (正方形)", "4:3" to "4:3 (横長クラシック)", "3:4" to "3:4 (縦長クラシック)", "21:9" to "21:9 (ウルトラワイド)", "9:21" to "9:21 (ウルトラトール)"),
                 selected = settings.pipAspectRatio,
             ) { value -> update { s -> s.copy(pipAspectRatio = value) } }
             Text("現在: ${settings.pipAspectRatio}", style = MaterialTheme.typography.bodySmall)
         }
 
-        SectionCard(title = "2. イベントハプティクス & LED通知") {
+        SettingsSection(title = "2. イベントハプティクス & LED通知", painter = painterResource(R.drawable.ic_hud)) {
             SwitchRow("イベントLEDランプ", settings.eventLampEnabled) { enabled ->
                 update { s -> s.copy(eventLampEnabled = enabled) }
             }
-            ChipSelector(
+            DropdownSelector(
                 label = "ランプ形状",
-                options = listOf("bar" to "スリムバー", "dot" to "LEDドット"),
+                options = listOf("bar" to "スリムバー (画面幅1/4)", "dot" to "丸型 LED (8dp)"),
                 selected = settings.eventLampShape,
             ) { value -> update { s -> s.copy(eventLampShape = value) } }
-            ChipSelector(
+            DropdownSelector(
                 label = "ランプ位置",
-                options = listOf("topCenter" to "中央", "topLeft" to "左", "topRight" to "右"),
+                options = listOf("topCenter" to "画面中央上部", "topLeft" to "画面左上", "topRight" to "画面右上"),
                 selected = settings.eventLampPosition,
             ) { value -> update { s -> s.copy(eventLampPosition = value) } }
+            HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             SwitchRow("5G+ 突入バイブ", settings.vibrateOn5gSub6) { enabled ->
                 update { s -> s.copy(vibrateOn5gSub6 = enabled) }
             }
@@ -140,6 +161,7 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
             SwitchRow("電波微弱警告バイブ", settings.vibrateOnCriticalSignal) { enabled ->
                 update { s -> s.copy(vibrateOnCriticalSignal = enabled) }
             }
+            HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             SwitchRow("バッテリー高温警告", settings.batteryTempWarningEnabled) { enabled ->
                 update { s -> s.copy(batteryTempWarningEnabled = enabled) }
             }
@@ -152,7 +174,7 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
             )
         }
 
-        SectionCard(title = "3. 通信 & ルーター接続") {
+        SettingsSection(title = "3. 通信 & ルーター接続", painter = painterResource(R.drawable.ic_dashboard)) {
             AutofillCredentialFields(
                 ip = settings.routerIp,
                 password = settings.webPassword,
@@ -196,7 +218,7 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
             )
         }
 
-        SectionCard(title = "4. UI・テーマ & 表示設定") {
+        SettingsSection(title = "4. UI・テーマ & 表示設定", painter = painterResource(R.drawable.ic_settings)) {
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 listOf("システム" to AppThemeMode.SYSTEM, "ライト" to AppThemeMode.LIGHT, "ダーク" to AppThemeMode.DARK, "OLED" to AppThemeMode.OLED)
                     .forEachIndexed { index, (label, mode) ->
@@ -207,7 +229,7 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
                         ) { Text(label) }
                     }
             }
-            ChipSelector(
+            DropdownSelector(
                 label = "ナビゲーション",
                 options = listOf("bottom" to "ボトム", "buttons" to "ボタン"),
                 selected = if (settings.navigationStyle == AppNavigationStyle.BOTTOM_NAV) "bottom" else "buttons",
@@ -216,9 +238,9 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
                     s.copy(navigationStyle = if (value == "bottom") AppNavigationStyle.BOTTOM_NAV else AppNavigationStyle.CARD_BUTTONS)
                 }
             }
-            ChipSelector(
+            DropdownSelector(
                 label = "世代表記",
-                options = listOf("4g_5g" to "4G / 5G", "lte_nr" to "LTE / NR"),
+                options = listOf("4g_5g" to "4G / 5G / e4G", "lte_nr" to "LTE / NR / eLTE"),
                 selected = settings.generationNotation,
             ) { value -> update { s -> s.copy(generationNotation = value) } }
             SwitchRow("画面の常時点灯", settings.keepScreenOn) { enabled ->
@@ -234,6 +256,7 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
                 update { s -> s.copy(updateFlashDotEnabled = enabled) }
             }
             Button(onClick = { showLogs = true }) { Text("診断ログを表示") }
+            }
         }
     }
 
@@ -248,6 +271,33 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
             },
             confirmButton = { TextButton(onClick = { showLogs = false }) { Text("閉じる") } },
         )
+    }
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    painter: androidx.compose.ui.graphics.painter.Painter,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(painter, contentDescription = null, tint = SignalColors.cyan, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(title, color = SignalColors.cyan, fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+        }
+        Spacer(Modifier.height(8.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            border = androidx.compose.foundation.BorderStroke(0.6.dp, Color.White.copy(alpha = 0.12f)),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                content = content,
+            )
+        }
     }
 }
 
@@ -273,24 +323,39 @@ private fun SwitchRow(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun ChipSelector(
+private fun DropdownSelector(
     label: String,
     options: List<Pair<String, String>>,
     selected: String,
     onSelect: (String) -> Unit,
 ) {
-    Text(label, style = MaterialTheme.typography.bodySmall)
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        options.forEach { (value, text) ->
-            FilterChip(
-                selected = selected == value,
-                onClick = { onSelect(value) },
-                label = { Text(text) },
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            TextField(
+                value = options.firstOrNull { it.first == selected }?.second ?: selected,
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                modifier = Modifier.menuAnchor().width(200.dp),
+                colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { (value, text) ->
+                    DropdownMenuItem(
+                        text = { Text(text) },
+                        onClick = { onSelect(value); expanded = false },
+                    )
+                }
+            }
         }
     }
 }

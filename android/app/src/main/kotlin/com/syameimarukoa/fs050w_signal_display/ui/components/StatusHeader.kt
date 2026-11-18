@@ -54,10 +54,6 @@ fun StatusHeader(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onOpenDetail)
-            .background(
-                Color(0x2200E5FF),
-                RoundedCornerShape(6.dp),
-            )
             .padding(horizontal = 6.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
