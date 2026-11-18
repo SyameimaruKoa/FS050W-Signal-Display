@@ -6,6 +6,14 @@ FS050W Signal Display のバージョンごとの更新履歴です。
 
 ## [未リリース]
 
+### 自動入力 (Autofill) の調査結果
+
+- パスワード欄の「自動入力」で「コンテンツを自動入力できません」が出る件を調査。
+- 原因は検証端末 (rakuten-mini) 側で Android の自動入力サービス (Google パスワードマネージャー) の初期設定が未完了だったこと。設定完了後は Gboard 候補バーに「🔑 パスワード」が表示され、Autofill が動作することを確認。
+- GitHub Release v2.2.11 の元 Flutter 版 APK でも同じ端末・同じ設定状態で挙動は同一。移植の回帰ではない。
+- Compose 版は Flutter 版と同じく `url` / `username` / `password` の autofillHints を渡し、IP 欄とパスワード欄を 1 つの ViewGroup (AutofillGroup 相当) に統合。設定完了後の端末で候補が出ることを確認。
+- 保存済みパスワードは「ウェブサイト用」として登録されている場合、Google パスワードマネージャーは「FS050W Signal Display 用に保存されているパスワードはありません」と表示することがある (アプリ用とウェブサイト用は別カテゴリ)。パスワード自体はアプリ内 (SharedPreferences) にも保存されている。
+
 ### v3.0.0 — ネイティブ移行 (Flutter → Kotlin / Jetpack Compose)
 
 - Flutter / Dart 実装を完全に置き換え、Kotlin + Jetpack Compose のネイティブ Android アプリへ移行。
