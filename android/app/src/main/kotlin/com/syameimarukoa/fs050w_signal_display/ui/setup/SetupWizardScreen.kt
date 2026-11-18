@@ -19,11 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +57,18 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
     var password by remember { mutableStateOf(settings.webPassword) }
     var passwordVisible by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    var isScanning by remember { mutableStateOf(true) }
+    var isDetected by remember { mutableStateOf(false) }
+
+    // 起動時に Wi-Fi ゲートウェイを調べ、実際に FS050W と通信できるか確認する。
+    // 通信できた時だけ「検出しました」と表示する（ゲートウェイ IP だけでは断定しない）。
+    LaunchedEffect(Unit) {
+        val gateway = detectGateway(context)
+        if (gateway != null) ip = gateway
+        val target = gateway ?: "192.168.100.1"
+        isDetected = repo.testConnection(target, "")
+        isScanning = false
+    }
 
     fun commitAutofill() {
         try {
@@ -114,9 +128,21 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
 
         Spacer(Modifier.height(20.dp))
 
-        // 検出カード
-        if (ip.isNotBlank()) {
-            Row(
+        // 検出カード: FS050W と実際に通信できた時だけ表示する。
+        // ゲートウェイ IP が埋まっているだけでは「検出」と断言しない。
+        when {
+            isScanning -> Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(10.dp))
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = SignalColors.cyan, strokeWidth = 2.dp)
+                Text("FS050W を検索中...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+            }
+            isDetected -> Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
@@ -137,6 +163,26 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
                     "🎉 +F FS050W ($ip) を検出しました！",
                     color = SignalColors.green,
                     fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+            }
+            else -> Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(10.dp))
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_dashboard),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(28.dp),
+                )
+                Text(
+                    "FS050W が見つかりません。Wi-Fi 接続と IP を確認してください",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                 )
             }

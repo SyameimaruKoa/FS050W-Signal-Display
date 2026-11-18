@@ -338,8 +338,8 @@ private fun IntensityBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = fontSize, fontWeight = FontWeight.W600)
-            Text(text, color = Color.White, fontSize = fontSize, fontWeight = FontWeight.Bold)
+            FittedPipText(label, color = Color.White.copy(alpha = 0.7f), fontSize = fontSize, fontWeight = FontWeight.W600, modifier = Modifier.weight(1f))
+            FittedPipText(text, color = Color.White, fontSize = fontSize, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         }
     }
 }
