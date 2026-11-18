@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
@@ -144,25 +143,22 @@ private fun ChartCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(0.6.dp, Color.White.copy(alpha = 0.12f)),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(config.title, style = MaterialTheme.typography.titleMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(config.title, fontSize = 12.5.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LegendDot(SignalColors.blue, config.label4g)
                     if (config.label5g.isNotEmpty()) LegendDot(SignalColors.cyan, config.label5g)
                 }
             }
-            Text(
-                "5G: シアン   4G: 青   ──: ハンドオーバー",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
-                    .padding(top = 8.dp),
+                    .height(102.dp)
+                    .padding(top = 4.dp),
             ) {
                 val textMeasurer = rememberTextMeasurer()
                 val axisColor = Color(0xAAFFFFFF)

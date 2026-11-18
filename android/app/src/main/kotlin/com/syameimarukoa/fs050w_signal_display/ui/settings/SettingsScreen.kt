@@ -29,9 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -135,6 +132,19 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit, onEnterPip: () -> Unit, 
                 selected = settings.pipAspectRatio,
             ) { value -> update { s -> s.copy(pipAspectRatio = value) } }
             Text("現在: ${settings.pipAspectRatio}", style = MaterialTheme.typography.bodySmall)
+            DropdownSelector(
+                label = "PiP 拡大時グラフ種類",
+                options = listOf("rsrp" to "RSRP 履歴", "snr" to "SNR / SINR 履歴", "rsrq" to "RSRQ 履歴", "none" to "非表示"),
+                selected = settings.pipGraphType,
+            ) { value -> update { s -> s.copy(pipGraphType = value) } }
+            Text("PiP枠が一定サイズ以上の時にグラフを表示します。", style = MaterialTheme.typography.bodySmall)
+            Slider(
+                value = settings.pipGraphScaleThreshold.toFloat(),
+                onValueChange = { value -> update { s -> s.copy(pipGraphScaleThreshold = value.toDouble()) } },
+                valueRange = 0.5f..1.5f,
+                steps = 9,
+            )
+            Text("現在: ${"%.1f".format(java.util.Locale.ROOT, settings.pipGraphScaleThreshold)}倍 (小さいほど表示されやすい)", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
         }
 
         SettingsSection(title = "2. イベントハプティクス & LED通知", painter = painterResource(R.drawable.ic_hud)) {
@@ -202,33 +212,53 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit, onEnterPip: () -> Unit, 
                 }) { Text("接続テスト") }
                 connectionMessage?.let { Text(it, modifier = Modifier.align(Alignment.CenterVertically)) }
             }
-            KeyValueRow("フォアグラウンド間隔", "${settings.foregroundIntervalSeconds} 秒")
-            Slider(
-                value = settings.foregroundIntervalSeconds.toFloat(),
-                onValueChange = { value -> update { s -> s.copy(foregroundIntervalSeconds = value.toInt().coerceIn(1, 5)) } },
-                valueRange = 1f..5f,
-                steps = 3,
-            )
-            KeyValueRow("未ログイン時間隔", "${settings.unauthIntervalSeconds} 秒")
-            Slider(
-                value = settings.unauthIntervalSeconds.toFloat(),
-                onValueChange = { value -> update { s -> s.copy(unauthIntervalSeconds = value.toInt().coerceIn(3, 10)) } },
-                valueRange = 3f..10f,
-                steps = 6,
-            )
+            DropdownSelector(
+                label = "ログイン時ポーリング間隔",
+                options = listOf(1 to "1秒 (推奨)", 2 to "2秒", 3 to "3秒", 5 to "5秒").map { it.first.toString() to it.second },
+                selected = settings.foregroundIntervalSeconds.toString(),
+            ) { value -> update { s -> s.copy(foregroundIntervalSeconds = value.toInt()) } }
+            DropdownSelector(
+                label = "未ログイン時ポーリング間隔",
+                options = listOf(3 to "3秒 (推奨)", 5 to "5秒", 10 to "10秒").map { it.first.toString() to it.second },
+                selected = settings.unauthIntervalSeconds.toString(),
+            ) { value -> update { s -> s.copy(unauthIntervalSeconds = value.toInt()) } }
         }
 
         SettingsSection(title = "4. UI・テーマ & 表示設定", painter = painterResource(R.drawable.ic_settings)) {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                listOf("システム" to AppThemeMode.SYSTEM, "ライト" to AppThemeMode.LIGHT, "ダーク" to AppThemeMode.DARK, "OLED" to AppThemeMode.OLED)
-                    .forEachIndexed { index, (label, mode) ->
-                        SegmentedButton(
-                            selected = settings.appTheme == mode,
-                            onClick = { update { s -> s.copy(appTheme = mode) } },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = 4),
-                        ) { Text(label) }
-                    }
+            DropdownSelector(
+                label = "通信規格の表記方式",
+                options = listOf("4g_5g" to "4G / 5G / e4G", "lte_nr" to "LTE / NR / eLTE"),
+                selected = settings.generationNotation,
+            ) { value -> update { s -> s.copy(generationNotation = value) } }
+            SwitchRow("5G SNR 値の補正 (-23dB)", settings.adjust5gSnr) { enabled ->
+                update { s -> s.copy(adjust5gSnr = enabled) }
             }
+            SwitchRow("更新時ポッチ点滅 (フラッシュインジケーター)", settings.updateFlashDotEnabled) { enabled ->
+                update { s -> s.copy(updateFlashDotEnabled = enabled) }
+            }
+            SwitchRow("シームレスゲージカラー", settings.smoothGaugeColor) { enabled ->
+                update { s -> s.copy(smoothGaugeColor = enabled) }
+            }
+            if (settings.smoothGaugeColor) {
+                DropdownSelector(
+                    label = "グラデーション曲線 (イージング)",
+                    options = listOf("easeOut" to "Ease Out (推奨: 弱電界の変化を強調)", "easeIn" to "Ease In (強電界の変化を強調)", "easeInOut" to "Ease In-Out (S字曲線)", "linear" to "Linear (リニア / 線形)"),
+                    selected = settings.smoothGaugeCurve,
+                ) { value -> update { s -> s.copy(smoothGaugeCurve = value) } }
+            }
+            SwitchRow("画面の常時点灯 (スリープ防止)", settings.keepScreenOn) { enabled ->
+                update { s -> s.copy(keepScreenOn = enabled) }
+            }
+            DropdownSelector(
+                label = "グラフ初期表示スパン",
+                options = listOf(1 to "1分", 3 to "3分 (推奨)", 5 to "5分", 10 to "10分").map { it.first.toString() to it.second },
+                selected = settings.graphSpanMinutes.toString(),
+            ) { value -> update { s -> s.copy(graphSpanMinutes = value.toInt()) } }
+            DropdownSelector(
+                label = "アプリテーマ",
+                options = listOf("OLED" to "OLED 漆黒ダーク", "DARK" to "マテリアルダーク", "LIGHT" to "ライトモード", "SYSTEM" to "システム追従"),
+                selected = settings.appTheme.name,
+            ) { value -> update { s -> s.copy(appTheme = AppThemeMode.valueOf(value)) } }
             DropdownSelector(
                 label = "ナビゲーション",
                 options = listOf("bottom" to "ボトム", "buttons" to "ボタン"),
@@ -238,23 +268,7 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit, onEnterPip: () -> Unit, 
                     s.copy(navigationStyle = if (value == "bottom") AppNavigationStyle.BOTTOM_NAV else AppNavigationStyle.CARD_BUTTONS)
                 }
             }
-            DropdownSelector(
-                label = "世代表記",
-                options = listOf("4g_5g" to "4G / 5G / e4G", "lte_nr" to "LTE / NR / eLTE"),
-                selected = settings.generationNotation,
-            ) { value -> update { s -> s.copy(generationNotation = value) } }
-            SwitchRow("画面の常時点灯", settings.keepScreenOn) { enabled ->
-                update { s -> s.copy(keepScreenOn = enabled) }
-            }
-            SwitchRow("5G SNR 補正 (-23dB)", settings.adjust5gSnr) { enabled ->
-                update { s -> s.copy(adjust5gSnr = enabled) }
-            }
-            SwitchRow("シームレスゲージカラー", settings.smoothGaugeColor) { enabled ->
-                update { s -> s.copy(smoothGaugeColor = enabled) }
-            }
-            SwitchRow("更新フラッシュドット", settings.updateFlashDotEnabled) { enabled ->
-                update { s -> s.copy(updateFlashDotEnabled = enabled) }
-            }
+            HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             Button(onClick = { showLogs = true }) { Text("診断ログを表示") }
             }
         }
