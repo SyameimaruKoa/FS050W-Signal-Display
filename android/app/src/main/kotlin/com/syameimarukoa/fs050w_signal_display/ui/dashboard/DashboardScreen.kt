@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -44,6 +47,7 @@ import com.syameimarukoa.fs050w_signal_display.R
 import com.syameimarukoa.fs050w_signal_display.domain.model.ConnectionModeHelper
 import com.syameimarukoa.fs050w_signal_display.domain.model.Fs050wConnectionMode
 import com.syameimarukoa.fs050w_signal_display.domain.model.SignalData
+import com.syameimarukoa.fs050w_signal_display.domain.model.SignalRatingLevel
 import com.syameimarukoa.fs050w_signal_display.domain.util.ColorGauge
 import com.syameimarukoa.fs050w_signal_display.domain.util.FrequencyCalculator
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
@@ -155,28 +159,37 @@ fun DashboardScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            if (!signal!!.is5gDisabledByConfig) {
+                            // Flutter の CellCard と同じ表示条件。
+                            val nrHidden = mode == Fs050wConnectionMode.LTE
+                            val nrStandby = mode == Fs050wConnectionMode.NSA_READY
+                            if (!signal!!.is5gDisabledByConfig && !nrHidden) {
                                 DetailCell(
                                     title = ConnectionModeHelper.get5gCardTitle(mode, settings.generationNotation),
                                     band = FrequencyCalculator.getNrBandName(signal!!.nrBand),
+                                    badge = FrequencyCalculator.getNrBadgeText(signal!!.nrBand),
                                     pci = signal!!.nrPci,
                                     rsrp = signal!!.nrRsrp,
                                     rsrq = if (isLoggedIn) signal!!.nrRsrq else null,
                                     snr = if (isLoggedIn) signal!!.nrSnr else null,
                                     snrLabel = "SNR",
                                     accent = SignalColors.cyan,
+                                    standby = nrStandby,
+                                    loggedIn = isLoggedIn,
                                 )
                             }
-                            if (mode != Fs050wConnectionMode.NR5G && mode != Fs050wConnectionMode.NR5G_SUB6 || !signal!!.isSa) {
+                            if (!signal!!.isSa) {
                                 DetailCell(
                                     title = ConnectionModeHelper.get4gCardTitle(mode, settings.generationNotation),
                                     band = FrequencyCalculator.getLteBandName(signal!!.lteBand),
+                                    badge = FrequencyCalculator.getLteBadgeText(signal!!.lteBand, signal!!.operatorName),
                                     pci = signal!!.ltePci,
                                     rsrp = signal!!.lteRsrp,
                                     rsrq = if (isLoggedIn) signal!!.lteRsrq else null,
                                     snr = if (isLoggedIn) signal!!.lteSinr else null,
                                     snrLabel = "SINR",
                                     accent = SignalColors.blue,
+                                    standby = false,
+                                    loggedIn = isLoggedIn,
                                 )
                             }
                             signal!!.handoverDescription?.let {
@@ -401,21 +414,124 @@ private fun RsrpPanel(
 private fun DetailCell(
     title: String,
     band: String,
+    badge: String?,
     pci: Int?,
     rsrp: Double?,
     rsrq: Double?,
     snr: Double?,
     snrLabel: String,
     accent: Color,
+    standby: Boolean,
+    loggedIn: Boolean,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("$band / ${pci ?: "--"}", fontSize = 12.sp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.2.dp, accent.copy(alpha = 0.3f)),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // ヘッダー: アイコン + タイトル + 回線バッジ (Flutter CellCard と同じ情報)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(painterResource(R.drawable.ic_graph), contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("● $title", color = accent, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f), maxLines = 1)
+                if (badge != null) {
+                    val badgeColor = when {
+                        badge.contains("楽天") || badge == "ローミング" || badge == "プラチナ" -> Color(0xFFE6007A)
+                        else -> Color(0xFF2196F3)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .background(badgeColor.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) { Text(badge, color = badgeColor, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                }
+            }
+            HorizontalDivider(color = Color.White.copy(alpha = 0.08f), thickness = 0.8.dp)
+            if (standby) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
+                    Text("⏳", fontSize = 18.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("$title NSA 待機中 (ENDC 未確立)", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                return@Card
+            }
+            Spacer(Modifier.height(10.dp))
+            // PCI / Band 行
+            Row(modifier = Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(6.dp)).padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row {
+                    Text("PCI: ", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text((pci ?: "--").toString(), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+                Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
+                    Text("Band: ", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(band, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            // RSRP メインゲージ
+            val level = ColorGauge.rateRsrp(rsrp)
+            val color = ColorGauge.colorFor(level).argbColorSafe()
+            val progress = ColorGauge.calculateNormalizedRatio(rsrp, ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX, "easeOut").toFloat()
+            val label = ColorGauge.getLabel(level)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("RSRP", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(rsrp?.let { String.format(Locale.ROOT, "%.1f dBm", it) } ?: "-- dBm", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Box(modifier = Modifier.background(color.copy(alpha = 0.2f), RoundedCornerShape(3.dp)).padding(horizontal = 3.dp, vertical = 1.dp)) {
+                        Text(label, color = color, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(5.dp), color = color, trackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+            Spacer(Modifier.height(6.dp))
+            // RSRQ / SNR 値＋レベル (Flutter _buildCompactRefMetric と同じ情報)
+            if (loggedIn && (rsrq != null || snr != null)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RefMetric("RSRQ", rsrq, ColorGauge.RSRQ_MIN, ColorGauge.RSRQ_MAX, { ColorGauge.rateRsrq(it) }, Modifier.weight(1f))
+                    RefMetric(snrLabel, snr, ColorGauge.SINR_MIN, ColorGauge.SINR_MAX, { ColorGauge.rateSinr(it) }, Modifier.weight(1f))
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                    Text("🔒", fontSize = 13.sp)
+                    Spacer(Modifier.width(6.dp))
+                    Text("ログインすると詳細パラメータ (PCI/Band/RQ/SNR) が表示されます", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
-        KeyValueRow("RSRP", rsrp?.let { String.format(Locale.ROOT, "%.1f dBm", it) } ?: "-- dBm")
-        KeyValueRow("RSRQ", rsrq?.let { String.format(Locale.ROOT, "%.1f dB", it) } ?: "-- dB")
-        KeyValueRow(snrLabel, snr?.let { String.format(Locale.ROOT, "%+.1f dB", it) } ?: "-- dB")
+    }
+}
+
+@Composable
+private fun RefMetric(
+    label: String,
+    value: Double?,
+    min: Double,
+    max: Double,
+    rate: (Double) -> SignalRatingLevel,
+    modifier: Modifier = Modifier,
+) {
+    val hasVal = value != null && value.isFinite() && value > -200
+    val color = if (hasVal) ColorGauge.colorFor(rate(value)).argbColorSafe() else Color.Gray
+    val ratio = if (hasVal) ((value - min) / (max - min)).coerceIn(0.0, 1.0).toFloat() else 0f
+    val valueText = if (hasVal) String.format(Locale.ROOT, "%+.1f", value) else "--"
+    val levelText = if (hasVal) ColorGauge.getLabel(rate(value)) else "--"
+    Box(
+        modifier = modifier
+            .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(6.dp))
+            .border(0.8.dp, if (hasVal) color.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.08f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 6.dp, vertical = 5.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(valueText, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Box(modifier = Modifier.background(if (hasVal) color.copy(alpha = 0.2f) else Color.Transparent, RoundedCornerShape(3.dp)).padding(horizontal = 3.dp, vertical = 1.dp)) {
+                    Text(levelText, color = color, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
     }
 }
 
