@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Google Material Icons: signal_cellular_4_bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M1,20h2v-3h-2v3zM5,20h2v-6H5v6zM9,20h2v-9H9v9zM13,20h2V7h-2v13zM17,20h2V4h-2v16z" />
+</vector>

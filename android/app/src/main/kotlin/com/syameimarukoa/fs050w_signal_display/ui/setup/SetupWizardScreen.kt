@@ -103,7 +103,7 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painterResource(R.drawable.ic_dashboard),
+                painterResource(R.drawable.ic_signal_cellular),
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier.size(44.dp),
@@ -154,7 +154,7 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(
-                    painterResource(R.drawable.ic_dashboard),
+                    painterResource(R.drawable.ic_signal_cellular),
                     contentDescription = null,
                     tint = SignalColors.green,
                     modifier = Modifier.size(28.dp),
@@ -175,7 +175,7 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(
-                    painterResource(R.drawable.ic_dashboard),
+                    painterResource(R.drawable.ic_signal_cellular),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(28.dp),

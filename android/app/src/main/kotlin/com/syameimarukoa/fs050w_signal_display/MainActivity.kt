@@ -96,7 +96,13 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(LocalRepository provides repository) {
                 Fs050wTheme(settings) {
                     MainScreen(
-                        onEnterPip = { enterPip(pipNumerator, pipDenominator) },
+                        onEnterPip = {
+                            val parts = settingsStore.value.pipAspectRatio.split(":")
+                            enterPip(
+                                parts.getOrNull(0)?.toIntOrNull() ?: 16,
+                                parts.getOrNull(1)?.toIntOrNull() ?: 9,
+                            )
+                        },
                         onOverlayChanged = { enabled ->
                             if (enabled) startOverlay() else stopOverlay()
                         },

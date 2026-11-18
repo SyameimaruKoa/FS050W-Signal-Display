@@ -203,7 +203,7 @@ fun DashboardScreen(
     }
 
     if (showBatterySheet && signal != null) {
-        BatteryDetailSheet(signal = signal!!, onDismiss = { showBatterySheet = false })
+        BatteryDetailSheet(signal = signal!!, isLoggedIn = isLoggedIn, onDismiss = { showBatterySheet = false })
     }
 }
 
@@ -537,7 +537,7 @@ private fun RefMetric(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BatteryDetailSheet(signal: SignalData, onDismiss: () -> Unit) {
+private fun BatteryDetailSheet(signal: SignalData, isLoggedIn: Boolean, onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
@@ -546,27 +546,175 @@ private fun BatteryDetailSheet(signal: SignalData, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("ルーター詳細統計", style = MaterialTheme.typography.titleLarge)
-            KeyValueRow("残り稼働予測", signal.estimatedTimeDisplay)
-            if (signal.isBatteryPresent) {
-                KeyValueRow("バッテリー残量", signal.batteryPercentDisplay)
-                KeyValueRow("温度", signal.batteryTemperature?.let { String.format(Locale.ROOT, "%.1f℃", it) } ?: "--")
-                KeyValueRow("電圧", signal.batteryVoltage?.let { String.format(Locale.ROOT, "%.2f V", it) } ?: "--")
-                KeyValueRow("電流", signal.batteryCurrent?.let { "$it mA" } ?: "--")
-                KeyValueRow("状態", signal.batteryChargeStatus ?: "--")
-            } else {
-                Text("AC給電駆動中 (バッテリーレス)", color = MaterialTheme.colorScheme.primary)
+            // ドラッグハンドル
+            Box(
+                Modifier
+                    .size(width = 40.dp, height = 4.dp)
+                    .background(Color.Gray.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+                    .align(Alignment.CenterHorizontally),
+            )
+            Spacer(Modifier.height(8.dp))
+            // ヘッダー
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(painterResource(R.drawable.ic_graph), contentDescription = null, tint = SignalColors.cyan, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("ルーター詳細統計・バッテリー情報", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                IconButton(onClick = onDismiss) { Icon(painterResource(R.drawable.ic_close), contentDescription = "閉じる") }
             }
-            Text("ハードウェア", style = MaterialTheme.typography.titleMedium)
-            KeyValueRow("CPU使用率", signal.cpuUsagePercent?.let { "$it %" } ?: "--")
-            KeyValueRow("RAM使用率", signal.formattedRamUsage)
-            KeyValueRow("稼働時間", signal.formattedUptime)
-            KeyValueRow("プロセス数", signal.processCount?.toString() ?: "--")
+            HorizontalDivider()
+            Spacer(Modifier.height(12.dp))
+
+            // 1. 推定稼働/充電時間カード
+            val hasBattery = signal.isBatteryPresent
+            val isCharging = signal.isCharging
+            val accent = if (!hasBattery) SignalColors.cyan else if (isCharging) SignalColors.yellow else SignalColors.cyan
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.2.dp, accent.copy(alpha = 0.4f)),
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(44.dp).background(accent.copy(alpha = 0.15f), androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(if (!hasBattery) R.drawable.ic_power else if (isCharging) R.drawable.ic_battery_charging else R.drawable.ic_battery),
+                            contentDescription = null, tint = accent, modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            if (!hasBattery) "給電状態" else if (isCharging) "充電完了予想時間" else "バッテリー残り稼働予想",
+                            fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            if (!hasBattery) "🔌 外部電源駆動 (バッテリーレス)" else signal.estimatedTimeDisplay,
+                            fontSize = 15.sp, fontWeight = FontWeight.Bold, color = accent,
+                        )
+                        if (hasBattery && signal.isLongLifeCharging && isCharging) {
+                            Text("※ いたわり充電有効中 (70%上限で計算)", fontSize = 10.5.sp, color = SignalColors.cyan)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // 2. バッテリー詳細カード
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(0.8.dp, Color.White.copy(alpha = 0.12f)),
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(R.drawable.ic_battery), contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("バッテリー詳細ステータス", fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        if (hasBattery && signal.isLongLifeCharging) {
+                            Box(Modifier.background(SignalColors.cyan.copy(alpha = 0.2f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                Text("いたわり充電 (70%制限)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SignalColors.cyan)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    if (!hasBattery) {
+                        Text("バッテリー未装着 (AC給電駆動中)", fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
+                    } else {
+                        val pct = signal.scaledBatteryPercent ?: signal.batteryPercent
+                        val pctColor = when {
+                            (pct ?: 0) >= 50 -> Color(0xFF4CAF50)
+                            (pct ?: 0) >= 20 -> SignalColors.yellow
+                            else -> SignalColors.red
+                        }
+                        SheetProgressRow("残量", signal.batteryPercentDisplay, (pct ?: 0).toFloat() / 100f, pctColor)
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                        Spacer(Modifier.height(8.dp))
+                        val cap = signal.batteryCapacity
+                        val raw = signal.batteryPercent
+                        val currentMah = if (cap != null && raw != null) (cap * raw) / 100 else null
+                        val tempColor = ColorGauge.temperatureColor(signal.batteryTemperature).argbColorSafe()
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            MetricTile("温度", signal.batteryTemperature?.let { String.format(Locale.ROOT, "%.1f °C", it) } ?: "--", tempColor, Modifier.weight(1f))
+                            MetricTile("電圧", signal.batteryVoltage?.let { "${kotlin.math.round(it).toInt()} mV" } ?: "--", null, Modifier.weight(1f))
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            MetricTile("電流 (入出力)", signal.batteryCurrent?.let { "${if (it > 0) "+" else ""}$it mA" } ?: "--",
+                                if ((signal.batteryCurrent ?: 0) > 0) SignalColors.yellow else null, Modifier.weight(1f))
+                            val status = signal.batteryChargeStatus
+                            MetricTile("動作状態", when (status) { "charging" -> "充電中 (⚡)"; "discharging" -> "放電中 (バッテリー駆動)"; else -> status ?: "--" }, null, Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // 3. ハードウェアカード
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(0.8.dp, Color.White.copy(alpha = 0.12f)),
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(R.drawable.ic_dashboard), contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("ルーターハードウェア & システム状態", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    if (!isLoggedIn) {
+                        Text("🔒 CPU・RAM・プロセス数・稼働時間はWebパスワード設定・ログイン時に取得されます", fontSize = 11.5.sp, color = SignalColors.yellow)
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    val cpu = signal.cpuUsagePercent
+                    val cpuColor = when { (cpu ?: 0) >= 80 -> SignalColors.red; (cpu ?: 0) >= 50 -> SignalColors.yellow; else -> Color(0xFF2196F3) }
+                    SheetProgressRow("CPU使用率", cpu?.let { "$it %" } ?: "--", (cpu ?: 0).toFloat() / 100f, cpuColor)
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                    Spacer(Modifier.height(8.dp))
+                    val totalRam = signal.totalRamBytes
+                    val usageRam = signal.usageRamBytes
+                    val ramRatio = if (totalRam != null && totalRam > 0 && usageRam != null) (usageRam.toFloat() / totalRam).coerceIn(0f, 1f) else 0f
+                    val ramColor = when { ramRatio >= 0.85f -> SignalColors.red; ramRatio >= 0.70f -> SignalColors.yellow; else -> SignalColors.cyan }
+                    SheetProgressRow("RAM使用率", signal.formattedRamUsage, ramRatio, ramColor)
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricTile("稼働時間", signal.formattedUptime, null, Modifier.weight(1f))
+                        MetricTile("実行プロセス数", signal.processCount?.toString() ?: "--", null, Modifier.weight(1f))
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun SheetProgressRow(label: String, valueText: String, progress: Float, color: Color) {
+    Column {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, fontSize = 12.5.sp, fontWeight = FontWeight.W600)
+            Text(valueText, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(6.dp))
+        LinearProgressIndicator(progress = { progress.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(7.dp), color = color, trackColor = Color.White.copy(alpha = 0.08f))
+    }
+}
+
+@Composable
+private fun MetricTile(label: String, value: String, color: Color?, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(6.dp)).padding(8.dp)) {
+        Text(label, fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(2.dp))
+        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color ?: MaterialTheme.colorScheme.onSurface)
     }
 }
 

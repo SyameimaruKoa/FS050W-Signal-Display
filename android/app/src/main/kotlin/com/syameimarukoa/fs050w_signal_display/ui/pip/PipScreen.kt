@@ -363,7 +363,7 @@ private fun RefBox(label: String, value: Double?, unit: String, accent: Color, m
         contentAlignment = Alignment.Center,
     ) {
         if (hasVal && ratio > 0f) {
-            Box(Modifier.fillMaxWidth(ratio).fillMaxHeight().background(color.copy(alpha = 0.24f)))
+            Box(Modifier.align(Alignment.CenterStart).fillMaxWidth(ratio).fillMaxHeight().background(color.copy(alpha = 0.24f)))
         }
         FittedPipText("$label $text", color = color, fontSize = 8.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
     }
