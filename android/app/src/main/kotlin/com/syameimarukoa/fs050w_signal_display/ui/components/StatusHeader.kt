@@ -115,7 +115,7 @@ fun StatusHeader(
                     Text("${it.roundToInt()}℃", color = SignalColors.cyan, fontSize = 11.sp)
                 }
                 signal?.batteryCurrent?.let {
-                    Text(String.format(Locale.ROOT, "%+d mA", it), fontSize = 10.sp)
+                    Text(String.format(Locale.ROOT, "%+dmA", it), fontSize = 10.sp)
                 }
             }
             Row(

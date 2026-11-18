@@ -1,6 +1,7 @@
 package com.syameimarukoa.fs050w_signal_display.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +71,7 @@ fun DashboardScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
+            modifier = Modifier.height(56.dp),
             title = {
                 StatusHeader(
                     signal = signal,
@@ -95,8 +97,8 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             val mode = signal?.connectionMode ?: Fs050wConnectionMode.DISCONNECTED
             val connected = status.name == "AUTHENTICATED" || status.name == "UNAUTHENTICATED_MODE"
@@ -209,7 +211,7 @@ private fun ConnectionBanner(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
                     modifier = Modifier
@@ -245,7 +247,7 @@ private fun ConnectionBanner(
                 Text(operatorName ?: "--", modifier = Modifier.weight(1f), fontSize = 13.sp)
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("ステータス", style = MaterialTheme.typography.bodyMedium)
+                Text("ステータス:", style = MaterialTheme.typography.bodyMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -256,14 +258,26 @@ private fun ConnectionBanner(
                     Text("ルーター設定: $net", fontSize = 12.sp)
                 }
             }
-            if (wifiFreq != null) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Wi-Fi", style = MaterialTheme.typography.bodyMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (isWifiEnabled) {
-                            Text("有効", color = SignalColors.green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-                        Text("$wifiFreq  (${wifiClients ?: 0} 台接続中)", fontSize = 12.sp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White.copy(alpha = 0.025f), RoundedCornerShape(6.dp))
+                    .border(0.8.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("📶", fontSize = 14.sp, color = if (isWifiEnabled) SignalColors.cyan else Color.Gray)
+                        Text("Wi-Fi: ", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            if (isWifiEnabled) "有効 ($wifiFreq)" else "無効",
+                            color = if (isWifiEnabled) SignalColors.cyan else Color.Gray,
+                            fontWeight = FontWeight.Bold, fontSize = 12.sp,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("📱", fontSize = 13.sp)
+                        Text("${wifiClients ?: 0}台 接続中", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -282,7 +296,7 @@ private fun RsrpOverviewCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(painterResource(R.drawable.ic_graph), contentDescription = null, tint = SignalColors.cyan, modifier = Modifier.size(22.dp))
@@ -296,77 +310,86 @@ private fun RsrpOverviewCard(
                     ) { Text("ログイン済", color = SignalColors.good, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                 }
             }
+            val is4gOnly = mode == Fs050wConnectionMode.LTE
+            val nrBandStr = if (signal.nrBand != null && signal.nrBand!! > 0) "n${signal.nrBand}" else "--"
+            val lteBandStr = if (signal.lteBand != null && signal.lteBand!! > 0) "B${signal.lteBand}" else "--"
+            androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = 0.08f), thickness = 0.8.dp)
             if (!signal.is5gDisabledByConfig) {
                 RsrpPanel(
                     title = ConnectionModeHelper.get5gCardTitle(mode, notation),
-                    band = FrequencyCalculator.getNrBandName(signal.nrBand),
+                    band = nrBandStr,
                     pci = signal.nrPci,
                     rsrp = signal.nrRsrp,
                     accent = SignalColors.cyan,
-                    standbyNote = if (signal.nrRsrp == null) "4G単独中" else null,
+                    is5g = true,
+                    isStandby = mode == Fs050wConnectionMode.NSA_READY,
+                    isSingleMode = is4gOnly,
                 )
             }
             if (mode != Fs050wConnectionMode.NR5G && mode != Fs050wConnectionMode.NR5G_SUB6 || !signal.isSa) {
                 RsrpPanel(
                     title = ConnectionModeHelper.get4gCardTitle(mode, notation),
-                    band = FrequencyCalculator.getLteBandName(signal.lteBand),
+                    band = lteBandStr,
                     pci = signal.ltePci,
                     rsrp = signal.lteRsrp,
                     accent = SignalColors.blue,
+                    is5g = false,
+                    isStandby = false,
+                    isSingleMode = signal.isSa,
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("✓", color = SignalColors.good, fontWeight = FontWeight.Bold)
-                Text("フル情報モード: セル詳細・ハンドオーバー常時監視中", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("フル情報モード: セル詳細・ハンドオーバー常時監視中", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun RsrpPanel(title: String, band: String, pci: Int?, rsrp: Double?, accent: Color, standbyNote: String? = null) {
+private fun RsrpPanel(
+    title: String, band: String, pci: Int?, rsrp: Double?, accent: Color,
+    is5g: Boolean, isStandby: Boolean, isSingleMode: Boolean,
+) {
+    val isValid = rsrp != null && !rsrp.isNaN() && rsrp < 0
     val level = ColorGauge.rateRsrp(rsrp)
     val color = ColorGauge.colorFor(level).argbColorSafe()
     val progress = ColorGauge.calculateNormalizedRatio(
         rsrp, ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX, "easeOut",
     ).toFloat()
-    val label = ColorGauge.getLabel(level)
+    val statusLabel = when {
+        isValid -> ColorGauge.getLabel(level)
+        isStandby -> "NSA待機中"
+        isSingleMode -> if (is5g) "4G単独中" else "5G SA中"
+        else -> "圏外 / 未接続"
+    }
+    val titleText = if (band.isNotBlank() && band != "--") "$title ($band)" else title
+    val mainValText = if (isValid) "${String.format(Locale.ROOT, "%.1f", rsrp)} dBm" else "-- dBm"
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.3f)),
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                if (standbyNote != null) {
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0x33FFFFFF), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                    ) { Text(standbyNote, color = Color(0xAAFFFFFF), fontSize = 11.sp) }
-                } else {
-                    Text("$band / ${pci ?: "--"}", fontSize = 12.sp)
-                }
-            }
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val valueText = if (rsrp != null && rsrp > -200) String.format(Locale.ROOT, "%.1f", rsrp) else "--"
-                Text(
-                    valueText,
-                    color = color,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                )
-                Text("dBm", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(titleText, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                 Box(
                     modifier = Modifier
                         .background(color.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 6.dp, vertical = 2.dp),
-                ) { Text(label, color = color, fontSize = 11.sp) }
+                ) { Text(statusLabel, color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
             }
+            Text(
+                mainValText,
+                color = if (isValid) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+            )
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(8.dp),
+                modifier = Modifier.fillMaxWidth().height(5.dp),
                 color = color,
                 trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             )
