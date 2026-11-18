@@ -9,6 +9,8 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Rational
 import android.view.WindowManager
@@ -26,6 +28,7 @@ import com.syameimarukoa.fs050w_signal_display.ui.MainScreen
 import com.syameimarukoa.fs050w_signal_display.ui.theme.Fs050wTheme
 
 class MainActivity : ComponentActivity() {
+    private val mainHandler = Handler(Looper.getMainLooper())
     private lateinit var repository: SignalRepository
     private lateinit var settingsStore: SettingsStore
 
@@ -60,22 +63,7 @@ class MainActivity : ComponentActivity() {
         repository = app.repository
         settingsStore = app.settingsStore
 
-        setContent {
-            val settings by repository.settings.collectAsStateWithLifecycle()
-            LaunchedEffect(settings.keepScreenOn) {
-                applyKeepScreenOn(settings.keepScreenOn)
-            }
-            CompositionLocalProvider(LocalRepository provides repository) {
-                Fs050wTheme(settings) {
-                    MainScreen(
-                        onEnterPip = { enterPip(pipNumerator, pipDenominator) },
-                        onOverlayChanged = { enabled ->
-                            if (enabled) startOverlay() else stopOverlay()
-                        },
-                    )
-                }
-            }
-        }
+        applyContent()
 
         val initial = settingsStore.value
         syncPipSettings(initial)
@@ -97,6 +85,25 @@ class MainActivity : ComponentActivity() {
             IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS),
             ContextCompat.RECEIVER_EXPORTED,
         )
+    }
+
+    private fun applyContent() {
+        setContent {
+            val settings by repository.settings.collectAsStateWithLifecycle()
+            LaunchedEffect(settings.keepScreenOn) {
+                applyKeepScreenOn(settings.keepScreenOn)
+            }
+            CompositionLocalProvider(LocalRepository provides repository) {
+                Fs050wTheme(settings) {
+                    MainScreen(
+                        onEnterPip = { enterPip(pipNumerator, pipDenominator) },
+                        onOverlayChanged = { enabled ->
+                            if (enabled) startOverlay() else stopOverlay()
+                        },
+                    )
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -170,6 +177,9 @@ class MainActivity : ComponentActivity() {
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         repository.setPipMode(isInPictureInPictureMode)
+        // PiP 遷移では configChanges により Activity が再作成されないため、
+        // ComposeView の内容を再適用して PiP サイズに再レイアウトさせる。
+        mainHandler.post { applyContent() }
     }
 
     private fun applyKeepScreenOn(enabled: Boolean) {
