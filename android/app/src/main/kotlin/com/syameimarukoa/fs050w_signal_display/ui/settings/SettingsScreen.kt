@@ -3,7 +3,6 @@ package com.syameimarukoa.fs050w_signal_display.ui.settings
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import android.view.View
 import android.view.autofill.AutofillManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,7 +43,7 @@ import com.syameimarukoa.fs050w_signal_display.domain.model.AppNavigationStyle
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppSettings
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppThemeMode
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
-import com.syameimarukoa.fs050w_signal_display.ui.components.AutofillField
+import com.syameimarukoa.fs050w_signal_display.ui.components.AutofillCredentialFields
 import com.syameimarukoa.fs050w_signal_display.ui.components.KeyValueRow
 import com.syameimarukoa.fs050w_signal_display.ui.components.SectionCard
 import kotlinx.coroutines.launch
@@ -78,25 +77,16 @@ fun SettingsScreen(onOverlayChanged: (Boolean) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         SectionCard(title = "接続設定") {
-            AutofillField(
-                value = settings.routerIp,
-                onValueChange = { value -> update { s -> s.copy(routerIp = value) } },
-                label = "ルーターIPアドレス",
-                hints = arrayOf("uri", View.AUTOFILL_HINT_USERNAME),
+            AutofillCredentialFields(
+                ip = settings.routerIp,
+                password = settings.webPassword,
+                onIpChange = { value -> update { s -> s.copy(routerIp = value) } },
+                onPasswordChange = { value -> update { s -> s.copy(webPassword = value) } },
+                passwordVisible = passwordVisible,
                 onDone = { commitAutofill() },
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AutofillField(
-                    modifier = Modifier.weight(1f),
-                    value = settings.webPassword,
-                    onValueChange = { value -> update { s -> s.copy(webPassword = value) } },
-                    label = "Web管理パスワード",
-                    hints = arrayOf(View.AUTOFILL_HINT_PASSWORD),
-                    password = true,
-                    passwordVisible = passwordVisible,
-                    imeDone = true,
-                    onDone = { commitAutofill() },
-                )
+                Text("パスワードを表示", modifier = Modifier.weight(1f))
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         painterResource(if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),

@@ -2,13 +2,11 @@ package com.syameimarukoa.fs050w_signal_display.ui.setup
 
 import android.content.Context
 import android.net.wifi.WifiManager
-import android.view.View
 import android.view.autofill.AutofillManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -29,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.syameimarukoa.fs050w_signal_display.R
 import com.syameimarukoa.fs050w_signal_display.ui.LocalRepository
-import com.syameimarukoa.fs050w_signal_display.ui.components.AutofillField
+import com.syameimarukoa.fs050w_signal_display.ui.components.AutofillCredentialFields
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,30 +66,21 @@ fun SetupWizardScreen(onFinished: () -> Unit) {
         Text("+F FS050W 初期セットアップ", style = MaterialTheme.typography.headlineSmall)
         Text("ルーターに接続して電波監視を開始します。", style = MaterialTheme.typography.bodyMedium)
 
-        // Flutter 版 AutofillGroup 相当: IP に url+username、パスワードに password。
-        AutofillField(
-            value = ip,
-            onValueChange = { ip = it },
-            label = "ルーターIPアドレス",
-            hints = arrayOf("uri", View.AUTOFILL_HINT_USERNAME),
-            onDone = { commitAutofill() },
+        AutofillCredentialFields(
+            ip = ip,
+            password = password,
+            onIpChange = { ip = it },
+            onPasswordChange = { password = it },
+            passwordLabel = "Web管理パスワード (任意)",
+            passwordVisible = passwordVisible,
+            onDone = {
+                commitAutofill()
+                saveAndFinish()
+            },
         )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AutofillField(
-                modifier = Modifier.weight(1f),
-                value = password,
-                onValueChange = { password = it },
-                label = "Web管理パスワード (任意)",
-                hints = arrayOf(View.AUTOFILL_HINT_PASSWORD),
-                password = true,
-                passwordVisible = passwordVisible,
-                imeDone = true,
-                onDone = {
-                    commitAutofill()
-                    saveAndFinish()
-                },
-            )
+            Text("パスワードを表示", modifier = Modifier.weight(1f))
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                 Icon(
                     painterResource(if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
