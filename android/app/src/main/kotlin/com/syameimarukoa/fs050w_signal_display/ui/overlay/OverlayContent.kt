@@ -1,7 +1,6 @@
 package com.syameimarukoa.fs050w_signal_display.ui.overlay
 
 import androidx.compose.foundation.background
-import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +29,9 @@ import com.syameimarukoa.fs050w_signal_display.ui.components.argbColor
 import com.syameimarukoa.fs050w_signal_display.data.SignalRepository
 import com.syameimarukoa.fs050w_signal_display.domain.model.AppSettings
 
+private val OVERLAY_ON_SURFACE = Color(0xFFF5F5F5)
+private val OVERLAY_PRIMARY = Color(0xFF00E5FF)
+
 /** Compose content for the floating window. Material You colours come from the platform scheme. */
 @Composable
 fun OverlayRoot(
@@ -43,21 +45,24 @@ fun OverlayRoot(
     val connecting by repository.isConnecting.collectAsState()
     val liveSettings by repository.settings.collectAsState()
     val settings = liveSettings
+    // オーバーレイは常に暗い背景に重なるため、dynamic カラーに頼らず
+    // コントラストを保証する固定の明るい色を使う。
     MaterialTheme(colorScheme = dynamicDarkColorScheme(context)) {
-        val modifier = Modifier
+        // 背景にのみ透過度を適用する。文字まで薄くすると可読性が落ちるため。
+        val opacity = settings.overlayOpacity.toFloat().coerceIn(0.2f, 1f)
+        val cardModifier = Modifier
             .fillMaxWidth()
-            .alpha(settings.overlayOpacity.toFloat().coerceIn(0.2f, 1f))
             .background(
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                color = Color(0xFF0A0A0A).copy(alpha = opacity.coerceAtLeast(0.85f)),
                 shape = RoundedCornerShape(12.dp),
             )
             .padding(10.dp)
         if (!expanded) {
-            PillContent(signal, connecting, settings, modifier, onToggleExpanded)
+            PillContent(signal, connecting, settings, cardModifier)
         } else if (settings.overlayStyle == "compact") {
-            CompactContent(signal, connecting, settings, modifier, onToggleExpanded)
+            CompactContent(signal, connecting, settings, cardModifier)
         } else {
-            CardContent(signal, connecting, settings, modifier, onToggleExpanded)
+            CardContent(signal, connecting, settings, cardModifier)
         }
     }
 }
@@ -68,7 +73,6 @@ private fun PillContent(
     connecting: Boolean,
     settings: AppSettings,
     modifier: Modifier,
-    onToggle: () -> Unit,
 ) {
     val mode = signal?.connectionMode ?: Fs050wConnectionMode.DISCONNECTED
     val badge = if (connecting) "..." else ConnectionModeHelper.getIconBadgeText(mode, settings.generationNotation)
@@ -84,7 +88,7 @@ private fun PillContent(
                 append("  AC給電")
             }
         },
-        color = color,
+        color = if (rsrp != null) color else OVERLAY_ON_SURFACE,
         fontSize = 11.sp,
         fontFamily = FontFamily.Monospace,
         modifier = modifier,
@@ -97,7 +101,6 @@ private fun CompactContent(
     connecting: Boolean,
     settings: AppSettings,
     modifier: Modifier,
-    onToggle: () -> Unit,
 ) {
     val mode = signal?.connectionMode ?: Fs050wConnectionMode.DISCONNECTED
     val badge = if (connecting) "[ 接続中... ]" else
@@ -105,7 +108,7 @@ private fun CompactContent(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             "$badge ${signal?.operatorName ?: "--"}",
-            color = MaterialTheme.colorScheme.primary,
+            color = OVERLAY_PRIMARY,
             fontSize = 11.sp,
             fontFamily = FontFamily.Monospace,
         )
@@ -138,17 +141,17 @@ private fun CardContent(
     connecting: Boolean,
     settings: AppSettings,
     modifier: Modifier,
-    onToggle: () -> Unit,
 ) {
     val mode = signal?.connectionMode ?: Fs050wConnectionMode.DISCONNECTED
     val badge = if (connecting) "[ 接続中... ]" else
         "[ ${ConnectionModeHelper.getIconBadgeText(mode, settings.generationNotation)} ]"
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(badge, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
         Text(
-            signal?.operatorName ?: "--",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 10.sp,
+            "$badge ${signal?.operatorName ?: "--"}",
+            color = OVERLAY_PRIMARY,
+            fontSize = 16.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
         )
         signal?.let { s ->
             if (!s.is5gDisabledByConfig) {
@@ -163,7 +166,7 @@ private fun CardContent(
             Text(
                 ConnectionModeHelper.get4gCardTitle(mode, settings.generationNotation) +
                     " (${FrequencyCalculator.getLteBandName(s.lteBand)}/${s.ltePci ?: "--"})",
-                color = MaterialTheme.colorScheme.primary,
+                color = Color(0xFF64B5F6),
                 fontSize = 10.sp,
             )
             OverlayMetrics(s.lteRsrp, s.lteRsrq, s.lteSinr, false)

@@ -25,8 +25,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.syameimarukoa.fs050w_signal_display.data.VibratorHelper
 import com.syameimarukoa.fs050w_signal_display.ui.overlay.OverlayRoot
 import kotlin.math.abs
@@ -146,17 +151,13 @@ class OverlayService : Service() {
 
     private fun app() = application as Fs050wApp
 
-    /** ComposeView in a Service needs a ViewTree LifecycleOwner; set reflectively so the
-     * build stays compatible with AndroidX variants that expose it as a class or extension. */
+    /** A ComposeView hosted in a Service must expose Lifecycle/SavedState/ViewModelStore
+     * owners through the View tree, otherwise onAttachedToWindow() throws
+     * "ViewTreeLifecycleOwner not found". */
     private fun attachComposeOwners(view: View) {
-        try {
-            val clazz = Class.forName("androidx.lifecycle.ViewTreeLifecycleOwner")
-            val setter = clazz.methods.firstOrNull { it.name == "set" && it.parameterCount == 2 }
-            setter?.invoke(null, view, owners)
-        } catch (_: Exception) {
-            // Older/newer AndroidX variants may not expose the static setter; composition
-            // still works because LocalLifecycleOwner is provided explicitly below.
-        }
+        view.setViewTreeLifecycleOwner(owners)
+        view.setViewTreeSavedStateRegistryOwner(owners)
+        view.setViewTreeViewModelStoreOwner(owners)
     }
 
     private fun showOverlay() {
@@ -171,25 +172,31 @@ class OverlayService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = (screenWidth * 0.05).toInt()
-            y = (screenHeight * 0.15).toInt()
+            y = (screenHeight * 0.22).toInt()
         }
 
         val host = FrameLayout(this)
+        // WindowRecomposer は View 階層（親を含む）から LifecycleOwner を探すため、
+        // ComposeView だけでなくコンテナにもオーナーを設定する。
+        attachComposeOwners(host)
         val view = ComposeView(this).apply {
             attachComposeOwners(this)
+            // addView 前に setContent しても composition が破棄されないよう、
+            // LifecycleOwner が DESTROYED になるまで保持する。
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
+            )
             layoutParams = FrameLayout.LayoutParams(
                 userWidthPx ?: dp(280f),
                 FrameLayout.LayoutParams.WRAP_CONTENT,
             )
             setContent {
-                CompositionLocalProvider(LocalLifecycleOwner provides owners) {
-                    OverlayRoot(
-                        repository = app().repository,
-                        initialSettings = app().settingsStore.value,
-                        expanded = isExpanded,
-                        onToggleExpanded = { toggleExpanded() },
-                    )
-                }
+                OverlayRoot(
+                    repository = app().repository,
+                    initialSettings = app().settingsStore.value,
+                    expanded = isExpanded,
+                    onToggleExpanded = { toggleExpanded() },
+                )
             }
         }
         composeView = view
@@ -240,14 +247,12 @@ class OverlayService : Service() {
     private fun recompose() {
         mainHandler.post {
             composeView?.setContent {
-                CompositionLocalProvider(LocalLifecycleOwner provides owners) {
-                    OverlayRoot(
-                        repository = app().repository,
-                        initialSettings = app().settingsStore.value,
-                        expanded = isExpanded,
-                        onToggleExpanded = { toggleExpanded() },
-                    )
-                }
+                OverlayRoot(
+                    repository = app().repository,
+                    initialSettings = app().settingsStore.value,
+                    expanded = isExpanded,
+                    onToggleExpanded = { toggleExpanded() },
+                )
             }
         }
     }
@@ -403,11 +408,19 @@ class OverlayService : Service() {
         super.onDestroy()
     }
 
-    private class OverlayComposeOwners : LifecycleOwner {
-        private val lifecycleRegistry = LifecycleRegistry(this).apply {
-            currentState = Lifecycle.State.RESUMED
+    private class OverlayComposeOwners : LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
+        private val lifecycleRegistry = LifecycleRegistry(this)
+        private val controller = SavedStateRegistryController.create(this)
+        private val store = ViewModelStore()
+
+        init {
+            // performRestore は Lifecycle が INITIALIZED の間（owner 初期化中）にのみ呼べる。
+            controller.performRestore(null)
+            lifecycleRegistry.currentState = Lifecycle.State.RESUMED
         }
 
         override val lifecycle: Lifecycle get() = lifecycleRegistry
+        override val savedStateRegistry get() = controller.savedStateRegistry
+        override val viewModelStore: ViewModelStore get() = store
     }
 }
