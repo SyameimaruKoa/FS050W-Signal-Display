@@ -28,6 +28,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,6 +49,76 @@ import com.syameimarukoa.fs050w_signal_display.ui.components.SignalColors
 import com.syameimarukoa.fs050w_signal_display.ui.components.argbColor
 import java.time.Duration
 import java.util.Locale
+
+/** Flutter の FittedBox(fit: scaleDown) 相当: 自然サイズで配置し、領域に収まるよう自動縮小する。 */
+@Composable
+private fun FittedPipText(
+    text: String,
+    color: Color,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    fontWeight: FontWeight? = null,
+    fontFamily: FontFamily? = null,
+    modifier: Modifier = Modifier,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val placeable = subcompose("text") {
+            Text(
+                text = text,
+                color = color,
+                fontWeight = fontWeight,
+                fontFamily = fontFamily,
+                maxLines = 1,
+                softWrap = false,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = fontSize),
+            )
+        }.first().measure(androidx.compose.ui.unit.Constraints())
+
+        val scale = if (placeable.width > constraints.maxWidth && constraints.maxWidth > 0) {
+            constraints.maxWidth.toFloat() / placeable.width.toFloat()
+        } else 1f
+        // 内容の自然幅 (scale 後) だけを占める。こうすると Row の SpaceBetween が正しく動く。
+        val w = (placeable.width * scale).toInt().coerceAtMost(constraints.maxWidth)
+        val h = (placeable.height * scale).toInt().coerceAtMost(constraints.maxHeight)
+        layout(w, h) {
+            placeable.placeRelativeWithLayer(0, 0) {
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = TransformOrigin(0f, 0f)
+            }
+        }
+    }
+}
+
+/** ヘッダー用: 色分けしたテキストを 1 行にまとめ、FittedBox 相当で縮小して全部表示する。 */
+@Composable
+private fun FittedPipAnnotatedText(
+    text: androidx.compose.ui.text.AnnotatedString,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val placeable = subcompose("text") {
+            Text(
+                text = text,
+                maxLines = 1,
+                softWrap = false,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = fontSize),
+            )
+        }.first().measure(androidx.compose.ui.unit.Constraints())
+        val scale = if (placeable.width > constraints.maxWidth && constraints.maxWidth > 0) {
+            constraints.maxWidth.toFloat() / placeable.width.toFloat()
+        } else 1f
+        val w = (placeable.width * scale).toInt().coerceAtMost(constraints.maxWidth)
+        val h = (placeable.height * scale).toInt().coerceAtMost(constraints.maxHeight)
+        layout(w, h) {
+            placeable.placeRelativeWithLayer(0, 0) {
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = TransformOrigin(0f, 0f)
+            }
+        }
+    }
+}
 
 /** Flutter 版 PipScreen と同じ構成: ヘッダー + 5G/4G 信号グリッド + タップで切替できるミニ履歴グラフ。 */
 @Composable
@@ -130,7 +205,36 @@ private fun PipHeader(signal: SignalData?, settings: AppSettings, connecting: Bo
     val isDelayed = latency != null && latency > 150
     val latencyColor = ColorGauge.latencyColor(latency).argbColor()
     val ratio = if (latency != null) (latency / 200.0).coerceIn(0.0, 1.0).toFloat() else 0f
-    val fs = if (isSquare) 11.sp else if (isPortrait) 6.sp else 9.5.sp
+    val fs = if (isSquare) 11.sp else 9.5.sp
+
+    val bat = when {
+        signal?.isBatteryPresent == false -> "🔌AC給電"
+        signal?.batteryPercent != null || signal?.batteryTemperature != null -> buildString {
+            append("🔋")
+            signal?.batteryPercent?.let { append("$it%") }
+            if (signal?.isCharging == true) append("⚡")
+            signal?.batteryTemperature?.let { append(" ${it.toInt()}℃") }
+            signal?.remainingTimeHHMM?.let { append(" $it") }
+        }
+        else -> ""
+    }
+    val warn = settings.batteryTempWarningEnabled &&
+        (signal?.batteryTemperature ?: 0.0) >= settings.batteryTempWarningThreshold
+    val operator = if (isDelayed) "${latency}ms" else signal?.operatorName ?: "--"
+
+    val headerText = buildAnnotatedString {
+        withStyle(SpanStyle(color = if (connecting) Color(0xFFFFB300) else SignalColors.cyan, fontWeight = FontWeight.Bold)) {
+            append(badge)
+        }
+        if (bat.isNotEmpty()) {
+            withStyle(SpanStyle(color = if (warn) Color(0xFFFF5252) else Color.White.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
+                append("  $bat")
+            }
+        }
+        withStyle(SpanStyle(color = if (isDelayed) latencyColor else Color.White.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
+            append("  $operator")
+        }
+    }
 
     Row(
         modifier = Modifier
@@ -138,71 +242,9 @@ private fun PipHeader(signal: SignalData?, settings: AppSettings, connecting: Bo
             .height(if (isSquare) 26.dp else 18.dp)
             .background(Color.White.copy(alpha = 0.06f))
             .padding(horizontal = 4.dp, vertical = if (isSquare) 2.5.dp else 1.5.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(
-                modifier = Modifier
-                    .background(
-                        if (connecting) Color(0xFFFFB300).copy(alpha = 0.25f)
-                        else SignalColors.cyan.copy(alpha = 0.25f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(3.dp),
-                    )
-                    .padding(horizontal = 4.dp, vertical = 1.dp),
-            ) {
-                Text(
-                    badge,
-                    color = if (connecting) Color(0xFFFFB300) else SignalColors.cyan,
-                    fontSize = fs, fontWeight = FontWeight.Bold,
-                )
-            }
-            val bat = when {
-                signal?.isBatteryPresent == false -> "🔌AC給電"
-                signal?.batteryPercent != null || signal?.batteryTemperature != null -> buildString {
-                    append("🔋")
-                    signal?.batteryPercent?.let { append("$it%") }
-                    if (signal?.isCharging == true) append("⚡")
-                    signal?.batteryTemperature?.let { append(" ${it.toInt()}℃") }
-                    signal?.remainingTimeHHMM?.let { append(" $it") }
-                }
-                else -> ""
-            }
-            if (bat.isNotEmpty()) {
-                val warn = settings.batteryTempWarningEnabled &&
-                    (signal?.batteryTemperature ?: 0.0) >= settings.batteryTempWarningThreshold
-                Text(bat, color = if (warn) Color(0xFFFF5252) else Color.White.copy(alpha = 0.7f),
-                    fontSize = if (isSquare) 10.sp else if (isPortrait) 5.5.sp else 8.5.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-        Box(
-            modifier = Modifier
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
-                .border(
-                    0.6.dp,
-                    if (latency != null) latencyColor.copy(alpha = 0.4f) else Color.Transparent,
-                    androidx.compose.foundation.shape.RoundedCornerShape(3.dp),
-                ),
-        ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(latencyColor.copy(alpha = 0.35f)),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(ratio)
-                        .fillMaxSize()
-                        .background(latencyColor.copy(alpha = 0.35f)),
-                )
-            }
-            Text(
-                if (isDelayed) "${latency}ms" else signal?.operatorName ?: "--",
-                color = if (isDelayed) latencyColor else Color.White.copy(alpha = 0.7f),
-                fontSize = fs, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-            )
-        }
+        FittedPipAnnotatedText(headerText, fontSize = fs)
     }
 }
 
@@ -227,8 +269,8 @@ private fun NrSection(signal: SignalData?, settings: AppSettings, single: Boolea
             .padding(horizontal = 3.dp, vertical = 2.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth().height(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("$title ($band)", color = SignalColors.cyan, fontSize = fs * 1.12f, fontWeight = FontWeight.Bold)
-            Text("PCI: $pci", color = Color.White.copy(alpha = 0.7f), fontSize = fs * 1.06f)
+            FittedPipText("$title ($band)", color = SignalColors.cyan, fontSize = fs * 1.12f, fontWeight = FontWeight.Bold)
+            FittedPipText("PCI: $pci", color = Color.White.copy(alpha = 0.7f), fontSize = fs * 1.06f)
         }
         IntensityBar("RSRP", signal?.nrRsrp, ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX,
             ColorGauge.colorFor(ColorGauge.rateRsrp(signal?.nrRsrp)).argbColor(),
@@ -255,8 +297,8 @@ private fun LteSection(signal: SignalData?, settings: AppSettings, single: Boole
             .padding(horizontal = 3.dp, vertical = 2.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth().height(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("$gen ($band)", color = SignalColors.blue, fontSize = fs * 1.12f, fontWeight = FontWeight.Bold)
-            Text("PCI: $pci", color = Color.White.copy(alpha = 0.7f), fontSize = fs * 1.06f)
+            FittedPipText("$gen ($band)", color = SignalColors.blue, fontSize = fs * 1.12f, fontWeight = FontWeight.Bold)
+            FittedPipText("PCI: $pci", color = Color.White.copy(alpha = 0.7f), fontSize = fs * 1.06f)
         }
         IntensityBar("RSRP", signal?.lteRsrp, ColorGauge.RSRP_MIN, ColorGauge.RSRP_MAX,
             ColorGauge.colorFor(ColorGauge.rateRsrp(signal?.lteRsrp)).argbColor(),
@@ -323,7 +365,7 @@ private fun RefBox(label: String, value: Double?, unit: String, accent: Color, m
         if (hasVal && ratio > 0f) {
             Box(Modifier.fillMaxWidth(ratio).fillMaxHeight().background(color.copy(alpha = 0.24f)))
         }
-        Text("$label $text", color = color, fontSize = 6.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1)
+        FittedPipText("$label $text", color = color, fontSize = 8.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
     }
 }
 
